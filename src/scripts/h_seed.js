@@ -151,6 +151,7 @@ function seedDemo(){
   /* 内容点赞点踩已体现在 contents;通知 */
   S.notices=[{t:'09:12',m:'课题「国地补口径」所属项目已结项,效果结论已写回'},{t:'09:05',m:'系统出题完成:批次 B2 从汽车语料 badcase 聚类 3 个候选,出题 2 个'},{t:'08:40',m:'项目「新人训第12期」分班结果已发布:第12期一班'},{t:'08:30',m:'项目「技能·邀约试驾」数据同步完成,可在「效果追踪」查看'},{t:'昨天',m:'内容「价格异议处理 · 价值锚点话术」已提交审核,审核人:总部培训部 刘翔'},{t:'08:10',m:'项目「强竞品·问界M8」灰度中:第一批 6 人已收到任务,对照批 4 人暂不下发'}];
   kpSeed();qSeed();drSeed();kpSeedMastery();
+  ciSeedCourse();
   /* v23:理想态数据层(维度 / 画像 / 12 周证据 / 业务结果 / 错题 / 学习包 / 配置版本),并覆盖掌握度算法 */
   if(typeof v23Seed==='function')v23Seed();
   $('#toast').style.display='none';
@@ -158,3 +159,26 @@ function seedDemo(){
 }
 A.reset=()=>{reset();seedDemo();render();toast('已载入示例数据(各模块都有数据,可直接演示)','ok')};
 A.clear=()=>{reset();render();toast('已清空,从零开始走闭环','ok')};
+
+
+/* 真实课程样例：CEMN 讲师手册（assets/cemn_course.md 的摘要版）
+   目的：让本地启动后可以直接看到「课程链接 → 课程骨架 + 候选知识点 → 回挂 → 上架」结果，无需依赖飞书登录态。 */
+function ciSeedCourse(){
+  if(typeof ciCourseKpSuggestions!=='function')return;
+  const md=typeof ciCourseSampleText==='function'?ciCourseSampleText():'';
+  const item=ciCourseLinkItem({name:'【CEMN-购买层级诊断与推进】——讲师手册',link:1,courseText:md},{dept:'总部培训部'});
+  if(!item)return;
+  const c=cEnsure(C0(Object.assign({},item,{id:'N_CEMN1',ver:1,up:0,down:0,views:0,lecturer:'王磊',cover:'默认封面.png',chan:['汽车销售'],vis:'全国',st:'已定稿',pubSt:'已上架',pubVer:1,pubAt:addDays(today,-2)+' 10:00',creator:'总部培训部 刘翔',cK:'hq',rK:'hq',rName:'总部培训部 刘翔',created:addDays(today,-3),origin:'线下资料导入',srcFile:'【CEMN-购买层级诊断与推进】——讲师手册',srcDept:'总部培训部',hist:[{t:addDays(today,-3)+' 10:00',who:'总部培训部 刘翔',act:'课程导入',note:'课程链接解析为课程骨架 + 候选知识点'}],kps:[],kpRole:{},mainKp:'',tags:[]})));
+  S.contents.unshift(c);
+  c.body=Object.assign({},c.body,{course:true});
+  const cands=ciCourseKpSuggestions(item.title,item.body.sourceText);
+  const kids=[];
+  cands.forEach((x,i)=>{
+    const kid='K_CEMN'+i;if(S.kps.some(k=>k.id===kid))return;
+    S.kps.push({id:kid,name:x.name,type:x.type,tags:[],dim:'顾虑解除',car:'通用车型',cars:['通用车型'],syn:x.syn||[],owner:'李娜',st:'启用',ext:[],created:addDays(today,-3),hist:[{t:addDays(today,-3),who:'总部培训部 刘翔',act:'课程候选确认',note:'来自 CEMN 课程导入'}]});
+    kids.push(kid);
+  });
+  c.kps=kids;c.mainKp=kids[0]||'';c.kpRole={};kids.forEach((kid,i)=>c.kpRole[kid]=i===0?'主讲解':'提及');
+  c.vers=[{v:1,t:today,who:'总部培训部 刘翔',note:'课程导入并定稿',snap:snapOf(c)}];
+  S.cimps.unshift({id:'B_CEMN',t:addDays(today,-3)+' 10:00',who:'总部培训部 刘翔',cK:'hq',files:[{name:'【CEMN-购买层级诊断与推进】——讲师手册',size:'-'}],items:[item],bad:[],st:'已导入',nDraft:0,nStored:1,nSkip:0,cids:['N_CEMN1'],direct:true,kpCandN:kids.length});
+}
