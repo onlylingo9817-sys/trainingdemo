@@ -2,26 +2,33 @@
    一个入口回答「今天我该处理什么」。所有"待办"都汇到这里(以前分散在 课题池 / 内容中心「待我处理」/ 知识点「总览」/ 报名审批),
    每条都带「去处理」,点进去落到对应模块的对应对象。回流通道也只有这一条:
    零售通反馈 / 学员薄弱 / 候选缺口 / 内容到期 → 工作台待办 → 由人决定 生成课题 / 改版 / 补内容。 */
-const WB_GROUPS=[['发现','topics','课题'],['备料','prep','知识点 · 内容'],['发布','pub','零售通发布'],['实施','impl','学习项目'],['效果','eff','就绪度 · 错题 · 调优']];
+/* [筛选键, 界面显示名, 说明]。键保持 v22 原值,避免待办数据与筛选条件错位 */
+const WB_GROUPS=[['发现','发现问题','课题'],['备料','准备内容','知识点 · 内容'],['发布','上架','零售通'],['实施','组织培训','学习项目'],['效果','看效果','就绪度 · 错题 · 调优']];
 function wbItems(){
   const it=[];const add=(g,sev,tag,title,desc,act,attrs)=>it.push({g,sev,tag,title,desc,act,attrs:attrs||''});
   const ck='data-act="wbGo"';
   /* —— 发现:课题 —— */
   S.topics.filter(t=>visTopics().includes(t)&&['新发现'].includes(t.flow)).forEach(t=>add('发现',prio(t).k==='P0'?3:prio(t).k==='P1'?2:1,'新课题','<b>'+esc(t.title)+'</b>',prio(t).k+' · 证据 '+t.stats.sess+' 条会话 / '+t.stats.stores+' 家门店','去看',ck+' data-p="topic" data-id="'+t.id+'" data-ky="tid"'));
   /* —— 备料:知识点缺口(最影响学员的先排)—— */
-  const act=S.kps.filter(k=>k.st==='启用');
+  /* 只给「已启用」的点派发缺讲解待办;停用且无负责人的点只留一条批量治理提示,避免 67 条待办被同一类问题淹没 */
+  const act=S.kps.filter(k=>k.st==='启用'&&k.owner);
   act.forEach(k=>{const h=kpHealth(k);const w=kpWeak(k),tt=kpTested(k);
     if(h.cells.exp.s!=='ok')add('备料',3,'缺讲解','<b>'+esc(kpLabel(k))+'</b>',(tt?'学员 '+w+'/'+tt+' 人未过关 · ':'')+h.cells.exp.t,'去补',ck+' data-p="kp" data-id="'+k.id+'" data-ky="kid"');
-    else if(tt>=KP_WEAK_N&&w/tt>=KP_WEAK_R&&!kpTopicOf(k))add('备料',2,'学员集中薄弱','<b>'+esc(kpLabel(k))+'</b>','学员 '+w+'/'+tt+' 人未过关,但讲解齐全 → 可能要改讲法或补题 / 演练','生成课题',' data-act="kpToTopic" data-id="'+k.id+'"');
-    else if(h.cells.q.s!=='ok'&&k.type==='事实型')add('备料',1,'缺题','<b>'+esc(kpLabel(k))+'</b>',h.cells.q.t,'去出题',ck+' data-p="content" data-tab="题" data-ky="none"');});
-  S.kps.filter(k=>!k.owner).forEach(k=>add('备料',3,'没有负责人','<b>'+esc(kpLabel(k))+'</b>','没有负责人不能启用','去指定',ck+' data-p="kp" data-id="'+k.id+'" data-ky="kid"'));
+  });
+  const qNeed=act.filter(k=>{const h=kpHealth(k);return h.cells.q.s!=='ok'&&k.type==='事实型'});
+  if(qNeed.length)add('备料',1,'缺测评题','<b>'+qNeed.length+' 个产品知识</b>测评题不够','题太少会影响诊断和掌握度；可批量进内容中心补题','去补题',ck+' data-p="content" data-tab="题" data-ky="none"');
+  const weakTodo=act.filter(k=>{const w=kpWeak(k),tt=kpTested(k);return tt>=KP_WEAK_N&&w/tt>=KP_WEAK_R&&!kpTopicOf(k)});
+  if(weakTodo.length)add('备料',2,'学员集中薄弱','<b>'+weakTodo.length+' 个知识点</b>讲解齐全但学员集中薄弱','通常是讲法或练习不够；可进知识点总览批量生成课题','去看',ck+' data-p="catalog" data-tab="总览" data-ky="none"');
+  const noOwner=S.kps.filter(k=>!k.owner);if(noOwner.length)add('备料',2,'没有负责人','<b>'+noOwner.length+' 个知识点</b>还没有负责人','这些点不会启用,学员也看不到。建议先批量指派负责人','批量指派',ck+' data-p="catalog" data-tab="知识点库" data-ky="none"');
   S.kpCand.filter(x=>x.st==='待确认').forEach(x=>add('备料',2,'候选知识点','<b>'+esc(x.name)+'</b>',x.from+':'+x.why,'去确认',' data-act="wbCand" data-id="'+x.id+'"'));
   const un=S.contents.filter(c=>visC(c)&&!(c.kps||[]).length&&c.st!=='已归档');if(un.length)add('备料',1,'未挂载','<b>'+un.length+' 条内容</b>还没挂知识点','进不了完备度检查,学员的提升清单也推荐不到','去挂载',' data-act="wbUnmounted"');
   /* —— 备料:内容生产(原「内容中心 · 待我处理」)—— */
-  cWork(S.contents.filter(visC)).forEach(x=>{const p={'待我审核':3,'区域推荐待审核':2,'导入待确认':2,'课题待生产':2,'一线纠错':3,'点踩反馈':2,'反馈异常':2,'待上架':1,'即将到期':3,'下架待处理':2,'我的草稿':1}[x.tag];if(!p)return;const g=x.tag==='待上架'||x.tag==='下架待处理'?'发布':'备料';it.push({g,sev:p,tag:x.tag,title:x.title,desc:x.desc,act:'',attrs:'',raw:x.btn})});
+  const cw=cWork(S.contents.filter(visC));const cwAgg={};
+  cw.forEach(x=>{const p={'待我审核':3,'区域推荐待审核':2,'导入待确认':2,'课题待生产':2,'一线纠错':3,'点踩反馈':2,'反馈异常':2,'待上架':1,'即将到期':3,'下架待处理':2,'我的草稿':1}[x.tag];if(!p)return;const g=x.tag==='待上架'||x.tag==='下架待处理'?'发布':'备料';if(p<=2){(cwAgg[x.tag]=cwAgg[x.tag]||[]).push({x,p,g});return}it.push({g,sev:p,tag:x.tag,title:x.title,desc:x.desc,act:'',attrs:'',raw:x.btn})});
+  Object.keys(cwAgg).forEach(tag=>{const arr=cwAgg[tag];if(arr.length<2){const a=arr[0];it.push({g:a.g,sev:a.p,tag,title:a.x.title,desc:a.x.desc,act:'',attrs:'',raw:a.x.btn});return}it.push({g:arr[0].g,sev:arr[0].p,tag,title:'<b>'+arr.length+' 条</b>「'+tag+'」',desc:'同类事项合并，进去按列表处理',act:'去处理',attrs:ck+' data-p="content" data-tab="全部内容" data-ky="none"'})});
   /* —— 题 / 演练草稿 —— */
-  S.qs.filter(q=>q.st==='草稿').forEach(q=>add('备料',1,'题待定稿','<b>'+esc(q.stem.slice(0,28))+'…</b>',(kp(q.kp)||{}).name+' · '+q.id,'去编辑',' data-act="qOpen" data-id="'+q.id+'"'));
-  S.drills.filter(d=>d.st==='草稿').forEach(d=>add('备料',1,'演练待定稿','<b>'+esc(d.name)+'</b>',(kp(d.kp)||{}).name+' · 回合 '+d.turns.length,'去编辑',' data-act="drOpen" data-id="'+d.id+'"'));
+  const qDraft=S.qs.filter(q=>q.st==='草稿');if(qDraft.length)add('备料',1,'题待定稿','<b>'+qDraft.length+' 道题</b>还没定稿','草稿题不会进入诊断；可逐个编辑或先放着','去处理',ck+' data-p="content" data-tab="题" data-ky="none"');
+  const dDraft=S.drills.filter(d=>d.st==='草稿');if(dDraft.length)add('备料',1,'演练待定稿','<b>'+dDraft.length+' 个演练</b>还没定稿','草稿演练不会进入学员练习','去处理',ck+' data-p="content" data-tab="演练" data-ky="none"');
   /* —— v23:效果与调优待办 —— */
   if(typeof v23Diag==='function'&&S.lrn&&S.lrn.length){
     v23Diag().filter(x=>x.ok==='bad').forEach(x=>add('效果',3,'效果诊断','<b>第 '+x.no+' 层 · '+esc(x.ttl)+'</b>',esc(x.sym)+' · '+esc(x.read[0][0])+' '+esc(String(x.read[0][1])),'去调优',ck+' data-p="effect" data-tab="调优" data-ky="none"'));
@@ -42,16 +49,16 @@ function pgWorkbench(){
   const st=kpStats();const act=S.kps.filter(k=>k.st==='启用');const hs=act.map(kpHealth);
   const cover=act.length?Math.round(hs.filter(h=>h.cells.exp.s==='ok').length/act.length*100):0;
   const num=(l,v,sub,attr)=>'<div class="stat kp-click" '+attr+' style="cursor:pointer"><div class="l">'+l+'</div><div class="n">'+v+'</div><div class="hint">'+sub+'</div></div>';
-  /* 主线:发现 → 备料 → 发布 → 实施 → 效果 */
-  const flow='<div class="wb-flow">'+[['发现','课题池',S.topics.filter(t=>t.flow==='新发现').length+' 个新课题','topics'],['备料','知识点 · 内容',st.err+' 个缺口 · '+S.contents.filter(c=>c.st==='草稿'||c.st==='审核中').length+' 条在途','catalog'],['发布','零售通发布',S.contents.filter(isPub).length+' 条已上架','publish'],['实施','学习项目',S.projects.length+' 个项目','projects'],['效果','效果追踪',S.projects.filter(p=>p.eff).length+' 个已出效果','effect']].map((x,i)=>(i?'<i>→</i>':'')+'<div class="wb-n kp-click" data-act="go" data-p="'+x[3]+'"><small>'+x[0]+'</small><b>'+x[1]+'</b><span>'+x[2]+'</span></div>').join('')+'</div>';
+  /* 主线:发现问题 → 准备内容 → 上架 → 组织培训 → 看效果 */
+  const flow='<div class="wb-flow">'+[['发现问题','课题池',S.topics.filter(t=>t.flow==='新发现').length+' 个新课题','topics'],['准备内容','知识点 · 内容',st.err+' 个缺口 · '+S.contents.filter(c=>c.st==='草稿'||c.st==='审核中').length+' 条在途','catalog'],['上架','上架到零售通',S.contents.filter(isPub).length+' 条已上架','publish'],['组织培训','学习项目',S.projects.length+' 个项目','projects'],['看效果','效果追踪',S.projects.filter(p=>p.eff).length+' 个已出效果','effect']].map((x,i)=>(i?'<i>→</i>':'')+'<div class="wb-n kp-click" data-act="go" data-p="'+x[3]+'"><small>'+x[0]+'</small><b>'+x[1]+'</b><span>'+x[2]+'</span></div>').join('')+'</div>';
   return '<div class="ph"><h2>工作台 <span class="hint" style="font-weight:400">今天该处理什么:所有待办都汇在这里,点「去处理」直接落到对应对象</span></h2></div>'
    +flow
    +'<div class="grid g4" style="margin-bottom:16px">'+num('待办总数',it.length,'紧急 '+it.filter(x=>x.sev===3).length+' · 建议 '+it.filter(x=>x.sev===2).length,'data-act="wbF" data-v=""')
    +num('讲解覆盖率',cover+'%','启用的知识点里有可用讲解','data-act="go" data-p="catalog"')
    +num('未挂载内容',st.un,'进不了完备度检查','data-act="wbUnmounted"')
-   +num('学员集中薄弱',kpWeakList().length,'已测 ≥3 人且 ≥50% 未过关','data-act="go" data-p="catalog" data-t="看板"')+'</div>'
-   +'<div class="card"><h3>待办 <span class="hint">按紧急程度排序;「紧急」= 学员现在就受影响</span></h3><div class="wb-tabs"><span class="'+(f?'':'on')+'" data-act="wbF" data-v="">全部 '+it.length+'</span>'+WB_GROUPS.map(g=>'<span class="'+(f===g[0]?'on':'')+'" data-act="wbF" data-v="'+g[0]+'">'+g[0]+' '+cnt(g[0])+'</span>').join('')+'</div>'
-   +(rows.length?'<table class="t"><tr><th style="width:64px">优先</th><th style="width:96px">类型</th><th>对象</th><th>为什么</th><th style="width:96px"></th></tr>'+rows.slice(0,40).map(x=>'<tr><td><span class="tag '+WB_SEV[x.sev][1]+'">'+WB_SEV[x.sev][0]+'</span></td><td><span class="tag" style="white-space:nowrap">'+x.tag+'</span></td><td style="white-space:normal;min-width:200px">'+x.title+'</td><td class="hint" style="white-space:normal">'+x.desc+'</td><td>'+(x.raw?x.raw:'<button class="btn sm pri" '+x.attrs+'>'+x.act+'</button>')+'</td></tr>').join('')+'</table>'+(rows.length>40?'<div class="hint" style="margin-top:6px">只显示前 40 条,共 '+rows.length+' 条</div>':''):'<div class="chk ok"><b>✓</b><span>这一类没有待办</span></div>')+'</div>'}
+   +num('学员集中薄弱',kpWeakList().length,'已测 ≥3 人且 ≥50% 未过关','data-act="go" data-p="catalog" data-t="总览"')+'</div>'
+   +'<div class="card"><h3>待办 <span class="hint">按紧急程度排序;「紧急」= 学员现在就受影响</span></h3><div class="wb-tabs"><span class="'+(f?'':'on')+'" data-act="wbF" data-v="">全部 '+it.length+'</span>'+WB_GROUPS.map(g=>'<span class="'+(f===g[0]?'on':'')+'" data-act="wbF" data-v="'+g[0]+'">'+g[1]+' '+cnt(g[0])+'</span>').join('')+'</div>'
+   +(rows.length?'<table class="t"><tr><th style="width:64px">优先</th><th style="width:96px">类型</th><th>对象</th><th>为什么</th><th style="width:96px"></th></tr>'+rows.slice(0,25).map(x=>'<tr><td><span class="tag '+WB_SEV[x.sev][1]+'">'+WB_SEV[x.sev][0]+'</span></td><td><span class="tag" style="white-space:nowrap">'+x.tag+'</span></td><td style="white-space:normal;min-width:200px">'+x.title+'</td><td class="hint" style="white-space:normal">'+x.desc+'</td><td>'+(x.raw?x.raw:'<button class="btn sm pri" '+x.attrs+'>'+x.act+'</button>')+'</td></tr>').join('')+'</table>'+(rows.length>25?'<div class="hint" style="margin-top:6px">只显示优先级最高的 25 条,共 '+rows.length+' 条;可用上方分组收敛范围</div>':''):'<div class="chk ok"><b>✓</b><span>这一类没有待办</span></div>')+'</div>'}
 A.wbF=el=>{UI.sel.wbf=el.dataset.v;render()};
 A.wbGo=el=>{const d=el.dataset;closeDlg();UI.page=d.p;if(d.tab)UI.tab[d.p]=d.tab;if(d.ky==='tid')UI.tid=d.id;if(d.ky==='kid')UI.kid=d.id;render();$('#main').scrollTop=0};
 A.wbCand=el=>{UI.page='catalog';UI.tab.catalog='看板';UI.sel.kpf={};render()};
@@ -97,7 +104,7 @@ function linkBar(o){
   if(o.type==='kp'){const k=o.k;const m=kpMounted(k);const h=kpHealth(k);const tp=kpTopicOf(k);const used=kpUsedBy(k);const tn=kpTested(k),w=kpWeak(k);
     seg.push(tp?LK('来自课题',esc(tp.id),'data-act="topicOpen" data-id="'+tp.id+'"','ok'):LK('来自','手工新建 / 候选','',''));
     seg.push(LK('这个知识点',esc(k.name),'','cur'));
-    seg.push(m.length?LK('弹药 · 内容',m.length+' 条 · 题 '+qsOf(k.id,'已定稿').length+' · 演练 '+drsOf(k.id,'已定稿').length,'','ok'):LK('弹药 · 内容','没有 · 去备','data-act="kpGoMount"','bad'));
+    seg.push(m.length?LK('讲解 / 题 / 演练',m.length+' 条讲解 · '+qsOf(k.id,'已定稿').length+' 题 · '+drsOf(k.id,'已定稿').length+' 演练','','ok'):LK('讲解 / 题 / 演练','还没有 · 去准备','data-act="kpGoMount"','bad'));
     seg.push(h.cells.exp.s==='ok'?LK('零售通','讲解已上架','','ok'):LK('零售通','没有可用讲解','','bad'));
     seg.push(tn?LK('学员',w+'/'+tn+' 人未过关','',(w/tn>=0.5?'bad':'ok')):LK('学员','还没人测','','dim'));
     seg.push(used?LK('学习项目',used+' 个引用','','ok'):LK('学习项目','未被引用','','dim'))}

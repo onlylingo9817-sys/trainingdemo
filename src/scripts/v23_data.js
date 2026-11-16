@@ -52,10 +52,10 @@ const V23_DIM_SEED=[
 ];
 /* 能力树:探需 / 场景化讲车 / 顾虑解除 三个收敛方向 + 店长带人 */
 const V23_AB_RAW=[
- ['探需',['需求挖掘','场景还原','邀约到店']],
- ['场景化讲车',['卖点转译','场景匹配','试驾引导']],
- ['顾虑解除',['价格异议','竞品对比','政策口径']],
- ['带人辅导',['新人带教','目标拆解']]
+ ['探需',[]],
+ ['场景化讲车',[]],
+ ['顾虑解除',[]],
+ ['带人辅导',[]]
 ];
 function v23Dims(){
   S.dims=V23_DIM_SEED.map(d=>Object.assign({},d,{
@@ -79,6 +79,8 @@ function dimIdsByNames(did,names){return (names||[]).map(n=>dimIdByName(did,n)).
 function dimPath(did,vid){const v=dimVal(did,vid);return v?(v.path||v.name):''}
 function dimKids(did,vid){const d=dimOf(did);return d?d.values.filter(v=>v.pid===vid):[]}
 function dimDesc(did,vid){const r=[vid];dimKids(did,vid).forEach(c=>dimDesc(did,c.id).forEach(x=>r.push(x)));return r}
+/* 合并留痕:旧值仍能被解析到目标值,避免画像/筛选引用旧 id 后突然失效 */
+function dimResolve(did,vid){let v=dimVal(did,vid);const seen=new Set();while(v&&v.mergedTo&&!seen.has(v.id)){seen.add(v.id);v=dimVal(did,v.mergedTo)}return v?v.id:vid}
 const dimLabel=(did,vid)=>dimPath(did,vid).replace(/^.*_/,'')||dimPath(did,vid);
 /* 能力值 → 简称(用于画像项显示) */
 const abName=(vid,short)=>{const p=dimPath('Dab',vid);return short?p.split('_').pop():p.replace('_',' / ')};
@@ -86,31 +88,31 @@ const abName=(vid,short)=>{const p=dimPath('Dab',vid);return short?p.split('_').
 /* ---------- 2. 知识点 × 维度值组合 ---------- */
 /* 知识点不再分"事实型/技能型",由挂的维度自然区分:挂产品=产品卖点,挂能力+场景=销售动作 */
 const V23_KP_DIM={
- K1:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景还原'},
- K2:{scene:['家庭出行','商务接待'],cust:['增换购'],stage:['接待','试驾'],ab:'卖点转译'},
- K3:{scene:['家庭出行'],cust:['首购家庭','增换购'],stage:['接待'],ab:'卖点转译'},
- K4:{scene:['露营','长途'],cust:['年轻个人','首购家庭'],stage:['试驾'],ab:'场景匹配'},
- K5:{scene:['长途','通勤'],cust:['首购家庭'],stage:['接待','试驾'],ab:'卖点转译'},
- K6:{scene:['长途','通勤'],cust:['首购家庭'],stage:['试驾'],ab:'卖点转译'},
- K7:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待'],ab:'卖点转译'},
- K8:{scene:['商务接待'],cust:['企业客户'],stage:['接待'],ab:'场景匹配'},
- K9:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景匹配'},
- K10:{scene:['家庭出行','露营'],cust:['首购家庭','年轻个人'],stage:['试驾'],ab:'场景匹配'},
- K11:{scene:['露营'],cust:['年轻个人'],stage:['试驾'],ab:'场景匹配'},
- K12:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待'],ab:'卖点转译'},
- K13:{scene:['家庭出行'],cust:['年轻个人'],stage:['接待'],ab:'场景匹配'},
- K14:{scene:['商务接待'],cust:['企业客户','年轻个人'],stage:['接待'],ab:'场景匹配'},
- K15:{scene:['通勤'],cust:['增换购'],stage:['报价'],ab:'价格异议'},
- K16:{scene:['通勤'],cust:['首购家庭'],stage:['试驾'],ab:'卖点转译'},
+ K1:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景化讲车'},
+ K2:{scene:['家庭出行','商务接待'],cust:['增换购'],stage:['接待','试驾'],ab:'场景化讲车'},
+ K3:{scene:['家庭出行'],cust:['首购家庭','增换购'],stage:['接待'],ab:'场景化讲车'},
+ K4:{scene:['露营','长途'],cust:['年轻个人','首购家庭'],stage:['试驾'],ab:'场景化讲车'},
+ K5:{scene:['长途','通勤'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景化讲车'},
+ K6:{scene:['长途','通勤'],cust:['首购家庭'],stage:['试驾'],ab:'场景化讲车'},
+ K7:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待'],ab:'场景化讲车'},
+ K8:{scene:['商务接待'],cust:['企业客户'],stage:['接待'],ab:'场景化讲车'},
+ K9:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景化讲车'},
+ K10:{scene:['家庭出行','露营'],cust:['首购家庭','年轻个人'],stage:['试驾'],ab:'场景化讲车'},
+ K11:{scene:['露营'],cust:['年轻个人'],stage:['试驾'],ab:'场景化讲车'},
+ K12:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待'],ab:'场景化讲车'},
+ K13:{scene:['家庭出行'],cust:['年轻个人'],stage:['接待'],ab:'场景化讲车'},
+ K14:{scene:['商务接待'],cust:['企业客户','年轻个人'],stage:['接待'],ab:'场景化讲车'},
+ K15:{scene:['通勤'],cust:['增换购'],stage:['报价'],ab:'顾虑解除'},
+ K16:{scene:['通勤'],cust:['首购家庭'],stage:['试驾'],ab:'场景化讲车'},
  K17:{scene:['试驾到店'],cust:['首购家庭'],stage:['试驾'],ab:'场景化讲车',comp:['奔驰 GLC']},
- K18:{scene:['首购到店'],cust:['增换购'],stage:['报价'],ab:'价格异议'},
- K19:{scene:['首购到店'],cust:['首购家庭','增换购'],stage:['报价'],ab:'竞品对比',comp:['奔驰 GLC','问界 M8','极氪 7X']},
+ K18:{scene:['首购到店'],cust:['增换购'],stage:['报价'],ab:'顾虑解除'},
+ K19:{scene:['首购到店'],cust:['首购家庭','增换购'],stage:['报价'],ab:'顾虑解除',comp:['奔驰 GLC','问界 M8','极氪 7X']},
  K20:{scene:['首购到店'],cust:['首购家庭'],stage:['接待'],ab:'探需'},
- K21:{scene:['首购到店'],cust:['首购家庭'],stage:['邀约'],ab:'邀约到店'},
- K22:{scene:['首购到店'],cust:['增换购'],stage:['报价'],ab:'政策口径'},
- K23:{scene:['首购到店'],cust:['首购家庭'],stage:['接待'],ab:'需求挖掘'},
- K24:{scene:['首购到店'],cust:[],stage:['接待'],ab:'新人带教'},
- K25:{scene:['首购到店'],cust:[],stage:['接待'],ab:'目标拆解'}
+ K21:{scene:['首购到店'],cust:['首购家庭'],stage:['邀约'],ab:'探需'},
+ K22:{scene:['首购到店'],cust:['增换购'],stage:['报价'],ab:'顾虑解除'},
+ K23:{scene:['首购到店'],cust:['首购家庭'],stage:['接待'],ab:'探需'},
+ K24:{scene:['首购到店'],cust:[],stage:['接待'],ab:'带人辅导'},
+ K25:{scene:['首购到店'],cust:[],stage:['接待'],ab:'带人辅导'}
 };/* 店长带人:两个示意知识点(画像里权重很小) */
 const V23_EXTRA_KP=[
  {id:'K24',name:'新人带教与陪访',car:'通用车型',owner:'周丽',syn:['带教','陪访','师徒']},
@@ -118,21 +120,22 @@ const V23_EXTRA_KP=[
 ];
 function v23KpDims(){
   S.v23={};
-  V23_EXTRA_KP.forEach(x=>{if(!kp(x.id))S.kps.push({id:x.id,name:x.name,type:'技能型',tags:[],dim:'沟通力',car:x.car,syn:x.syn,owner:x.owner,st:'启用',ext:[],created:addDays(today,-40),hist:[]})});
+  V23_EXTRA_KP.forEach(x=>{if(!kp(x.id))S.kps.push({id:x.id,name:x.name,type:'技能型',tags:[],dim:'带人辅导',car:x.car,syn:x.syn,owner:x.owner,st:'启用',ext:[],created:addDays(today,-40),hist:[]})});
   S.kps.forEach(k=>{
     const m=V23_KP_DIM[k.id]||{};
     k.dims={};
-    const car=dimIdByName('Dcar',k.car);
-    if(car)k.dims.Dcar=[car];
+    k.cars=(k.cars&&k.cars.length?k.cars:[k.car||'通用车型']).slice();
+    const carIds=k.cars.map(n=>dimIdByName('Dcar',n)).filter(Boolean);
+    if(carIds.length)k.dims.Dcar=carIds;
     if((k.tags||[]).length)k.dims.Dprod=k.tags.slice(0,2);
     const put=(did,names)=>{const ids=dimIdsByNames(did,names);if(ids.length)k.dims[did]=ids};
     put('Dscene',m.scene);put('Dcust',m.cust);put('Dcomp',m.comp);put('Dstage',m.stage);
     /* 能力维度按业务名解析成树里的稳定 id(可指父节点) */
-    if(m.ab){const ab=dimIdByName('Dab',m.ab);if(ab)k.dims.Dab=[ab]}
+    if(m.ab){const ab=dimIdByName('Dab',m.ab);if(ab){k.dims.Dab=[ab];k.dim=abName(ab,true)}}
   });
 }
 /* 知识点是否挂了某个维度值(含树形父节点) */
-function kpHasDim(k,did,vid){const vs=(k.dims||{})[did]||[];if(!vs.length)return false;if(vs.includes(vid))return true;return vs.some(v=>dimDesc(did,vid).includes(v))}
+function kpHasDim(k,did,vid){const vs=(k.dims||{})[did]||[];if(!vs.length)return false;const target=dimResolve(did,vid);if(vs.includes(target))return true;return vs.some(v=>dimDesc(did,target).includes(dimResolve(did,v)))}
 const kpDimsTxt=k=>Object.keys(k.dims||{}).map(did=>{const d=dimOf(did);if(!d)return '';return (k.dims[did]||[]).map(v=>dimLabel(did,v)).join('/')}).filter(Boolean);
 
 /* 是否属于「顾虑解除」能力分支(按名称解析,不依赖 id 编号) */
@@ -145,24 +148,22 @@ function v23IsConcern(k){
 /* ---------- 3. 岗位画像(四档,理想数据,业务可改) ---------- */
 const V23_TIER=['新人顾问','进阶顾问','销冠','店长'];
 const V23_PROFILE_SEED=[
- {id:'PF1',role:'新人顾问',note:'产品熟不熟:先把卖点记准、能讲出来',
-  items:[{id:'PF1-1',dim:'Dab',vals:['卖点转译'],weight:45,target:85,label:'产品卖点(卖点转译)'},
-         {id:'PF1-2',dim:'Dab',vals:['探需'],weight:20,target:70,label:'探需'},
-         {id:'PF1-3',dim:'Dab',vals:['场景匹配','试驾引导'],weight:20,target:70,label:'场景匹配与试驾引导'},
-         {id:'PF1-4',dim:'Dab',vals:['价格异议','竞品对比','政策口径'],weight:15,target:60,label:'基础顾虑应对'}]},
- {id:'PF2',role:'进阶顾问',note:'探需 + 场景化讲车:从"会讲"到"会问"',
-  items:[{id:'PF2-1',dim:'Dab',vals:['探需','场景还原','邀约到店'],weight:35,target:85,label:'探需与邀约'},
-         {id:'PF2-2',dim:'Dab',vals:['场景匹配','试驾引导'],weight:35,target:85,label:'场景化讲车'},
-         {id:'PF2-3',dim:'Dab',vals:['价格异议','竞品对比','政策口径'],weight:20,target:75,label:'顾虑解除'},
-         {id:'PF2-4',dim:'Dab',vals:['卖点转译'],weight:10,target:80,label:'产品卖点'}]},
- {id:'PF3',role:'销冠',note:'顾虑解除与竞品对比:打法稳定、可复制',
-  items:[{id:'PF3-1',dim:'Dab',vals:['价格异议','竞品对比','政策口径'],weight:45,target:90,label:'顾虑解除与竞品对比'},
-         {id:'PF3-2',dim:'Dab',vals:['场景匹配','试驾引导'],weight:30,target:90,label:'场景化讲车'},
-         {id:'PF3-3',dim:'Dab',vals:['探需','场景还原'],weight:25,target:85,label:'探需与场景还原'}]},
- {id:'PF4',role:'店长',note:'带人:用两个示意知识点表示(真实要业务补)',
-  items:[{id:'PF4-1',dim:'Dab',vals:['新人带教','目标拆解'],weight:50,target:85,label:'带人辅导(示意)'},
-         {id:'PF4-2',dim:'Dab',vals:['探需','场景还原'],weight:30,target:75,label:'探需(看人会不会问)'},
-         {id:'PF4-3',dim:'Dab',vals:['价格异议','竞品对比'],weight:20,target:70,label:'顾虑解除(判断讲法好坏)'}]}
+ {id:'PF1',role:'新人顾问',note:'先把产品讲清楚，再学会问需求、处理常见顾虑',
+  items:[{id:'PF1-1',dim:'Dab',vals:['场景化讲车'],weight:50,target:85,label:'产品讲解'},
+         {id:'PF1-2',dim:'Dab',vals:['探需'],weight:25,target:70,label:'探需'},
+         {id:'PF1-3',dim:'Dab',vals:['顾虑解除'],weight:25,target:60,label:'顾虑处理'}]},
+ {id:'PF2',role:'进阶顾问',note:'从会讲产品，到会问、会应对',
+  items:[{id:'PF2-1',dim:'Dab',vals:['探需'],weight:35,target:85,label:'探需'},
+         {id:'PF2-2',dim:'Dab',vals:['场景化讲车'],weight:35,target:85,label:'场景化讲车'},
+         {id:'PF2-3',dim:'Dab',vals:['顾虑解除'],weight:30,target:75,label:'顾虑解除'}]},
+ {id:'PF3',role:'销冠',note:'复杂异议和竞品对比能稳定处理，打法可复制',
+  items:[{id:'PF3-1',dim:'Dab',vals:['顾虑解除'],weight:45,target:90,label:'复杂异议与竞品'},
+         {id:'PF3-2',dim:'Dab',vals:['场景化讲车'],weight:30,target:90,label:'场景化讲车'},
+         {id:'PF3-3',dim:'Dab',vals:['探需'],weight:25,target:85,label:'探需'}]},
+ {id:'PF4',role:'店长',note:'带人辅导为主，同时能判断讲法和异议处理是否到位',
+  items:[{id:'PF4-1',dim:'Dab',vals:['带人辅导'],weight:50,target:85,label:'带人辅导'},
+         {id:'PF4-2',dim:'Dab',vals:['探需'],weight:25,target:75,label:'判断探需'},
+         {id:'PF4-3',dim:'Dab',vals:['顾虑解除'],weight:25,target:70,label:'判断讲法'}]}
 ];
 function v23Profiles(){
   S.profiles=JSON.parse(JSON.stringify(V23_PROFILE_SEED));

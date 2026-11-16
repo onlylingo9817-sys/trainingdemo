@@ -83,3 +83,41 @@
 .r-pk .c{flex:1;font-size:12.5px}
 .r-pk .c b{display:block;font-size:13.5px;margin-bottom:2px}
 .r-pk-t{font-size:11px;color:#999}
+
+/* ---------- v24 知识点:按一线任务组织 ---------- */
+.kp-panel{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.kp-ph{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}
+.kp-ph h3{font-size:15px;margin:0}
+.kp-ph .hint{max-width:62%;text-align:right;line-height:1.6}
+.kp-next{background:linear-gradient(180deg,#fffaf5,#fff)}
+.kp-step{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #f2f3f5}
+.kp-step:first-of-type{border-top:0}
+.kp-step>span{width:24px;height:24px;border-radius:50%;background:var(--pri-l);color:var(--pri-d);font-size:12px;font-weight:700;display:grid;place-items:center}
+.kp-step b{font-size:13.5px}
+.kp-step .hint{font-size:12px;margin-top:1px}
+.kp-issues{display:flex;flex-direction:column;gap:2px}
+.kp-issue{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #f2f3f5;font-size:13px}
+.kp-issue:first-child{border-top:0}
+.kp-matrix th,.kp-tagtree th{white-space:nowrap;text-align:center}
+.kp-matrix th:first-child,.kp-tagtree th:first-child{text-align:left}
+.kp-mx{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:72px;padding:5px 8px;border-radius:8px;background:#f2f4f7;line-height:1.25}
+.kp-mx b{font-size:12.5px}.kp-mx small{font-size:10px;color:#98a2b3}
+.kp-mx.ok{background:#e7f8f0;color:#0b7a50}.kp-mx.warn{background:#fff4d6;color:#a15c00}.kp-mx.err{background:#fdecec;color:#c8323a}.kp-mx.na{color:#98a2b3}
+.kp-bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff8ef;border:1px solid #f3dc9b;border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:13px}
+.kp-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kp-checks{display:flex;flex-wrap:wrap;gap:8px 16px;padding:4px 0}
+.kp-check{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);white-space:nowrap}
+.kp-preview{margin-top:10px;padding:9px 12px;background:#fff8ef;border-radius:8px;font-size:13px}
+.kp-more{padding:2px 0}
+.kv-line{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:12.5px}
+.kv-line>span{color:var(--mut)}.kv-line>b{font-weight:500;text-align:right;word-break:break-all}
+tr.off{opacity:.62}
+.kp-batch .kp-panel:last-child{margin-bottom:0}
+.kp-lib th,.kp-lib td{vertical-align:middle}
+.kp-lib .kp-dots{white-space:nowrap}
+.kp-excel{margin-top:12px;padding:9px 12px;background:#f7f8fa;border-radius:8px;font-size:12.5px;line-height:1.7;color:#667085}
+.kp-excel b{color:#344054;margin-right:8px}
+
+/* 工作台待办:操作列固定,避免按钮换行把行高打散 */
+#main table.t tr td:last-child .btn, #main table.t tr td:last-child .link{white-space:nowrap}
+.wb-tabs{row-gap:6px}

@@ -40,11 +40,10 @@ function renderMenu(){
   const g=(t,k)=>k.some(x=>ok.includes(x))?'<div class="mg">'+t+'</div>':'';
   $('#menu').innerHTML='<div class="who"><b>'+UI.role.n.split(' · ')[1]+'</b>'+UI.role.n.split(' · ')[0]+' · 数据范围:'+(UI.role.type==='region'?UI.role.region:'全国')+'</div>'
    +g('工作台',['workbench','overview'])+it(['workbench'],'工作台','workbench','ov','<span class="tg">新</span>')+it(['overview'],'培训总览','overview','ov','')
-   +g('① 发现',['topics'])+it(['topics','topic'],'课题池','topics','tp','')
-   +g('② 备料',['catalog','content'])+it(['catalog','kp','kpform'],'知识点(要备什么)','catalog','ca','')+it(['content','cedit','cdetail','qform','dform'],'内容中心(怎么造)','content','ct','')
-   +g('③ 发布',['publish'])+it(['publish'],'零售通发布','publish','gr','')
-   +g('④ 实施',['projects','approvals','coach'])+it(['projects','detail','form'],'学习项目配置','projects','pj','')+it(['approvals'],'报名审批','approvals','ap',n?'<span class="dot">'+n+'</span>':'')+it(['coach'],'入店辅导','coach','co','')
-   +g('⑤ 效果',['effect'])+it(['effect','student'],'效果追踪','effect','ef','')
+   +g('发现问题',['topics'])+it(['topics','topic'],'课题池','topics','tp','')
+   +g('准备内容',['catalog','content','publish'])+it(['catalog','kp','kpform'],'知识点','catalog','ca','')+it(['content','cedit','cdetail','qform','dform'],'内容中心','content','ct','')+it(['publish'],'上架到零售通','publish','gr','')
+   +g('组织培训',['projects','approvals','coach'])+it(['projects','detail','form'],'学习项目','projects','pj','')+it(['approvals'],'报名审批','approvals','ap',n?'<span class="dot">'+n+'</span>':'')+it(['coach'],'入店辅导','coach','co','')
+   +g('看效果',['effect'])+it(['effect','student'],'效果追踪','effect','ef','')
    +g('系统',['config'])+it(['config'],'配置中心','config','cf','')
    +(UI.role.type==='boss'?'':'<div class="mg">现有功能(未复刻;演练剧本已由「内容中心 · 演练」承接)</div>'+['专题管理','检核任务管理','晨读管理','学堂首页配置','日志管理'].map(x=>'<div class="mi gray">'+IC.gr+'<span>'+x+'</span></div>').join(''));
 }
@@ -76,7 +75,7 @@ function guide(){
   const P=S.projects;const off=P.filter(p=>p.off);
   return [
    ['① 发现(可选):课题池看系统 / AI 发现的问题,决定做不做','课题池',S.topics.some(t=>['已采纳','已闭环'].includes(t.flow)),'topics'],
-   ['② 备料:先在「知识点」看缺什么,再到「内容中心」造话术 / 课程 / 题 / 演练,挂到知识点,审核定稿(定稿≠上架)','内容中心 · 知识点',S.contents.some(c=>!c.orig&&(c.kps||[]).length),'content'],
+   ['② 准备内容:先在「知识点」看缺什么，再到「内容中心」做话术 / 课程 / 题 / 演练，挂到知识点，审核定稿（定稿≠上架）','内容中心 · 知识点',S.contents.some(c=>!c.orig&&(c.kps||[]).length),'content'],
    ['③ 发布:把已定稿的内容上架到零售通学习专区(学员也能在「我的提升清单」里诊断、练题、做演练)','零售通发布',S.contents.some(isPub),'publish'],
    ['④ 实施:新增学习项目——定培训目标、配学习模块(含「线下班次培训」节点)、选覆盖角色','学习任务',P.length>0,'form'],
    ['零售通:学员报名(右上角切到零售通,可切换学员)','零售通',S.apps.some(a=>a.src==='零售通报名'),'rn'],

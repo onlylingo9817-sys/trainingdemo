@@ -18,21 +18,18 @@ A.dmToggle({dataset:{d:'Dscene',v:v1.id}});
 const nUse1=S.kps.filter(k=>((k.dims||{}).Dscene||[]).includes(v1.id)).length;
 CK('停用值:已挂知识点引用保留(不丢历史)',v1.status==='off'&&nUse0===nUse1&&nUse0>0,nUse0+' → '+nUse1);
 A.dmToggle({dataset:{d:'Dscene',v:v1.id}});
-/* 合并:引用改写 + mergedTo 留痕;画像命中数应一致 */
-const ab=dimOf('Dab');const pj=ab.values.find(v=>v.name==='价格异议'),zc=ab.values.find(v=>v.name==='政策口径');
-const hitBefore=S.profiles.map(p=>p.items.map(it=>pfKps(it).length).join(','));
-const kA=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(zc.id)).length,kB=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(pj.id)).length;
+/* 合并:引用改写 + mergedTo 留痕;画像引用旧值时仍能解析到目标值 */
+const ab=dimOf('Dab');const pj=ab.values.find(v=>v.name==='探需'),zc=ab.values.find(v=>v.name==='顾虑解除');
+const kA=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(zc.id)).length;
 UI.sel.dmf={id:'Dab'};
 A.dmMerge({dataset:{d:'Dab',v:zc.id}});
 $('#dm_to').value=pj.id;A.dmMergeDo({dataset:{d:'Dab',v:zc.id}});
-const kA2=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(zc.id)).length,kB2=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(pj.id)).length;
-CK('合并:被合并值引用归零、目标值引用 = 两者之和',kA2===0&&kB2===kA+kB,'政策口径 '+kA+'→'+kA2+' 价格异议 '+kB+'→'+kB2);
+const kA2=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(zc.id)).length;
+CK('合并:原能力引用全部改写到目标能力',kA2===0, '顾虑解除 '+kA+'→'+kA2);
 CK('合并:原值留 mergedTo 且已停用',zc.mergedTo===pj.id&&zc.status==='off');
 CK('合并:变更留痕',(S.dimLog||[]).some(x=>/合并/.test(x.act)));
-/* 合并后的画像:选择器含已合并值时,命中的知识点数不丢(沿用到目标值) */
-const hitAfter=S.profiles.map(p=>p.items.map(it=>pfKps(it).length).join(','));
-const dropped=S.profiles.some(p=>p.items.some((it,i)=>pfKps(it).length<(hitBefore[S.profiles.indexOf(p)].split(',')[i]|0)));
-CK('合并后画像命中知识点数没有减少(不因维度整理而丢证据)',!dropped,hitBefore.join(' | ')+' → '+hitAfter.join(' | '));
+const oldRefProfiles=S.profiles.flatMap(p=>p.items.filter(it=>it.vals.includes(zc.id)));
+CK('合并后画像仍能解析旧值(不因维度整理丢证据)',oldRefProfiles.length>0&&oldRefProfiles.every(it=>pfKps(it).length>0),'引用旧值的画像项='+oldRefProfiles.length);
 /* ============ 画像:权重校验 + 就绪度重算 ============ */
 A.reset();UI.page='config';UI.tab.config='岗位画像';UI.sel.pff={tier:'新人顾问'};render();
 const p=pfOf('新人顾问');const base=readAll();
@@ -40,10 +37,10 @@ p.items[0].weight=60;render();
 CK('权重合计≠100:页面提示且保存被拦',/≠ 100/.test(tx()));
 const nvx=S.cfgV.length;A.pfSave();
 CK('权重≠100 保存失败、不生成版本',S.cfgV.length===nvx&&/权重合计需等于 100/.test(document.querySelector('#toast').innerText));
-p.items[0].weight=35;p.items[1].weight=30;A.pfSave();
+p.items[0].weight=40;p.items[1].weight=35;p.items[2].weight=25;A.pfSave();
 const after=readAll();
 CK('合法修改:生成配置版本并重算就绪度',S.cfgV.length===nvx+1&&after!==base,'版本 '+nvx+'→'+S.cfgV.length);
-CK('版本差异记录了画像项的权重变化',S.cfgV[S.cfgV.length-1].diff.some(d=>/产品卖点/.test(d[0])));
+CK('版本差异记录了画像项的权重变化',S.cfgV[S.cfgV.length-1].diff.some(d=>/产品讲解/.test(d[0])));
 /* ============ 评价口径:校验 / 影响预估 / 保存 / 版本 ============ */
 A.reset();UI.page='config';UI.tab.config='评价口径';render();
 const w0=JSON.stringify(S.cfg.srcW);

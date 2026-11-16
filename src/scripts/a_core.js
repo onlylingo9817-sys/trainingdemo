@@ -89,7 +89,7 @@ const POSITIONS=['大区岗位','小区岗位','城市岗位','门店岗位'];
 
 /* ========== 系统数据(从空白开始,全部由操作产生) ========== */
 const CARS=['N70系列','N90 Max','N90 Max 探索版','通用车型'];const THEMES=['空间与舒适','商务与工作','亲子与家庭','户外与露营','娱乐与休闲','安全与实用','个人经济与创业','宠物出行','顾虑处理','邀约到店','政策口径','场景化讲车'];
-const TAX0={car:CARS.slice(),theme:THEMES.slice(),subject:['奔驰 GLC','问界 M8','极氪 7X','特斯拉 Model Y','国补 / 地补','以旧换新','邀约试驾','探需','价格异议','展厅接待','YU7 产品','通用'],scene:['试驾','外呼','展厅','客服','不限'],ability:['探需','场景化讲车','顾虑解除','不限'],aud:['新人','进阶','全员']};
+const TAX0={car:CARS.slice(),theme:THEMES.slice(),subject:['奔驰 GLC','问界 M8','极氪 7X','特斯拉 Model Y','国补 / 地补','以旧换新','邀约试驾','探需','价格异议','展厅接待','YU7 产品','通用'],scene:['试驾','外呼','展厅','客服','不限'],ability:['探需','场景化讲车','顾虑解除','带人辅导','未指定'],aud:['新人','进阶','全员']};
 const C0=o=>Object.assign({ver:1,hist:[],assets:[],refs:[],creator:'总部培训部 刘翔',cK:'hq',rK:'hq',rName:'总部培训部 刘翔',up:0,down:0,orig:1,created:'2026-09-15',st:'已定稿',pubSt:'已上架',pubVer:1,lecturer:'王磊',vis:'全国',topic:'',src:'培训部编写',srcTag:'',body:{},kw:'',script:0},o);
 const SEED={
  // 学堂现有「内容管理」:话术是图文内容,本次只补「来源」「关键词组」,点赞 / 点踩挂在内容上

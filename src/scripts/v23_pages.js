@@ -484,18 +484,18 @@ A.tnCompare=el=>{UI.tab.tune='前后对比';render();$('#main').scrollTop=0};
 function cfgDims(){
   if(!(S.dims&&S.dims.length))return srcBar('维度体系是「标签」的升级:把产品、车型、场景、客户类型、竞品、销售阶段、能力做成可配置的维度。')+v23EmptyCta('维度');
   const f=UI.sel.dmf||(UI.sel.dmf={});
-  const roleTxt={belong:['归属','belong','参与统计,必填'],context:['上下文','context','筛选推荐'],ability:['能力','ability','带权重等级,进画像']};
+  const roleTxt={belong:['归类项','belong','决定归在哪个车型/部位，参与完备率统计'],context:['筛选条件','context','用于筛选和推荐'],ability:['能力项','ability','带权重等级，进入岗位标准']};
   const nUse=(did,vid)=>S.kps.filter(k=>((k.dims||{})[did]||[]).includes(vid)).length;
   const nUseAny=did=>S.kps.filter(k=>((k.dims||{})[did]||[]).length).length;
   const sel=f.id||S.dims[0].id;const d=dimOf(sel)||S.dims[0];
   const lim=10;
   const tpl=['产品','车型','场景','客户类型','竞品','销售阶段','能力'];
-  return srcBar('「标签」升级为<b>可配置的维度体系</b>:每个维度有形态(树/平铺)、角色(归属/上下文/能力)、是否必填。<b>知识点不再分「事实型 / 技能型」</b>,由它挂的维度自然区分:挂产品 = 产品卖点,挂能力 + 场景 = 销售动作。维度值 id 稳定,改名不改 id,合并要留痕。')
+  return srcBar('这里是系统里可维护的分类方式。业务上只需要理解三件事：<b>车型和车上的部位</b>决定一个知识点归在哪、完备率怎么算；<b>场景和客户</b>用于筛选；<b>4 个能力项</b>用于岗位标准和效果诊断。改名不会影响已挂的知识点，合并会保留历史。')
    +'<div class="grid g4" style="margin-bottom:16px">'
      +'<div class="rd-stat"><div class="l">维度数</div><div class="n">'+S.dims.length+'<small>/ '+lim+' 上限</small></div><div class="h">超过上限需先停用旧维度(防配置地狱)</div></div>'
-     +'<div class="rd-stat"><div class="l">归属维度</div><div class="n">'+S.dims.filter(x=>x.role==='belong').length+'</div><div class="h">参与统计、必填</div></div>'
-     +'<div class="rd-stat"><div class="l">能力维度</div><div class="n">'+S.dims.filter(x=>x.role==='ability').length+'</div><div class="h">进岗位画像,带权重</div></div>'
-     +'<div class="rd-stat"><div class="l">知识点已挂维度</div><div class="n">'+S.kps.filter(k=>Object.keys(k.dims||{}).length).length+'<small>/ '+S.kps.length+'</small></div><div class="h">至少挂一个归属维度才能启用</div></div></div>'
+     +'<div class="rd-stat"><div class="l">归类项</div><div class="n">'+S.dims.filter(x=>x.role==='belong').length+'</div><div class="h">车型、部位；决定完备率</div></div>'
+     +'<div class="rd-stat"><div class="l">能力项</div><div class="n">'+S.dims.filter(x=>x.role==='ability').length+'</div><div class="h">探需 / 讲车 / 顾虑 / 带人</div></div>'
+     +'<div class="rd-stat"><div class="l">已归类的知识点</div><div class="n">'+S.kps.filter(k=>Object.keys(k.dims||{}).length).length+'<small>/ '+S.kps.length+'</small></div><div class="h">归类后才进入车型 × 部位矩阵</div></div></div>'
    +'<div class="card"><h3>维度列表 <span class="hint">起步模板 7 个维度,开箱即用</span></h3>'
    +'<div class="tw"><table class="t nw"><tr><th>维度</th><th>形态</th><th>角色</th><th>多选</th><th>必填对象</th><th>来源</th><th>值数量</th><th>被知识点引用</th><th>操作</th></tr>'
    +S.dims.map(x=>{const rt=roleTxt[x.role];
@@ -542,13 +542,13 @@ function cfgProfile(){
   const abVals=dimOf('Dab').values.filter(v=>v.lv===2||!dimKids('Dab',v.id).length);
   const nPeople=S.lrn.filter(l=>l.tier===tier).length;
   const hit=(it)=>pfKps(it);
-  return srcBar('岗位画像 = 岗位 × 能力项 × 权重 × 目标等级。<b>能力项用「选择器」选维度值</b>(如「能力 = 价格异议 / 竞品对比」),命中的知识点自动归入,所以<b>加知识点或换维度都不用改画像</b>。权重合计必须 = 100。')
+  return srcBar('岗位标准回答：这个岗位最该会什么、各占多少分。这里只用 4 个业务能力项（探需 / 场景化讲车 / 顾虑解除 / 带人辅导）。改权重会立刻影响这个岗位所有人的就绪度，保存前会给出影响人数。权重合计必须 = 100。')
    +'<div class="fil"><span class="hint">岗位档</span>'+V23_TIER.map(t=>'<span class="'+(tier===t?'tag pri':'tag')+'" style="cursor:pointer;padding:3px 12px" data-act="pfTier" data-v="'+t+'">'+t+' · '+S.lrn.filter(l=>l.tier===t).length+' 人</span>').join('')+'</div>'
    +'<div class="card"><h3>'+tier+' 画像 <span class="pf-sum '+(ok?'ok':'err')+'">权重合计 '+ws+(ok?' ✓':' ≠ 100,无法保存')+'</span></h3>'
    +'<div class="hint" style="margin-bottom:8px">'+esc(p.note||'')+'</div>'
    +'<div class="pf-item" style="border-top:0"><div class="hint">能力项(选择器 → 命中知识点)</div><div class="hint">权重</div><div class="hint">目标等级</div><div class="hint">命中</div></div>'
    +p.items.map((it,i)=>{const ks=hit(it);
-     return '<div class="pf-item"><div class="sel"><b>'+esc(it.label)+'</b><em>'+it.vals.map(v=>'能力 = '+dimLabel('Dab',v)).join(' 或 ')+'</em></div>'
+     return '<div class="pf-item"><div class="sel"><b>'+esc(it.label)+'</b><em>'+it.vals.map(v=>'能力项 = '+dimLabel('Dab',v)).join(' 或 ')+'</em></div>'
       +'<div><input type="number" min="0" max="100" value="'+it.weight+'" data-wc="pfEdit" data-i="'+i+'" data-k="weight"></div>'
       +'<div><input type="number" min="0" max="100" value="'+it.target+'" data-wc="pfEdit" data-i="'+i+'" data-k="target"></div>'
       +'<div><span class="tag '+(ks.length?'ok':'err')+'">'+ks.length+' 个知识点</span></div></div>'}).join('')
@@ -688,7 +688,7 @@ function kpDimsHtml(k){
   if(!k.dims||!Object.keys(k.dims).length)return '';
   const order=['Dprod','Dcar','Dab','Dscene','Dcust','Dcomp','Dstage'];
   return order.filter(did=>(k.dims[did]||[]).length&&dimOf(did)).map(did=>{const d=dimOf(did);
-    return '<div style="margin-bottom:6px"><span class="hint" style="display:block;font-size:11px;margin-bottom:2px">'+esc(d.name)+' · '+({belong:'归属',context:'上下文',ability:'能力'}[d.role])+'</span>'
+    return '<div style="margin-bottom:6px"><span class="hint" style="display:block;font-size:11px;margin-bottom:2px">'+esc(d.name)+'</span>'
      +k.dims[did].map(v=>'<span class="dm-tag '+d.role+'"><b>'+esc(dimLabel(did,v))+'</b></span>').join('')+'</div>'}).join('')
    +'<div class="hint" style="margin-top:4px;line-height:1.6">'+kpKindHint(k)+'</div>';
 }
