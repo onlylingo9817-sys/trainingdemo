@@ -51,7 +51,7 @@ A.roleSwitch=el=>{UI.role=ROLES.find(r=>r.k===el.value);UI.tab={};UI.sel={};F=nu
 function renderPC(){
   renderMenu();if(!PAGES_OK[UI.role.type].includes(UI.page))UI.page=(PAGES_OK[UI.role.type].includes('workbench')?'workbench':'overview');
   const fn={workbench:pgWorkbench,overview:pgOverview,topics:pgTopics,topic:pgTopicDetail,content:pgContent,cedit:pgContentEdit,cdetail:pgContentDetail,catalog:pgCatalog,kp:pgKp,kpform:pgKpForm,qform:pgQForm,dform:pgDrForm,publish:pgPublish,projects:pgProjects,form:pgForm,detail:pgDetail,approvals:pgApprovals,coach:pgCoach,effect:pgEffect,student:pgStudent,config:pgConfig,tagmanage:pgTagManage}[UI.page];
-  const m=$('#main');const st=m.scrollTop;m.innerHTML=fn();m.scrollTop=st;
+  const m=$('#main');const st=m.scrollTop;m.innerHTML=(typeof aiPageGuideHtml==='function'?aiPageGuideHtml():'')+fn();m.scrollTop=st;
   if(typeof gdTrack==='function')gdTrack();
 }
 const crumb=a=>'<div class="crumb">'+a+'</div>';

@@ -65,6 +65,7 @@ function pgTagManage(){
      +'<button class="btn sm" data-act="tagMove" data-id="'+t.id+'">移动</button>'
      +'<button class="btn sm" data-act="tagNewChild" data-id="'+t.id+'">加子标签</button>'
      +(t.status==='off'?'<button class="btn sm" data-act="tagOn" data-id="'+t.id+'">恢复启用</button>':'<button class="btn sm" data-act="tagOff" data-id="'+t.id+'">停用</button>')+'</div></div>':'<div class="card"><h3>先选一个标签</h3><div class="hint">左侧选标签后可以改名、加子标签、移动层级或停用。</div></div>')
+   +(typeof aiTagAuditHtml==='function'?aiTagAuditHtml():'')
    +'<div class="card"><h3>新建标签</h3><div class="fgrid"><div class="fld"><label>名称</label><input id="tag_new_name" placeholder="如：政策口径 / 车内冰箱 / 露营"></div><div class="fld"><label>上级标签</label><select id="tag_new_parent"><option value="">无（作为根标签）</option>'+rows.map(x=>'<option value="'+x.id+'">'+'　'.repeat(x.lv-1)+esc(x.name)+'</option>').join('')+'</select></div></div><div style="margin-top:10px"><button class="btn pri" data-act="tagAdd">新建</button> <span class="hint">同一个标签可以同时用于知识点和内容；不需要重复建两套。</span></div></div>'
    +(off.length?'<div class="card"><h3>已停用 <span class="hint">'+off.length+' 个</span></h3>'+off.map(x=>'<div style="padding:5px 0;border-top:1px solid #f2f3f5;display:flex;gap:10px;align-items:center"><span style="flex:1">'+esc(x.path)+'</span><button class="link" data-act="tagOn" data-id="'+x.id+'">恢复</button></div>').join('')+'</div>':'')
    +'</div></div>';

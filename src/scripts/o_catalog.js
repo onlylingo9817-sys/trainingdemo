@@ -2,7 +2,7 @@
    知识点平铺,不自建层级;分类用「标签树」,一个点可挂多个标签。
    标签树可自主维护:可以是车上部位,也可以是政策、卖点、场景等业务分类。
    内容、题、演练都"挂"在知识点上,各留在原来的地方。 */
-const KP_TABS=['总览','知识点库','批量新建','候选','清河迁移'];
+const KP_TABS=['总览','知识点库','题库','演练','批量新建','候选','清河迁移'];
 const KP_TYPES=['事实型','技能型'];
 const KP_DIMS=['探需','场景化讲车','顾虑解除','带人辅导'];
 const KP_EXT_T=['清河考试','话术演练','角色演练'];
@@ -277,7 +277,7 @@ function pgKp(){
    +'<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><select id="kpx_t">'+KP_EXT_T.map(x=>'<option>'+x+'</option>').join('')+'</select><input type="text" id="kpx_n" placeholder="名称" style="width:160px"><input type="number" id="kpx_c" placeholder="题数" style="width:80px"><button class="btn sm" data-act="kpExtAdd">登记</button></div></div>';
   return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+k.id)
    +linkBar({type:'kp',k})+'<div class="cdh"><div class="cdh-l"><h2>'+esc(k.name)+'</h2><div class="ph-meta"><span class="tag">'+(typeof kpTypeText==='function'?kpTypeText(k):k.type)+'</span><span class="tag">'+esc((k.cars||[k.car]).join(' / '))+'</span>'+kpLv(h.level)+(k.st==='停用'?'<span class="tag">停用</span>':'')+'</div></div><div class="cdh-r"><div class="dnav"><button class="btn sm" data-act="kpNav" data-d="-1" '+(ix<=0?'disabled':'')+'>‹ 上一个</button><span class="hint">'+(ix+1)+' / '+lst.length+'</span><button class="btn sm" data-act="kpNav" data-d="1" '+(ix>=lst.length-1?'disabled':'')+'>下一个 ›</button></div></div></div>'
-   +'<div class="dgrid"><div class="dmain">'+main+'</div><div class="dside">'+sideInfo+'</div></div>'}
+   +'<div class="dgrid"><div class="dmain">'+(typeof aiKpDetailAdvice==='function'?aiKpDetailAdvice(k):'')+main+'</div><div class="dside">'+sideInfo+'</div></div>'}
 A.kpOpen=el=>{closeDlg();UI.kid=el.dataset.id;UI.page='kp';render();$('#main').scrollTop=0};
 A.kpNav=el=>{const i=S.kps.findIndex(x=>x.id===UI.kid)+ +el.dataset.d;if(i<0||i>=S.kps.length)return;UI.kid=S.kps[i].id;render();$('#main').scrollTop=0};
 A.drNewFor=()=>{UI.sel.df={kp:UI.kid};A.drNew()};

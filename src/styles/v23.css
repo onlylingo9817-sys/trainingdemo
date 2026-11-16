@@ -139,3 +139,27 @@ tr.off{opacity:.62}
 .tag-ops{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .tag-picker{max-width:560px}
 @media(max-width:1150px){.tag-layout{grid-template-columns:200px minmax(0,1fr)}.tag-manage{grid-template-columns:230px minmax(0,1fr)}}
+
+/* ---------- AI 建议：统一卡片 / 引导 / 工作台 ---------- */
+.ai-box{margin-top:10px;background:linear-gradient(180deg,#fffaf5,#fff);border:1px solid #f3dc9b;border-radius:10px;padding:12px 14px;line-height:1.7}
+.ai-box-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.ai-box .tag{vertical-align:middle}
+.ai-cell{font-size:12.5px;line-height:1.7;white-space:normal}
+.ai-cell .tag{margin-bottom:2px}
+.ai-guide{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--bd);border-left:4px solid var(--pri);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;line-height:1.6}
+.ai-guide b{font-size:13.5px}.ai-guide span{color:var(--sub);flex:1;min-width:240px}.ai-guide .link{white-space:nowrap;margin:0}
+.ai-wb{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#fff8ef;border:1px solid #f3dc9b;border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.ai-wb b{font-size:14px}.ai-wb .hint{margin-left:8px}.ai-wb .btn{white-space:nowrap}
+.ai-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #f2f3f5}
+.ai-row:first-of-type{border-top:0}.ai-row>span{font-size:18px;text-align:center}.ai-row b{font-size:13px}.ai-row .hint{margin-top:1px}
+@media(max-width:900px){.ai-wb{flex-direction:column}.ai-wb .btn{width:100%}}
+
+/* 导入确认：AI 建议整行展开，避免把业务字段挤出视口 */
+.tw table.t.ci-table{width:100%;min-width:0;table-layout:fixed}
+.ci-table .ci-col-check{width:36px}
+.ci-table .ci-col-kind{width:82px}
+.ci-table .ci-col-meta{width:210px}
+.ci-table .ci-col-check-state{width:190px}
+.ci-table tr.ci-airow td{background:#fffbf4;border-top:0;padding-top:0;padding-bottom:12px;white-space:normal;word-break:break-word}
+.ci-table tr.ci-airow .ai-cell{max-width:none}
+.ci-table .ci-meta-grid{display:grid;gap:4px;min-width:0}

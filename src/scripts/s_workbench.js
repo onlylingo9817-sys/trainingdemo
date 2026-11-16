@@ -57,6 +57,7 @@ function pgWorkbench(){
    +num('讲解覆盖率',cover+'%','启用的知识点里有可用讲解','data-act="go" data-p="catalog"')
    +num('未挂载内容',st.un,'进不了完备度检查','data-act="wbUnmounted"')
    +num('学员集中薄弱',kpWeakList().length,'已测 ≥3 人且 ≥50% 未过关','data-act="go" data-p="catalog" data-t="总览"')+'</div>'
+   +(typeof aiWorkbenchCard==='function'?aiWorkbenchCard():'')
    +'<div class="card"><h3>待办 <span class="hint">按紧急程度排序;「紧急」= 学员现在就受影响</span></h3><div class="wb-tabs"><span class="'+(f?'':'on')+'" data-act="wbF" data-v="">全部 '+it.length+'</span>'+WB_GROUPS.map(g=>'<span class="'+(f===g[0]?'on':'')+'" data-act="wbF" data-v="'+g[0]+'">'+g[1]+' '+cnt(g[0])+'</span>').join('')+'</div>'
    +(rows.length?'<table class="t"><tr><th style="width:64px">优先</th><th style="width:96px">类型</th><th>对象</th><th>为什么</th><th style="width:96px"></th></tr>'+rows.slice(0,25).map(x=>'<tr><td><span class="tag '+WB_SEV[x.sev][1]+'">'+WB_SEV[x.sev][0]+'</span></td><td><span class="tag" style="white-space:nowrap">'+x.tag+'</span></td><td style="white-space:normal;min-width:200px">'+x.title+'</td><td class="hint" style="white-space:normal">'+x.desc+'</td><td>'+(x.raw?x.raw:'<button class="btn sm pri" '+x.attrs+'>'+x.act+'</button>')+'</td></tr>').join('')+'</table>'+(rows.length>25?'<div class="hint" style="margin-top:6px">只显示优先级最高的 25 条,共 '+rows.length+' 条;可用上方分组收敛范围</div>':''):'<div class="chk ok"><b>✓</b><span>这一类没有待办</span></div>')+'</div>'}
 A.wbF=el=>{UI.sel.wbf=el.dataset.v;render()};

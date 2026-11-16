@@ -53,11 +53,11 @@ function kpCarMatrix(){
 }
 function kpTagTree(){
   const cars=kpCarsHost();
-  const rows=PTAGS.filter(t=>t.lv<=2&&t.path.split('_').length<=2);
-  return '<div class="kp-panel"><div class="kp-ph"><h3>按标签看各车型完备率</h3><span class="hint">每个标签分支单独显示各车型的完备率，不再只有一个总数</span></div>'
-   +'<div class="tw"><table class="t nw kp-tagtree"><tr><th>标签</th><th>知识点</th><th>能上课</th>'+cars.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'
-   +rows.map(t=>{const all=kpStatFor(t.id,'');return '<tr><td style="padding-left:'+(10+(t.lv-1)*18)+'px">'+(ptagKids(t.id).length?'<b>'+esc(t.name)+'</b>':esc(t.name))+'</td><td>'+all.n+'</td><td>'+all.ready+'</td>'+cars.map(car=>{const st=kpStatFor(t.id,car);const g=kpCellGrade(st.ready,st.n);return '<td><span class="kp-mx '+g+'"><b>'+(st.n?st.ready+'/'+st.n:'未建')+'</b></span></td>'}).join('')+'</tr>'}).join('')
-   +'</table></div></div>';
+  const rows=PTAGS.filter(t=>t.lv<=2&&t.path.split('_').length<=2&&t.status!=='off');
+  return '<div class="kp-panel"><div class="kp-ph"><h3>按标签看各车型完备率</h3><span class="hint">每个标签分支单独显示各车型的完备率；「能上课 / 已建」= 有负责人且有已上架讲解</span></div>'
+   +'<div class="tw"><table class="t nw kp-tagtree"><tr><th>标签</th><th>已建</th><th>能上课</th><th>完备率</th>'+cars.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'
+   +rows.map(t=>{const all=kpStatFor(t.id,'');const pct=all.n?Math.round(all.ready/all.n*100):0;return '<tr><td style="padding-left:'+(10+(t.lv-1)*18)+'px">'+(ptagKids(t.id).length?'<b>'+esc(t.name)+'</b>':esc(t.name))+'</td><td>'+all.n+'</td><td>'+all.ready+'</td><td><span class="tag '+(pct>=80?'ok':pct>0?'warn':'err')+'">'+(all.n?pct+'%':'未建')+'</span></td>'+cars.map(car=>{const st=kpStatFor(t.id,car);const g=kpCellGrade(st.ready,st.n);const ratio=st.n?Math.round(st.ready/st.n*100):0;return '<td><span class="kp-mx '+g+'"><b>'+(st.n?ratio+'%':'未建')+'</b><small>'+(st.n?st.ready+'/'+st.n:'')+'</small></span></td>'}).join('')+'</tr>'}).join('')
+   +'</table></div><div class="hint" style="margin-top:6px">同一标签在 N90 也许已能上课，在 N70 仍是「未建」或 0%——多车型不再被一个总数掩盖。点上方「车型 × 标签」格子可直接筛到缺口。</div></div>';
 }
 function kpNextCard(){
   const act=S.kps.filter(k=>k.st==='启用');const noExp=act.filter(k=>!kpHealth(k).cells.exp.s==='ok'||kpHealth(k).cells.exp.s!=='ok').length;
@@ -111,7 +111,7 @@ function kpLibrary(){
    +so('car','适用车型',cars)+so('dim','主要训练能力',ab.map(x=>x.name))
    +so('owner','负责人',kpOwners().concat(['(无)']).map(x=>({v:x,n:x})))
    +'<div class="fi2"><label>状态</label><select data-wc="kpset" data-k="lv"><option value="" '+(!f.lv?'selected':'')+'>全部</option>'+['只看有缺口','只看待补','只看完备'].map(x=>'<option '+(f.lv===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'
-   +'<div class="fi2" style="align-self:end"><button class="btn" data-act="kpFclr">清除</button></div></div></div>';
+   +'<div class="fi2" style="align-self:end"><button class="btn" data-act="kpFclr">清除</button> <button class="btn" data-act="kpAiContentAudit">AI 找缺口</button></div></div></div>';
   const bulk='<div class="kp-bulkbar"><b>已选 '+selN+' 个</b><select id="kp_bulk_owner"><option value="">批量指定负责人…</option>'+kpOwners().map(x=>'<option>'+esc(x)+'</option>').join('')+'</select><button class="btn sm" data-act="kpBulkOwner">指定</button><button class="btn sm" data-act="kpBulkOn">批量启用</button><button class="btn sm" data-act="kpBulkOff">批量停用</button>'+(selN?'<button class="link" data-act="kpSelClear">取消选择</button>':'<span class="hint">先勾选左侧复选框，再点批量操作</span>')+'</div>';
   return '<div class="tag-layout">'+tagTreeHtml(f.tag||'',{}) + '<div>'+filter+bulk+'<div class="kp-panel"><div class="tw"><table class="t nw stk kp-lib"><tr><th style="width:28px"><input type="checkbox" data-wc="kpSelAll" '+(rows.length&&rows.every(k=>sel[k.id])?'checked':'')+'></th><th>知识点</th><th>标签</th><th>适用车型</th><th>负责人</th><th>状态</th><th>操作</th></tr>'
    +rows.map(k=>{const h=kpHealth(k);const m=kpMounted(k);return '<tr class="'+(k.st==='停用'?'off':'')+'"><td><input type="checkbox" data-wc="kpSel" data-id="'+k.id+'" '+(sel[k.id]?'checked':'')+'></td><td style="white-space:normal;min-width:180px"><a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>'+(k.st==='停用'?' <span class="tag">停用</span>':'')+'<div class="hint">'+k.id+' · '+kpTypeText(k)+' · '+esc(kpAbText(k))+'</div></td><td style="white-space:normal;min-width:150px">'+(kpTagNames(k).map(p=>'<span class="tag" style="margin:0 3px 3px 0">'+esc(p)+'</span>').join('')||'<span class="hint">未挂</span>')+'</td><td style="white-space:normal;min-width:120px">'+kpCars(k).map(c=>kpCarChip(c)).join('')+'</td><td>'+(k.owner?esc(k.owner):'<span class="tag err">无</span>')+'</td><td><span class="kp-dots">'+kpDots(h)+'</span> <span class="hint">'+(kpReady(k)?'能上课':'缺口')+'</span></td><td><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a></td></tr>'}).join('')
@@ -127,8 +127,10 @@ function kpBatchPage(){
    +'<div class="kp-actions"><button class="btn" data-act="kpTpl">下载 CSV 模板</button><button class="btn" data-act="kpSample">载入示例 CSV</button><input type="file" accept=".csv,text/csv" id="kp_file" data-wc="kpImportFile" style="display:none"><button class="btn pri" data-act="kpPickFile">选择 CSV 文件</button></div>'
    +'<div class="hint" style="margin:10px 0">列：名称 / 适用车型（多个用顿号）/ 标签（如 能源_外放电）/ 主要训练能力 / 负责人 / 同义词 / 状态。车型或标签不存在的行会被跳过并报告。</div>'
    +'<textarea id="kp_csv" style="width:100%;min-height:170px;font:12px/1.6 Menlo,monospace" placeholder="先点「载入示例 CSV」看格式；也可以直接把 Excel 里的列复制过来。\n\n名称,适用车型,标签,主要训练能力,负责人,同义词,状态"></textarea>'
-   +'<div style="margin-top:10px"><button class="btn pri" data-act="kpImportRun">校验并导入</button> <span class="hint">没有负责人会自动停用；不会覆盖已有同名同车型知识点。</span></div>'
+   +'<div style="margin-top:10px"><button class="btn" data-act="kpAiAudit">AI 预检</button> <button class="btn pri" data-act="kpImportRun">校验并导入</button> <span class="hint">没有负责人会自动停用；不会覆盖已有同名同车型知识点。</span></div>'
+   +(typeof aiKpCsvAuditHtml==='function'?aiKpCsvAuditHtml():'')
    +'<div class="kp-excel"><b>从 Excel 过来？</b><span>按上面 7 列复制粘贴即可，车型多个用顿号隔开；标签写法如「车型卖点_内饰_座椅」或「政策口径_国补地补」。</span></div></div>'
+   +(typeof aiNewCarPanel==='function'?aiNewCarPanel():'')
    +'<div class="kp-panel"><div class="kp-ph"><h3>新车型一键克隆</h3><span class="hint">复制的是知识点骨架（名称 + 标签 + 动作 + 适用车型），不复制讲解、题、演练；适合新车型先起清单</span></div>'
    +'<div class="kp-actions"><select id="kp_clone_from">'+cars.map(c=>'<option '+(kpc.from===c?'selected':'')+'>'+esc(c)+'</option>').join('')+'</select><span>→</span><input id="kp_clone_to" value="'+esc(kpc.to||'')+'" placeholder="新车型，如 YU7 Max" style="width:180px"><button class="btn" data-act="kpClonePreview">预览</button><button class="btn pri" data-act="kpCloneRun">开始克隆</button></div>'
    +(kpc.count?'<div class="kp-preview">将把「'+esc(kpc.from)+'」的 '+kpc.count+' 个知识点复制到「'+esc(kpc.to)+'」，全部为停用、待补负责人和讲解。'+(kpc.count?'<button class="link" data-act="kpCloneRun">确认克隆</button>':'')+'</div>':'')
@@ -137,8 +139,19 @@ function kpBatchPage(){
    +'<div class="filg"><div class="fi2"><label>知识点名称</label><input id="kp_multi_name" placeholder="如：车内冰箱"></div><div class="fi2"><label>标签</label><select id="kp_multi_tag"><option value="">暂不挂</option>'+PTAGS.filter(t=>t.lv>=2).map(t=>'<option value="'+t.id+'">'+(t.lv-1>1?'　'.repeat(t.lv-2):'')+esc(t.path.replace('产品_',''))+'</option>').join('')+'</select></div><div class="fi2"><label>主要训练能力</label><select id="kp_multi_ab">'+ab.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></div><div class="fi2"><label>负责人</label><select id="kp_multi_owner"><option value="">暂不指定</option>'+kpOwners().map(x=>'<option>'+esc(x)+'</option>').join('')+'</select></div></div>'
    +'<div class="kp-actions" style="margin-top:10px"><span class="hint">适用车型：</span>'+cars.map(c=>'<label class="kp-check"><input type="checkbox" class="kp_multi_car" value="'+esc(c)+'"> '+esc(c)+'</label>').join('')+'<label class="kp-check"><input type="checkbox" class="kp_multi_car" value="通用车型"> 通用车型</label><button class="btn pri" data-act="kpQuickAdd">建一个点多车型</button></div></div></div>';
 }
+function aiKpContentAuditRows(){
+  const cars=kpCarsHost();const out=[];
+  cars.forEach(car=>{const ks=S.kps.filter(k=>k.st==='启用'&&kpCarsHas(k,car));const ready=ks.filter(kpReady).length;if(!ks.length||ready/ks.length<0.8)out.push({car,n:ks.length,ready,gap:Math.max(0,ks.length-ready)});});
+  return out.sort((a,b)=>(b.n?b.ready/b.n:0)-(a.n?a.ready/a.n:0));
+}
+A.kpAiContentAudit=()=>{const rows=aiKpContentAuditRows();UI.sel.kpAudit=rows;openDlg('AI 找缺口','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">按车型 × 标签检查：哪些车缺知识点、哪些点还上不了课；不自动改数据</span></div>'
+  +(rows.length?rows.map(x=>'<div style="padding:6px 0;border-top:1px solid #f2f3f5"><b>'+esc(x.car)+'</b> <span class="hint">已建 '+x.n+' 个，能上课 '+x.ready+' 个，缺口 '+x.gap+' 个</span> <a class="link" data-act="kpJump" data-fk="car" data-fv="'+esc(x.car)+'">去看知识点</a> <a class="link" data-act="kpGapDemo" data-car="'+esc(x.car)+'">生成补充建议</a></div>').join(''):'<div class="chk ok"><b>✓</b><span>各车型知识点覆盖都不错</span></div>')
+  +'<div class="hint" style="margin-top:6px">缺口排序按「能上课占比」从低到高，优先补最空的车型。</div></div>','<button class="btn" data-act="close">关闭</button>',true)};
+A.kpGapDemo=el=>{const car=el.dataset.car;const r=aiCheckNewCar(car);UI.sel.kpCar=r;closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_BATCH;render();setTimeout(()=>{const e=document.getElementById('kp_car_info');if(e)e.scrollIntoView({block:'center'})},50)};
 function pgCatalog(){
   let t=curTab('catalog',KP_TABS);if(KP_TAB_ALIAS[t])t=KP_TAB_ALIAS[t];
+  if(t==='题库')return '<div class="crumb"><a data-act="go" data-p="catalog" data-t="知识点库">知识点</a> / 题库</div>'+kpQuiz();
+  if(t==='演练')return '<div class="crumb"><a data-act="go" data-p="catalog" data-t="知识点库">知识点</a> / 情景演练</div>'+kpDrills();
   const head='<div class="ph"><h2>知识点 <span class="hint" style="font-weight:400">这里管「要讲什么、有没有讲的内容」。话术/课程/测评题 / 情景演练在内容中心造；先把清单补完整。</span></h2><div><button class="btn" data-act="kpOpenBatch">批量导入</button> <button class="btn" data-act="kpOpenBatch">新车克隆</button> <button class="btn pri" data-act="kpNew">新增知识点</button></div></div>';
   let b='';
   if(t==='总览')b=kpOverviewNew();
@@ -205,6 +218,8 @@ function pgKpForm(){
    +FR('知识类型','<div class="rels">'+[['事实型','产品知识'],['技能型','销售动作']].map(x=>'<span class="'+(KF.type===x[0]?'on':'')+'" data-act="kfType" data-v="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>',{req:1,h:KF.type==='事实型'?'产品知识：记住这款车有什么、怎么讲':'销售动作：探需、讲车、处理异议等，看练得怎么样'})
    +FR('主要训练能力','<select data-wc="kfAb">'+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id?'selected':'')+'>'+esc(x.root+' · '+x.name)+'</option>').join('')+'</select>',{req:1,h:'和岗位画像使用同一套能力项；这样诊断、画像、效果看板才对得上'})
    +more
+   +'<div class="kp-actions" style="margin:6px 0 10px"><button class="btn sm" data-act="kfAdvice">AI 匹配标签</button><span class="hint">按名称 / 同义词 / 已选标签推荐，只建议</span></div>'
+   +(typeof aiKpFormAdviceHtml==='function'?aiKpFormAdviceHtml():'')
    +(KF.type==='事实型'&&!KF.tags.length?'<div class="chk rec"><b>·</b><span>产品知识建议挂至少一个标签，否则标签筛选里容易漏掉它</span></div>':'')
    +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」适用这些车型，不要重复建</span></div>':'')
    +'</div><div class="dock"><span class="sp"></span><button class="btn" data-act="kfCancel">取消</button><button class="btn pri" data-act="kfSave">保存</button></div>';
