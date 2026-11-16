@@ -1,0 +1,17 @@
+{
+  "name": "training-demo",
+  "version": "23.0.0",
+  "private": true,
+  "description": "培训全链路闭环交互 Demo（学堂后台 + 零售通）",
+  "scripts": {
+    "dev": "node tools/dev-server.js",
+    "start": "node tools/dev-server.js",
+    "check": "node tools/check.js",
+    "test": "node tools/run-tests.js",
+    "build": "node tools/build-single-file.js",
+    "export": "node tools/build-single-file.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

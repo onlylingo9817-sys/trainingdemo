@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>培训全链路闭环项目 · 交互 Demo</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="styles/app.css">
+<link rel="stylesheet" href="styles/v23.css">
+</head>
+<body data-end="pc">
+<div class="topbar">
+  <div class="brand"><i>学</i><div>培训全链路闭环<small>交互 Demo · 示意数据</small></div></div>
+  <div class="seg"><button id="bPc" class="on" data-act="end" data-v="pc">学堂后台</button><button id="bRn" data-act="end" data-v="rn">零售通</button></div>
+  <span class="sp"></span>
+  <select id="roleSel" data-wc="roleSwitch"><option value="hq">总部培训部 · 刘翔</option><option value="r1">区域老师 · 周丽(华北)</option><option value="r2">区域老师 · 陈磊(华东)</option><option value="boss">老板</option></select>
+  <button class="ibtn" id="bell" data-act="bell">通知<i id="bellN" style="display:none">0</i></button>
+  <details class="dd"><summary class="ibtn">演示数据 ▾</summary><div class="ddm"><button data-act="reset">载入示例数据</button><button data-act="clear">清空数据(从零演示闭环)</button><button data-act="welcome">体验说明</button></div></details>
+</div>
+<div class="stage">
+  <div id="pc"><div class="menu" id="menu"></div><div class="content" id="main"></div></div>
+  <div id="rn"><div class="phone"><div class="sb"><span>9:41</span><span>5G ▮▮▮</span></div><div class="scr" id="rscr"></div></div><div class="rn-side" id="rside"></div></div>
+</div>
+<div class="mask" id="mask"><div class="dlg" id="dlg"></div></div>
+<div id="toast"></div>
+
+<script src="scripts/a_core.js"></script>
+<script src="scripts/n_spin.js"></script>
+<script src="scripts/b_pc1.js"></script>
+<script src="scripts/c_pc2.js"></script>
+<script src="scripts/c_form.js"></script>
+<script src="scripts/d_pc3.js"></script>
+<script src="scripts/e_pc4.js"></script>
+<script src="scripts/k_content.js"></script>
+<script src="scripts/k2_edit.js"></script>
+<script src="scripts/k3_import.js"></script>
+<script src="scripts/o_catalog.js"></script>
+<script src="scripts/p_quiz.js"></script>
+<script src="scripts/r_drill.js"></script>
+<script src="scripts/s_workbench.js"></script>
+<script src="scripts/q_guide.js"></script>
+<script src="scripts/l_gray.js"></script>
+<script src="scripts/m_report.js"></script>
+<script src="scripts/g_topic1.js"></script>
+<script src="scripts/g_topic2.js"></script>
+<script src="scripts/g_topic3.js"></script>
+<script src="scripts/h_seed.js"></script>
+<script src="scripts/v23_data.js"></script>
+<script src="scripts/i_ops.js"></script>
+<script src="scripts/j_boss.js"></script>
+<script src="scripts/v23_pages.js"></script>
+<script src="scripts/f_rn.js"></script>
+</body>
+</html>

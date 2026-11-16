@@ -1,0 +1,85 @@
+/* ===== v23 新增样式(统一前缀 v23- / rd- / tn- / mis-,避免与全局 .warn/.err/.ok 撞车) ===== */
+.v23-sim{background:#fff4d6;color:#a15c00;font-size:11px;font-weight:600;letter-spacing:.2px}
+.rd-hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.rd-stat{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px 16px;box-shadow:var(--sh)}
+.rd-stat .l{font-size:12px;color:var(--sub);margin-bottom:4px}
+.rd-stat .n{font-size:26px;font-weight:650;letter-spacing:-.5px;line-height:1.15}
+.rd-stat .n small{font-size:13px;font-weight:500;color:var(--mut);margin-left:2px}
+.rd-stat .h{font-size:11.5px;color:var(--mut);margin-top:3px}
+.rd-bar{height:6px;border-radius:3px;background:#eef0f4;overflow:hidden;margin-top:8px}
+.rd-bar i{display:block;height:100%;border-radius:3px}
+.rd-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px;align-items:start}
+.rd-radar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.rd-legend{font-size:12px;color:var(--sub);line-height:1.9}
+.rd-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.rd-quad{position:relative;border:1px solid var(--bd);border-radius:10px;background:linear-gradient(#fff,#fff)}
+.rd-quad .ax{font-size:11px;color:var(--mut)}
+.rd-pt{cursor:pointer}
+.rd-pt:hover circle{stroke:#1f2329;stroke-width:1.5}
+.rd-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #f2f3f5}
+.rd-item .nm{width:190px;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-item .bw{flex:1;height:8px;border-radius:4px;background:#eef0f4;position:relative;overflow:hidden}
+.rd-item .bw i{display:block;height:100%;border-radius:4px}
+.rd-item .bw u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#1f2329;opacity:.45}
+.rd-item .vv{width:96px;text-align:right;font-size:12px;color:var(--sub)}
+.rd-item .wt{width:44px;text-align:right;font-size:11.5px;color:var(--mut)}
+/* 就绪度分布(直方) */
+.rd-hist{display:flex;align-items:flex-end;gap:5px;height:96px;padding-top:6px}
+.rd-hist div{flex:1;background:var(--pri-m);border-radius:3px 3px 0 0;position:relative;min-height:2px}
+.rd-hist div.on{background:var(--pri)}
+.rd-hist div span{position:absolute;top:-15px;left:0;right:0;text-align:center;font-size:10px;color:var(--mut)}
+.rd-hist-x{display:flex;gap:5px;font-size:10px;color:var(--mut);margin-top:3px}
+.rd-hist-x div{flex:1;text-align:center}
+/* 错题集 */
+.mis-cell{display:inline-block;padding:0 7px;border-radius:5px;font-size:11.5px;line-height:19px;font-weight:500}
+.mis-s1{background:#f2f4f7;color:#667085}.mis-s2{background:#fff4d6;color:#a15c00}.mis-s3{background:#fdecec;color:#c8323a}
+.mis-q{background:#fafbfc;border-left:3px solid #d0d5dd;padding:6px 10px;border-radius:0 6px 6px 0;font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:4px}
+.mis-re{font-size:11.5px;color:#a15c00;font-weight:600}
+/* 诊断树 */
+.tn-l{display:grid;grid-template-columns:38px minmax(0,1fr) 210px 150px;gap:12px;padding:12px 0;border-top:1px solid #f2f3f5;align-items:start}
+.tn-l .no{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:650;background:#f2f4f7;color:var(--sub)}
+.tn-l.hit .no{background:#fdecec;color:#c8323a}
+.tn-l.hit{background:#fffafa;margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:8px}
+.tn-l .ttl b{font-size:13.5px}
+.tn-l .ttl .sym{font-size:12.5px;color:var(--sub);margin-top:2px}
+.tn-l .rd{font-size:12px;color:var(--ink2);line-height:1.8}
+.tn-l .rd .k{color:var(--mut)}
+.tn-verdict{font-size:11.5px;text-align:center;padding:2px 0;border-radius:5px;font-weight:600}
+.tn-verdict.bad{background:#fdecec;color:#c8323a}.tn-verdict.warn{background:#fff4d6;color:#a15c00}.tn-verdict.ok{background:#e7f8f0;color:#0b7a50}
+/* 配置版本 */
+.tn-ver{display:flex;gap:14px;padding:14px 0;border-top:1px solid #f2f3f5;align-items:flex-start}
+.tn-vb{flex:none;width:52px;height:52px;border-radius:12px;display:grid;place-items:center;font-size:15px;font-weight:700;background:#f2f4f7;color:var(--sub)}
+.tn-vb.on{background:#fff4d6;color:#a15c00}.tn-vb.cur{background:#e7f8f0;color:#0b7a50}.tn-vb.back{background:#f2f4f7;color:#98a2b3}
+.tn-diff{font-size:12px;color:var(--sub);line-height:1.9}
+.tn-diff code{background:#f6f7f9;border-radius:4px;padding:0 5px;font-size:11.5px}
+/* 前后对比 */
+.tn-cmp{display:grid;grid-template-columns:minmax(0,1fr) 118px 118px 104px;gap:10px;font-size:12.5px;align-items:center;padding:8px 0;border-top:1px solid #f2f3f5}
+.tn-cmp .hd{font-size:11.5px;color:var(--mut);font-weight:500}
+.tn-cmp .up{color:#0b7a50;font-weight:600}.tn-cmp .dn{color:#c8323a;font-weight:600}
+/* 维度 */
+.dm-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;background:#f2f4f7;color:var(--sub);font-size:12px;margin:0 6px 6px 0}
+.dm-tag b{font-weight:600;color:var(--ink2)}
+.dm-tag.belong{background:#eaf2ff;color:#2457c5}.dm-tag.context{background:#f4f0ff;color:#5b3fa8}.dm-tag.ability{background:#fff1e8;color:#b34a00}
+.dm-role{font-size:11px;padding:1px 7px;border-radius:999px;font-weight:600}
+/* 画像 */
+.pf-item{display:grid;grid-template-columns:minmax(0,1fr) 70px 76px 90px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #f2f3f5}
+.pf-item .sel{font-size:12.5px}
+.pf-item .sel em{font-style:normal;color:var(--mut);font-size:11px;display:block;margin-top:1px}
+.pf-item input[type=number]{width:64px;height:28px;border:1px solid var(--bd2);border-radius:6px;padding:0 8px;font-size:12.5px}
+.pf-sum{font-size:12px;font-weight:600}
+.pf-sum.err{color:#c8323a}.pf-sum.ok{color:#0b7a50}
+/* 学员详情 */
+.stu-hero{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+.stu-av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#ffb27a,#ff6700);color:#fff;display:grid;place-items:center;font-size:20px;font-weight:600;flex:none}
+.stu-kv{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--sub)}
+.stu-kv b{color:var(--ink);font-size:15px;font-weight:650;display:block;margin-top:1px}
+/* 零售通:就绪度卡 / 学习包 */
+.r-rdy{background:#fff;border-radius:14px;padding:14px;margin:10px 12px}
+.r-rdy-h{display:flex;justify-content:space-between;align-items:baseline}
+.r-rdy-n{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.r-rdy-bar{height:7px;border-radius:4px;background:#eef0f4;overflow:hidden;margin:8px 0 6px}
+.r-rdy-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#ffa04d,#ff6700)}
+.r-pk{background:#fff;border-radius:14px;padding:12px 14px;margin:8px 12px;display:flex;gap:10px;align-items:center}
+.r-pk .c{flex:1;font-size:12.5px}
+.r-pk .c b{display:block;font-size:13.5px;margin-bottom:2px}
+.r-pk-t{font-size:11px;color:#999}
