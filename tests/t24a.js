@@ -12,10 +12,11 @@ CK('知识点支持多车型字段',S.kps.every(k=>Array.isArray(k.cars)&&k.cars
 CK('多车型统计按车型分开',(()=>{const t=ptagByPath('内饰');const stats=kpCarsHost().map(c=>kpStatFor(t.id,c));return stats.length===3&&stats.some((x,i,a)=>i&&x.n!==a[0].n)})() ,kpCarsHost().map(c=>c+'='+kpStatFor(ptagByPath('内饰').id,c).n).join(' / '));
 /* 3. 知识点页:三件事 */
 UI.page='catalog';UI.tab.catalog='总览';render();const ov=tx();
-CK('总览第一屏是缺口而不是学员列表',/先做这三步/.test(ov)&&/车型 × 部位/.test(ov)&&ov.indexOf('车型 × 部位')<ov.indexOf('学员集中薄弱'),'矩阵位置 '+ov.indexOf('车型 × 部位')+' 薄弱位置 '+ov.indexOf('学员集中薄弱'));
+CK('总览第一屏是缺口而不是学员列表',/先做这三步/.test(ov)&&/车型 × 标签/.test(ov)&&ov.indexOf('车型 × 标签')<ov.indexOf('学员集中薄弱'),'矩阵位置 '+ov.indexOf('车型 × 标签')+' 薄弱位置 '+ov.indexOf('学员集中薄弱'));
 CK('总览矩阵每款车单独列',kpCarsHost().every(c=>document.querySelector('#main').innerText.includes(c)));
+CK('总览不再出现「车型 × 部位」',!/车型 × 部位|车上的部位/.test(ov));
 UI.tab.catalog='知识点库';render();const lib=tx();
-CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&/车上的部位/.test(lib));
+CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&/标签/.test(lib));
 CK('知识点库支持批量操作',/批量指定负责人|批量启用/.test(lib));
 UI.tab.catalog='批量新建';render();const batch=tx();
 CK('批量新建含 CSV 导入',/批量导入/.test(batch)&&/下载 CSV 模板/.test(batch));

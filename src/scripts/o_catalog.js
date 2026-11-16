@@ -1,6 +1,7 @@
-/* ========== 知识点(原「目录」)v19.2 ==========
-   知识点平铺,不自建层级;分类直接引用「产品标签树」(只读同步,最高四级,节点 id 不变,不含车型版本),一个点可挂多个标签。
-   内容、演练、题都"挂"在知识点上,各留在原来的地方。知识点自己只存:名称、车型、类型、产品标签、能力维度、同义词、负责人、外部资源登记。 */
+/* ========== 知识点 ==========
+   知识点平铺,不自建层级;分类用「标签树」,一个点可挂多个标签。
+   标签树可自主维护:可以是车上部位,也可以是政策、卖点、场景等业务分类。
+   内容、题、演练都"挂"在知识点上,各留在原来的地方。 */
 const KP_TABS=['总览','知识点库','批量新建','候选','清河迁移'];
 const KP_TYPES=['事实型','技能型'];
 const KP_DIMS=['探需','场景化讲车','顾虑解除','带人辅导'];
@@ -8,9 +9,9 @@ const KP_EXT_T=['清河考试','话术演练','角色演练'];
 const KP_EXT_SRC={话术演练:'情景演练',角色演练:'情景演练',清河考试:'清河大学',练习题:'本系统'};
 const KP_Q_T=['话术演练','清河考试','练习题'];
 const KP_CELLS=[['owner','负责人'],['exp','讲解'],['q','测评题'],['drill','演练'],['fresh','新鲜度']];
-/* ---- 产品标签树(只读同步;最高四级;节点 id 不变;不含车型版本)。下面是样例,正式由对方系统同步 ---- */
+/* ---- 标签树种子:第一次进入时装载;之后可在标签管理里维护,PTAGS 是当前生效的节点 ---- */
 const PTAG_RAW=[
- ['产品',[
+ ['车型卖点',[
   ['外饰',['迎宾踏板','电动侧踏','车身结构','车灯','车轮']],
   ['内饰',['座椅','储物','空间布局','车内冰箱','桌板']],
   ['座舱',['大屏','音响','影音']],
@@ -18,15 +19,25 @@ const PTAG_RAW=[
   ['智驾',['辅助驾驶','主动安全','哨兵']],
   ['安全',['车身安全','被动安全']],
   ['经济性',['用车成本']]
- ]]
+ ]],
+ ['政策口径',['国补地补','以旧换新','金融方案']],
+ ['销售场景',['邀约到店','展厅接待','试驾','报价谈判']]
 ];
-const PTAGS=[];(function(){let n=0;const walk=(name,kids,pid,lv)=>{const id='T'+(++n);const path=(pid?PTAGS.find(x=>x.id===pid).path+'_':'')+name;PTAGS.push({id,name,pid,lv,path});(kids||[]).forEach(k=>typeof k==='string'?walk(k,null,id,lv+1):walk(k[0],k[1],id,lv+1))};PTAG_RAW.forEach(r=>walk(r[0],r[1],null,1))})();
+const PTAGS=[];
+function ptagSeed(){
+  PTAGS.length=0;let n=0;
+  const walk=(name,kids,pid,lv)=>{const id='T'+(++n);const path=(pid?PTAGS.find(x=>x.id===pid).path+'_':'')+name;PTAGS.push({id,name,pid,lv,path,status:'on'});(kids||[]).forEach(k=>typeof k==='string'?walk(k,null,id,lv+1):walk(k[0],k[1],id,lv+1))};
+  PTAG_RAW.forEach(r=>walk(r[0],r[1],null,1));
+  return PTAGS;
+}
+ptagSeed();
 const ptagOf=id=>PTAGS.find(t=>t.id===id);
-const ptagByPath=p=>PTAGS.find(t=>t.path===p||t.path==='产品_'+p);
-const ptagKids=id=>PTAGS.filter(t=>t.pid===id);
+const ptagByPath=p=>{const norm=p.replace(/^产品_/,'车型卖点_');return PTAGS.find(t=>(t.path===norm||t.path===p||t.path==='产品_'+p||t.path==='车型卖点_'+p)&&t.status!=='off')};
+const ptagKids=id=>PTAGS.filter(t=>t.pid===id&&t.status!=='off');
 const ptagDesc=id=>{const r=[id];ptagKids(id).forEach(c=>ptagDesc(c.id).forEach(x=>r.push(x)));return r};
-const ptagLeaf=id=>!ptagKids(id).length;
+const ptagLeaf=id=>!PTAGS.filter(t=>t.pid===id&&t.status!=='off').length;
 const kpTagTxt=k=>(k.tags||[]).map(id=>{const t=ptagOf(id);return t?t.path:''}).filter(Boolean);
+const kpTagNames=k=>(k.tags||[]).map(id=>{const t=ptagOf(id);return t?t.name:''}).filter(Boolean);
 const kp=id=>S.kps.find(k=>k.id===id);
 const kpMounted=k=>S.contents.filter(c=>(c.kps||[]).includes(k.id));
 const kpUsesQH=k=>(k.ext||[]).some(e=>e.src==='清河大学');
@@ -78,7 +89,7 @@ A.cKpRec=el=>{C.kps=C.kps||[];if(!C.kps.includes(el.dataset.v))C.kps.push(el.dat
 A.cKpDel=el=>{C.kps=(C.kps||[]).filter(x=>x!==el.dataset.v);render()};
 /* ---- 种子:知识点(试点:销售顾问 · 讲车)。在售车型 10 多个,这里只做 N70 / N90 / 通用三组 ---- */
 const KP_SEED=[
- // [id, 名称, 类型, 产品标签(路径,可多个), 能力维度, 车型, 同义词, 负责人]
+ // [id, 名称, 类型, 标签(路径,可多个), 能力维度, 车型, 同义词, 负责人]
  ['K1','极致储物','事实型',['内饰_储物','内饰_空间布局'],'场景化讲车','N70系列',['后备箱容量','储物空间','装得下'],'王磊'],
  ['K2','二排零重力座椅','事实型',['内饰_座椅'],'场景化讲车','N90 Max',['零重力','一键躺平','腿托'],'王磊'],
  ['K3','上下车便利','事实型',['外饰_迎宾踏板','外饰_电动侧踏'],'场景化讲车','N90 Max',['电动侧踏','三节台阶','开门角度'],'李娜'],
@@ -144,10 +155,10 @@ function kpOverview(){
   /* 标签树热力图 */
   const row=t=>{const x=kpTreeStat(t.id);const rate=x.n?Math.round(x.ok/x.n*100):null;const kids=ptagKids(t.id);const lvl=x.n?(x.err?'err':x.warn?'warn':'ok'):'na';
     return '<tr class="kp-click" data-act="kpJump" data-fk="tag" data-fv="'+t.id+'" style="cursor:pointer"><td style="padding-left:'+(10+(t.lv-1)*20)+'px">'+(kids.length?'<b>'+esc(t.name)+'</b>':esc(t.name))+' <span class="hint">'+(t.lv===1?'':'')+'</span></td><td>'+(x.all?x.all:'<span class="tag kp-lv-err" title="树上有这个节点,还没有知识点">0</span>')+'</td><td style="min-width:150px">'+(x.n?'<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:90px"><i class="'+(rate>=70?'ok':rate>=30?'warn':'')+'" style="width:'+rate+'%"></i></div><span class="hint">'+x.ok+' / '+x.n+' 完备</span></div>':'<span class="hint">—</span>')+'</td><td>'+(x.n?(x.noExp?'<span class="tag kp-lv-err">'+x.noExp+' 缺讲解</span>':'<span class="tag kp-lv-ok">讲解齐</span>'):'')+'</td><td><span class="kp-d s-'+lvl+'"></span></td></tr>'};
-  const tree='<div class="card"><h3>按产品标签树看 <span class="hint">点任意一行,带着该节点(含子节点)跳到看板</span></h3><table class="t"><tr><th>节点</th><th>知识点数</th><th>完备率</th><th>讲解</th><th></th></tr>'+PTAGS.filter(t=>t.lv<=4).map(row).join('')+'</table><div class="hint" style="margin-top:6px">标签树来自产品标签系统,只读同步,id 不变;样例 '+PTAGS.length+' 个节点。一个知识点可挂多个节点,所以各行数字不能相加。</div></div>';
+  const tree='<div class="card"><h3>按标签树看 <span class="hint">点任意一行，带着该标签（含子标签）跳到知识点库</span></h3><table class="t"><tr><th>标签</th><th>知识点数</th><th>完备率</th><th>讲解</th><th></th></tr>'+PTAGS.filter(t=>t.lv<=4).map(row).join('')+'</table><div class="hint" style="margin-top:6px">标签可在「标签管理」里自主维护；一个知识点可挂多个标签，所以各行数字不能相加。</div></div>';
   /* 标签树上还没有知识点的叶子 */
   const gaps=PTAGS.filter(t=>ptagLeaf(t.id)&&!S.kps.some(k=>(k.tags||[]).includes(t.id)));
-  const gapCard='<div class="card"><h3>树上有、还没有知识点的叶子 <span class="hint">共 '+gaps.length+' 个。叶子是部件 / 系统,通常要拆成若干卖点才是知识点</span></h3>'+(gaps.length?'<div>'+gaps.map(t=>'<span class="tag" style="margin:0 8px 8px 0;padding:4px 10px">'+esc(t.path.replace('产品_',''))+' <a class="link" data-act="kpNewTag" data-id="'+t.id+'">建知识点</a></span>').join('')+'</div>':'<div class="chk ok"><b>✓</b><span>每个叶子下都至少有一个知识点</span></div>')+'<div class="hint" style="margin-top:4px">树和知识点不是一一对应:树解决"这是车的什么部分",知识点解决"这个部分能讲出什么卖点"。</div></div>';
+  const gapCard='<div class="card"><h3>树上有、还没有知识点的叶子 <span class="hint">共 '+gaps.length+' 个。叶子是部件 / 系统,通常要拆成若干卖点才是知识点</span></h3>'+(gaps.length?'<div>'+gaps.map(t=>'<span class="tag" style="margin:0 8px 8px 0;padding:4px 10px">'+esc(t.path.replace(/^[^_]+_/,''))+' <a class="link" data-act="kpNewTag" data-id="'+t.id+'">建知识点</a></span>').join('')+'</div>':'<div class="chk ok"><b>✓</b><span>每个叶子下都至少有一个知识点</span></div>')+'<div class="hint" style="margin-top:4px">树和知识点不是一一对应:树解决"这是车的什么部分",知识点解决"这个部分能讲出什么卖点"。</div></div>';
   /* 按车型 / 按负责人分布 */
   const dist=(title,keys,fkey,ofn,fmt)=>{const rows=keys.map(k=>{const ks=act.filter(x=>ofn(x)===k);const h=ks.map(kpHealth);return {k,n:ks.length,ok:h.filter(x=>x.level==='ok').length,err:h.filter(x=>x.level==='err').length,warn:h.filter(x=>x.level==='warn').length}}).filter(r=>r.n);
     return '<div class="card"><h3>'+title+'</h3>'+rows.map(r=>'<div class="kp-click" data-act="kpJump" data-fk="'+fkey+'" data-fv="'+esc(r.k)+'" style="display:flex;align-items:center;gap:10px;margin:8px 0;cursor:pointer"><div style="width:120px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fmt?fmt(r.k):r.k)+'</div><div class="kp-seg" style="flex:1" title="完备 '+r.ok+' · 待补 '+r.warn+' · 缺口 '+r.err+'"><i class="s-ok" style="width:'+r.ok/r.n*100+'%"></i><i class="s-warn" style="width:'+r.warn/r.n*100+'%"></i><i class="s-err" style="width:'+r.err/r.n*100+'%"></i></div><div class="hint" style="width:90px;text-align:right">'+r.n+' 个'+(r.err?' · <b style="color:#c8323a">'+r.err+' 缺口</b>':'')+'</div></div>').join('')+'<div class="hint">绿 完备 · 黄 待补 · 红 有缺口;点一行跳到看板</div></div>'};
@@ -162,8 +173,8 @@ function kpOverview(){
   /* 整体问题清单 */
   const noOwner=S.kps.filter(k=>!k.owner).length,noTag=S.kps.filter(k=>k.type==='事实型'&&!(k.tags||[]).length).length,noExpl=hs.filter(h=>h.cells.exp.s!=='ok').length;
   const todo='<div class="card"><h3>现在最该处理的 <span class="hint">每条点进去就是对应的列表</span></h3>'
-   +[[noOwner,'个知识点没有负责人(不能启用)','data-act="kpJump" data-fk="owner" data-fv="(无)"'],[noExpl,'个启用的知识点没有可用讲解','data-act="kpJump" data-fk="lv" data-fv="只看有缺口"'],[st.un,'条内容还没挂知识点','data-act="kpJump" data-tab="未挂载内容"'],[S.kpCand.filter(x=>x.st==='待确认').length,'个候选知识点待确认','data-act="kpJump" data-tab="待确认候选"'],[noTag,'个事实型知识点没挂产品标签(政策口径类可以不挂)','data-act="kpJump" data-fk="tag" data-fv="__none"'],[kpWeakList().length,'个知识点学员集中薄弱','data-act="kpJump" data-tab="完备度看板"']].filter(x=>x[0]).map(x=>'<div class="kp-click" '+x[2]+' style="padding:7px 0;border-top:1px solid #f2f3f5;cursor:pointer"><b style="color:var(--pri)">'+x[0]+'</b> '+x[1]+' <span class="link">去处理 ›</span></div>').join('')+'</div>';
-  return srcBar('这页回答"知识点整体怎么样":覆盖到哪、缺口在哪个产品部位 / 车型 / 谁手里、学员侧哪里弱。所有数字和色块都能点,带着筛选条件跳到「看板」。')
+   +[[noOwner,'个知识点没有负责人(不能启用)','data-act="kpJump" data-fk="owner" data-fv="(无)"'],[noExpl,'个启用的知识点没有可用讲解','data-act="kpJump" data-fk="lv" data-fv="只看有缺口"'],[st.un,'条内容还没挂知识点','data-act="kpJump" data-tab="未挂载内容"'],[S.kpCand.filter(x=>x.st==='待确认').length,'个候选知识点待确认','data-act="kpJump" data-tab="待确认候选"'],[noTag,'个产品知识没挂标签','data-act="kpJump" data-fk="tag" data-fv="__none"'],[kpWeakList().length,'个知识点学员集中薄弱','data-act="kpJump" data-tab="完备度看板"']].filter(x=>x[0]).map(x=>'<div class="kp-click" '+x[2]+' style="padding:7px 0;border-top:1px solid #f2f3f5;cursor:pointer"><b style="color:var(--pri)">'+x[0]+'</b> '+x[1]+' <span class="link">去处理 ›</span></div>').join('')+'</div>';
+  return srcBar('这页回答"知识点整体怎么样"：覆盖到哪、缺口在哪个标签 / 车型 / 谁手里、学员侧哪里弱。所有数字和色块都能点，带着筛选条件跳到知识点库。')
    +'<div class="grid g4" style="margin-bottom:16px">'
    +num('讲解覆盖率',cover+'%','启用的点里有可用讲解的占比','data-act="kpJump" data-fk="lv" data-fv="只看有缺口"')
    +num('完备点占比',okp+'%','5 个点全绿的占比','data-act="kpJump" data-fk="lv" data-fv="只看完备"')
@@ -175,7 +186,7 @@ function kpStats(){
   const act=S.kps.filter(k=>k.st==='启用');const hs=act.map(k=>kpHealth(k));
   const un=S.contents.filter(c=>visC(c)&&!(c.kps||[]).length&&c.st!=='已归档').length;
   return {act:act.length,ok:hs.filter(h=>h.level==='ok').length,warn:hs.filter(h=>h.level==='warn').length,err:hs.filter(h=>h.level==='err').length,off:S.kps.filter(k=>k.st==='停用').length,un}}
-function kpTagSel(f){return '<div class="fi2"><label>产品标签(含子节点)</label><select data-wc="kpset" data-k="tag"><option value="">全部</option><option value="__none" '+(f.tag==='__none'?'selected':'')+'>事实型但没挂标签</option>'+PTAGS.map(t=>'<option value="'+t.id+'" '+(f.tag===t.id?'selected':'')+'>'+'　'.repeat(t.lv-1)+esc(t.name)+'</option>').join('')+'</select></div>'}
+function kpTagSel(f){return '<div class="fi2"><label>标签（含子标签）</label><select data-wc="kpset" data-k="tag"><option value="">全部</option><option value="__none" '+(f.tag==='__none'?'selected':'')+'>未挂标签</option>'+PTAGS.map(t=>'<option value="'+t.id+'" '+(f.tag===t.id?'selected':'')+'>'+'　'.repeat(t.lv-1)+esc(t.name)+'</option>').join('')+'</select></div>'}
 function kpBoard(){
   const f=kpFx();const st=kpStats();const T=kp=>kp;
   const cars=[...new Set(S.kps.map(k=>k.car))];
@@ -187,8 +198,8 @@ function kpBoard(){
   const mini=(l,v,h,c)=>'<div class="stat" style="'+(c?'border-color:'+c:'')+'"><div class="l">'+l+'</div><div class="n">'+v+'</div><div class="hint">'+h+'</div></div>';
   return srcBar('每个知识点一行,5 个点依次是:<b>负责人 · 讲解 · 测评题 · 演练 · 新鲜度</b>。绿 = 满足,黄 = 提醒,红 = 缺口,灰 = 无法判断(鼠标放上去看原因)。「讲解」要求至少 1 条<b>已定稿且已上架</b>的话术或课程;测评题数 = 本系统题库已定稿的题 + 演练、清河考试登记的题数。门槛在「规则」里改。')
    +'<div class="grid g4" style="margin-bottom:16px">'+mini('启用的知识点',st.act,'停用 '+st.off+' 个(没有负责人)')+mini('有缺口(红)',st.err,'缺负责人 / 没有可用讲解',st.err?'#f3b5b8':'')+mini('待补(黄)',st.warn,'缺题 / 缺演练 / 内容快到期')+mini('未挂载的内容',st.un,'还没挂到任何知识点','')+'</div>'
-   +kpWeakCard()+fil+(rows.length?'<div class="tw"><table class="t nw stk"><tr><th>知识点</th><th>产品标签</th><th>车型</th><th>类型</th><th>能力维度</th><th>负责人</th><th>讲解 / 题 / 演练</th><th>完备度</th><th>弱点人数</th><th>被项目引用</th><th>操作</th></tr>'
-   +rows.map(x=>{const k=x.k,m=kpMounted(k);return '<tr style="'+(k.st==='停用'?'opacity:.6':'')+'"><td style="white-space:normal;min-width:170px"><a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>'+(k.st==='停用'?' <span class="tag">停用</span>':'')+'<div class="hint">'+k.id+'</div></td><td style="white-space:normal;min-width:140px">'+(kpTagTxt(k).map(p=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(p.replace('产品_',''))+'</span>').join('')||'<span class="hint">—</span>')+'</td><td>'+esc(k.car)+'</td><td>'+k.type+'</td><td>'+esc(k.dim)+'</td><td>'+(k.owner?esc(k.owner):'<span class="tag err">无</span>')+'</td><td>'+m.length+' / '+kpQn(k)+' / '+(k.ext||[]).filter(e=>/演练/.test(e.t)).length+'</td><td><span class="kp-dots">'+kpDots(x.h)+'</span> '+kpLv(x.h.level)+'</td><td>'+kpWeakTxt(k)+'</td><td>'+kpUsedBy(k)+' 个</td><td><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a></td></tr>'}).join('')+'</table></div>'
+   +kpWeakCard()+fil+(rows.length?'<div class="tw"><table class="t nw stk"><tr><th>知识点</th><th>标签</th><th>车型</th><th>类型</th><th>能力维度</th><th>负责人</th><th>讲解 / 题 / 演练</th><th>完备度</th><th>弱点人数</th><th>被项目引用</th><th>操作</th></tr>'
+   +rows.map(x=>{const k=x.k,m=kpMounted(k);return '<tr style="'+(k.st==='停用'?'opacity:.6':'')+'"><td style="white-space:normal;min-width:170px"><a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>'+(k.st==='停用'?' <span class="tag">停用</span>':'')+'<div class="hint">'+k.id+'</div></td><td style="white-space:normal;min-width:140px">'+(kpTagTxt(k).map(p=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(p.replace(/^[^_]+_/,''))+'</span>').join('')||'<span class="hint">—</span>')+'</td><td>'+esc(k.car)+'</td><td>'+k.type+'</td><td>'+esc(k.dim)+'</td><td>'+(k.owner?esc(k.owner):'<span class="tag err">无</span>')+'</td><td>'+m.length+' / '+kpQn(k)+' / '+(k.ext||[]).filter(e=>/演练/.test(e.t)).length+'</td><td><span class="kp-dots">'+kpDots(x.h)+'</span> '+kpLv(x.h.level)+'</td><td>'+kpWeakTxt(k)+'</td><td>'+kpUsedBy(k)+' 个</td><td><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a></td></tr>'}).join('')+'</table></div>'
    :cta('没有符合条件的知识点','调整上面的筛选条件。','<button class="btn" data-act="kpFclr">清除筛选</button>'))}
 A.kpset=el=>{const f=kpFx();if(el.value)f[el.dataset.k]=el.value;else delete f[el.dataset.k];render()};
 A.kpq=el=>{const f=kpFx();f.q=el.value.trim();render()};
@@ -221,18 +232,18 @@ function kpRules(){
   const car=[...new Set(S.kps.map(k=>k.car))].filter(x=>x!=='通用车型');
   const T=(h,r)=>'<table class="t"><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr>'+r.map(x=>'<tr>'+x.map(y=>'<td style="white-space:normal">'+y+'</td>').join('')+'</tr>').join('')+'</table>';
   return srcBar('这页是给运营看的"怎么用":知识点要填什么、怎么算好、新车型怎么起知识点。门槛数值可在本页改,改了完备度立刻变化。(原在知识点页签里,现统一放配置中心)')
-   +'<div class="card"><h3>知识点怎么管:平铺 + 引用产品标签</h3>'+T(['字段','谁填 / 怎么来','用来干什么'],[
+   +'<div class="card"><h3>知识点怎么管：平铺 + 引用标签</h3>'+T(['字段','谁填 / 怎么来','用来干什么'],[
     ['名称(必填)','运营。粒度:能单独讲一次、单独出一道题','—'],
     ['车型(必填)','运营选。同一卖点在不同车型上话术不同,拆成不同的点','挂载推荐加分、新车型复制、编辑页预过滤'],
     ['类型(必填)','运营选:事实型(记没记住)/ 技能型(练没练到位)','决定怎么测评'],
-    ['产品标签(选填,可多个)','<b>引用「产品标签树」</b>(只读同步,最高四级,不含车型版本,节点 id 不变)。运营只选,不手填路径;事实型建议挂,技能型 / 政策口径可不挂','按产品部位筛选、总览热力图、挂载推荐'],
+    ['标签(选填,可多个)','引用「标签树」；标签可在「标签管理」自主维护，可以是车上部位、政策口径、卖点或场景。运营只选，不手填路径','按标签筛选、总览矩阵、挂载推荐'],
     ['能力项','产品知识默认「场景化讲车」，销售动作默认「探需」；与岗位标准共用 4 个能力项','岗位标准、诊断、效果归因'],
     ['负责人','默认创建人,可改。没有负责人不能启用','治理'],
     ['同义词','选填;语料里客户的说法也可加进来','挂载推荐、搜索']])
-   +'<div class="hint" style="margin-top:8px;line-height:1.8"><b>为什么不自建层级</b>:同一个卖点天然跨类(6.6kW 外放电既是「能源」也是「露营」),树只能放一个位置;层级要人维护,分错了谁改。分类交给产品标签树,知识点只"引用",标签变了知识点不用动。<br><b>树和知识点的关系</b>:树回答"这是车的什么部分",知识点回答"这个部分能讲出什么卖点"。树的叶子通常比知识点粗,所以不要求一一对应,「总览」里会列出"树上有、还没有知识点的叶子"。</div></div>'
+   +'<div class="hint" style="margin-top:8px;line-height:1.8"><b>为什么用标签</b>：同一个卖点可以同时属于「能源」「露营」「政策」等不同分类，标签支持多选，比单一目录更灵活。标签树由业务自己维护，改名不会让已挂的知识点失效。<br><b>标签和知识点的关系</b>：标签回答“它属于哪一类”，知识点回答“具体要讲什么”。标签可以比知识点粗，不要求一一对应。</div></div>'
    +'<div class="card"><h3>完备度的 5 个点</h3>'+T(['点','满足条件','不满足'],[['负责人','指定了一个具体的人','红:没有负责人,不能启用(自动停用)'],['讲解','至少 1 条「已定稿且已上架且未过期」的话术或课程','红:没挂载 / 没定稿 / 没上架'],['测评题','本系统题库已定稿题 + 演练问答 + 清河考试的题数合计 ≥ <input type="number" id="kp_q" value="'+S.cfg.kpQ+'" style="width:60px"> 道','黄'],['演练','至少 1 个情景演练(话术演练 / 角色演练)','黄'],['新鲜度','挂载内容无过期 / 即将到期 / 待处理一线反馈 / 点踩偏高','黄']])+'<div style="margin-top:10px"><button class="btn pri" data-act="kpCfg">保存门槛</button></div></div>'
-   +'<div class="card"><h3>运营怎么用(4 个动作)</h3><div style="line-height:2"><b>① 看全貌</b>:「总览」看覆盖率、哪个产品部位 / 车型 / 谁手里缺口大,点进去就是列表。<br><b>② 看缺口</b>:「看板」按产品标签、车型、负责人、完备度筛。<br><b>③ 清未挂载</b>:到「内容中心」筛「知识点 = 未挂载」,点内容详情顶部链路条里的「未挂载 · 去挂」,系统给推荐,点一下确认。新增内容时表单里也能选。<br><b>④ 处理候选</b>:「候选」是系统从语料、反馈、课题池里发现的缺口,确认 / 并入 / 忽略;也会出现在「工作台」待办里。</div></div>'
-   +'<div class="card"><h3>新车型怎么起知识点</h3><div class="hint" style="line-height:1.9;margin-bottom:8px">目前在售 10 多个车型。新车型上市时「一键复制」已有车型的卖点模板(含产品标签):复制出的知识点都是<b>停用 + 无讲解</b>,运营逐个补内容、指定负责人后再启用,不用重搭。</div><div style="display:flex;gap:8px;align-items:center"><select id="kp_cp_from">'+car.map(x=>'<option>'+esc(x)+'</option>').join('')+'</select> → <input type="text" id="kp_cp_to" placeholder="新车型名称,如 YU7 Max" style="width:180px"><button class="btn" data-act="kpCopy">复制卖点模板</button></div></div>'}
+   +'<div class="card"><h3>运营怎么用(4 个动作)</h3><div style="line-height:2"><b>① 看全貌</b>:「总览」看覆盖率、哪款车 / 哪个标签 / 谁手里缺口大，点进去就是列表。<br><b>② 看缺口</b>：在「知识点库」左侧选标签，右侧按车型、负责人、完备度筛。<br><b>③ 清未挂载</b>:到「内容中心」筛「知识点 = 未挂载」,点内容详情顶部链路条里的「未挂载 · 去挂」,系统给推荐,点一下确认。新增内容时表单里也能选。<br><b>④ 处理候选</b>:「候选」是系统从语料、反馈、课题池里发现的缺口,确认 / 并入 / 忽略;也会出现在「工作台」待办里。</div></div>'
+   +'<div class="card"><h3>新车型怎么起知识点</h3><div class="hint" style="line-height:1.9;margin-bottom:8px">目前在售 10 多个车型。新车型上市时「一键复制」已有车型的卖点模板(含标签):复制出的知识点都是<b>停用 + 无讲解</b>,运营逐个补内容、指定负责人后再启用,不用重搭。</div><div style="display:flex;gap:8px;align-items:center"><select id="kp_cp_from">'+car.map(x=>'<option>'+esc(x)+'</option>').join('')+'</select> → <input type="text" id="kp_cp_to" placeholder="新车型名称,如 YU7 Max" style="width:180px"><button class="btn" data-act="kpCopy">复制卖点模板</button></div></div>'}
 A.kpCfg=()=>{const v=+$('#kp_q').value;if(!(v>=1&&v<=50))return toast('请填 1–50','err');S.cfg.kpQ=v;toast('已保存:测评题门槛 '+v+' 道','ok');render()};
 A.kpCopy=()=>{const from=$('#kp_cp_from').value,to=($('#kp_cp_to').value||'').trim();if(!to)return toast('请填写新车型名称','err');if(S.kps.some(k=>k.car===to))return toast('这个车型已经有知识点了','err');
   const src=S.kps.filter(k=>k.car===from&&k.type==='事实型');let n=Math.max(...S.kps.map(k=>+k.id.slice(1)));
@@ -245,7 +256,7 @@ function pgKp(){
   const cellT=KP_CELLS.map(x=>{const c=h.cells[x[0]];return '<div class="kp-cell s-'+c.s+'"><i></i><div><b>'+x[1]+'</b><div class="hint">'+esc(c.t)+'</div></div></div>'}).join('');
   const ext=(k.ext||[]);
   const dimBox=(typeof kpDimsHtml==='function'?kpDimsHtml(k):'');
-  const sideInfo=(dimBox?'<div class="card sd"><h3>这个点教什么 <span class="hint">给内容和学员看的信息</span></h3>'+dimBox+'</div>':'')+'<div class="card sd"><h3>基本信息</h3><dl class="kv sm"><dt>知识类型</dt><dd>'+(typeof kpTypeText==='function'?kpTypeText(k):k.type)+'</dd><dt>适用车型</dt><dd>'+esc((k.cars||[k.car]).join(' / '))+'</dd><dt>车上的部位</dt><dd>'+(kpTagTxt(k).map(p=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(p.replace('产品_',''))+'</span>').join('')||'<span class="hint">未挂（销售动作类可以不挂）</span>')+'</dd><dt>同义词</dt><dd>'+((k.syn||[]).map(w=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(w)+'</span>').join('')||'-')+'</dd></dl></div>'
+  const sideInfo=(dimBox?'<div class="card sd"><h3>这个点教什么 <span class="hint">给内容和学员看的信息</span></h3>'+dimBox+'</div>':'')+'<div class="card sd"><h3>基本信息</h3><dl class="kv sm"><dt>知识类型</dt><dd>'+(typeof kpTypeText==='function'?kpTypeText(k):k.type)+'</dd><dt>适用车型</dt><dd>'+esc((k.cars||[k.car]).join(' / '))+'</dd><dt>标签</dt><dd>'+(kpTagTxt(k).map(p=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(p.replace(/^[^_]+_/,''))+'</span>').join('')||'<span class="hint">未挂（销售动作类可以不挂）</span>')+'</dd><dt>同义词</dt><dd>'+((k.syn||[]).map(w=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(w)+'</span>').join('')||'-')+'</dd></dl></div>'
    +'<div class="card sd"><h3>管理</h3><dl class="kv sm"><dt>负责人</dt><dd>'+(k.owner?esc(k.owner):'<span class="tag err">无</span>')+'</dd><dt>状态</dt><dd>'+(k.st==='启用'?'<span class="tag ok">启用</span>':'<span class="tag">停用</span>')+'</dd><dt>创建</dt><dd>'+esc(k.created)+'</dd><dt>被项目引用</dt><dd>'+kpUsedBy(k)+' 个学习项目</dd></dl>'
    +'<div style="margin-top:10px"><select data-wc="kpOwner"><option value="">指定负责人…</option>'+kpOwners().map(x=>'<option '+(k.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select> <button class="btn sm" data-act="kpToggle">'+(k.st==='启用'?'停用':'启用')+'</button> <button class="btn sm" data-act="kpEdit">编辑</button></div></div>'
    +'<div class="card sd"><h3>变更记录</h3>'+((k.hist||[]).length?k.hist.slice(0,6).map(x=>'<div style="padding:3px 0;font-size:12.5px"><span class="hint">'+esc(x.t)+'</span> '+esc(x.who)+' '+esc(x.act)+(x.note?'<span class="hint"> · '+esc(x.note)+'</span>':'')+'</div>').join(''):'<div class="hint">无</div>')+'</div>';
@@ -285,17 +296,17 @@ function pgKpForm(){
   const dup=S.kps.find(k=>k.id!==KF.id&&k.name===KF.name.trim()&&k.car===KF.car);
   const tagOpts=PTAGS.filter(t=>!KF.tags.includes(t.id));
   const more=KF.more?
-    FR('产品标签','<div style="margin-bottom:6px">'+(KF.tags.length?KF.tags.map(id=>'<span class="tag pri" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(ptagOf(id).path.replace('产品_',''))+' <a class="link" data-act="kfTagDel" data-v="'+id+'">×</a></span>').join(''):'<span class="hint">未选</span>')+'</div><select data-wc="kfTagAdd"><option value="">从产品标签树里选(可多个)…</option>'+tagOpts.map(t=>'<option value="'+t.id+'">'+'　'.repeat(t.lv-1)+esc(t.name)+(t.lv>1?'  ('+esc(t.path.replace('产品_',''))+')':'')+'</option>').join('')+'</select>',{h:'引用「产品标签树」,不手填路径。事实型建议挂 1–2 个;技能型、政策口径可不挂'})
+    FR('标签','<div style="margin-bottom:6px">'+(KF.tags.length?KF.tags.map(id=>'<span class="tag pri" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(ptagOf(id).path.replace(/^[^_]+_/,''))+' <a class="link" data-act="kfTagDel" data-v="'+id+'">×</a></span>').join(''):'<span class="hint">未选</span>')+'</div><select data-wc="kfTagAdd"><option value="">从标签树里选(可多个)…</option>'+tagOpts.map(t=>'<option value="'+t.id+'">'+'　'.repeat(t.lv-1)+esc(t.name)+(t.lv>1?'  ('+esc(t.path.replace(/^[^_]+_/,''))+')':'')+'</option>').join('')+'</select>',{h:'引用可维护的标签树，不手填路径；一个点可以挂多个标签'})
    +FR('能力维度',sel('dim',KP_DIMS),{h:'默认：产品知识 → 场景化讲车，销售动作 → 探需。与岗位画像使用同一套 4 个能力'})
    +FR('同义词','<input type="text" data-kf="syn" value="'+esc(KF.syn)+'" placeholder="多个用顿号或逗号隔开,如 后备箱容量、装得下" style="width:100%;max-width:420px">',{h:'用于挂载推荐和搜索'})
    +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">(暂不指定,创建后为停用)</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'默认是你自己;没有负责人不能启用'})
-   :'<div class="fr"><div class="flb"></div><div class="fc"><span class="hint">其余默认:能力维度 <b>'+KF.dim+'</b> · 负责人 <b>'+esc(KF.owner||'暂无')+'</b>'+(KF.tags.length?' · 产品标签 <b>'+KF.tags.length+'</b> 个':'')+'</span> <a class="link" data-act="kfMore">展开修改(产品标签、同义词…)</a></div></div>';
+   :'<div class="fr"><div class="flb"></div><div class="fc"><span class="hint">其余默认:能力维度 <b>'+KF.dim+'</b> · 负责人 <b>'+esc(KF.owner||'暂无')+'</b>'+(KF.tags.length?' · 标签 <b>'+KF.tags.length+'</b> 个':'')+'</span> <a class="link" data-act="kfMore">展开修改(标签、同义词…)</a></div></div>';
   return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+(KF.id?'编辑 '+KF.id:'新增知识点'))+'<div class="ph"><h2>'+(KF.id?'编辑知识点':'新增知识点')+' <span class="hint" style="font-weight:400">只有名称、车型、类型必填</span></h2></div>'
    +'<div class="card frm">'+FR('名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="一个点能单独讲一次、单独出一道题,如:6.6kW 外放电" style="width:100%;max-width:420px">',{req:1,h:'粒度判断:能单独讲一次、单独出一道题。太粗 → 拆;太细 → 并'})
    +FR('车型',sel('car',S.cfg.tax.car),{req:1,h:'同一卖点在不同车型上话术不同,所以拆成不同的点'})
    +FR('类型','<div class="rels">'+KP_TYPES.map(x=>'<span class="'+(KF.type===x?'on':'')+'" data-act="kfType" data-v="'+x+'">'+x+'</span>').join('')+'</div>',{req:1,h:KF.type==='事实型'?'事实型:某车型的某个卖点 / 政策口径,看"记没记住"':'技能型:异议处理、探需等,看"练没练到位"'})
    +more
-   +(KF.type==='事实型'&&!KF.tags.length&&KF.more?'<div class="chk rec"><b>·</b><span>事实型知识点建议至少挂一个产品标签,方便按产品部位筛选(提醒,不拦截)</span></div>':'')
+   +(KF.type==='事实型'&&!KF.tags.length&&KF.more?'<div class="chk rec"><b>·</b><span>产品知识建议至少挂一个标签，方便在标签树里检索（提醒，不拦截）</span></div>':'')
    +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」('+esc(dup.car)+'),不要重复建。</span></div>':'')
    +'</div><div class="dock"><span class="sp"></span><button class="btn" data-act="kfCancel">取消</button><button class="btn pri" data-act="kfSave">保存</button></div>'}
 A.kfType=el=>{KF.type=el.dataset.v;if(KF.dimAuto)KF.dim=kpDefDim(KF.type);render()};

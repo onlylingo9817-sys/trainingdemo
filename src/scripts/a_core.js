@@ -112,7 +112,7 @@ const SEED={
   weakN:3,weakR:.5,obsWeeks:4,smallN:8,corrTh:.3,funnelGate:8}
 };
 const ROLES=[{k:'hq',n:'总部培训部 · 刘翔',name:'刘翔',type:'hq',region:'全国'},{k:'r1',n:'区域老师 · 周丽(华北)',name:'周丽',type:'region',region:'华北'},{k:'r2',n:'区域老师 · 陈磊(华东)',name:'陈磊',type:'region',region:'华东'},{k:'boss',n:'管理层 · 老板',name:'老板',type:'boss',region:'全国'}];
-const PAGES_OK={hq:['workbench','overview','topics','topic','content','cedit','cdetail','catalog','kp','kpform','qform','dform','publish','projects','form','detail','approvals','coach','effect','student','config'],region:['workbench','overview','topics','topic','content','cedit','cdetail','catalog','kp','kpform','qform','dform','publish','projects','form','detail','approvals','coach','effect','student'],boss:['overview','effect','student']};
+const PAGES_OK={hq:['tagmanage','workbench','overview','topics','topic','content','cedit','cdetail','catalog','kp','kpform','qform','dform','publish','projects','form','detail','approvals','coach','effect','student','config'],region:['workbench','overview','topics','topic','content','cedit','cdetail','catalog','kp','kpform','qform','dform','publish','projects','form','detail','approvals','coach','effect','student'],boss:['overview','effect','student']};
 function reset(){
   tmr.forEach(clearTimeout);tmr=[];
   const _fbk=(typeof S!=='undefined'&&S&&S.fbk)?S.fbk:[];const _gd=(typeof UI!=='undefined'&&UI)?UI.gdOpen:undefined;

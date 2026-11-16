@@ -39,10 +39,10 @@ function v23Sync(mid,kid,mode){
   const blended=old?Math.round((old.score*nOld+score*rec.length)/(nOld+rec.length)):score;
   S.ev[src][mid][kid]={score:blended,n:(old?old.n:0)+1,ts:today,live:true};
 }
-/* ---------- 1. 维度体系(取代单一产品标签树) ---------- */
+/* ---------- 1. 维度体系(标签树的底层分类) ---------- */
 /* shape: tree|flat · role: belong 归属(参与统计)/context 上下文(筛选推荐)/ability 能力(带权重,进画像) */
 const V23_DIM_SEED=[
- {id:'Dprod',name:'产品',shape:'tree',role:'belong',multi:1,requiredFor:['kp'],source:'sync',values:null,note:'沿用产品标签树:只读同步,id 稳定,改名不改 id'},
+ {id:'Dprod',name:'产品',shape:'tree',role:'belong',multi:1,requiredFor:['kp'],source:'sync',values:null,note:'标签树可在标签管理里维护,id 稳定,改名不改 id'},
  {id:'Dcar',name:'车型',shape:'flat',role:'belong',multi:1,requiredFor:['kp'],source:'manual',values:['N70系列','N90 Max','N90 Max 探索版','通用车型']},
  {id:'Dscene',name:'场景',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['家庭出行','露营','通勤','长途','商务接待','首购到店']},
  {id:'Dcust',name:'客户类型',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['首购家庭','增换购','企业客户','年轻个人']},

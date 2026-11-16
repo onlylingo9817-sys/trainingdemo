@@ -490,12 +490,12 @@ function cfgDims(){
   const sel=f.id||S.dims[0].id;const d=dimOf(sel)||S.dims[0];
   const lim=10;
   const tpl=['产品','车型','场景','客户类型','竞品','销售阶段','能力'];
-  return srcBar('这里是系统里可维护的分类方式。业务上只需要理解三件事：<b>车型和车上的部位</b>决定一个知识点归在哪、完备率怎么算；<b>场景和客户</b>用于筛选；<b>4 个能力项</b>用于岗位标准和效果诊断。改名不会影响已挂的知识点，合并会保留历史。')
+  return srcBar('这里是系统里可维护的分类方式。业务上只需要理解三件事：<b>车型和标签</b>决定一个知识点归在哪、完备率怎么算；<b>场景和客户</b>用于筛选；<b>4 个能力项</b>用于岗位标准和效果诊断。改名不会影响已挂的知识点，合并会保留历史。')
    +'<div class="grid g4" style="margin-bottom:16px">'
      +'<div class="rd-stat"><div class="l">维度数</div><div class="n">'+S.dims.length+'<small>/ '+lim+' 上限</small></div><div class="h">超过上限需先停用旧维度(防配置地狱)</div></div>'
-     +'<div class="rd-stat"><div class="l">归类项</div><div class="n">'+S.dims.filter(x=>x.role==='belong').length+'</div><div class="h">车型、部位；决定完备率</div></div>'
+     +'<div class="rd-stat"><div class="l">归类项</div><div class="n">'+S.dims.filter(x=>x.role==='belong').length+'</div><div class="h">车型、标签；决定完备率</div></div>'
      +'<div class="rd-stat"><div class="l">能力项</div><div class="n">'+S.dims.filter(x=>x.role==='ability').length+'</div><div class="h">探需 / 讲车 / 顾虑 / 带人</div></div>'
-     +'<div class="rd-stat"><div class="l">已归类的知识点</div><div class="n">'+S.kps.filter(k=>Object.keys(k.dims||{}).length).length+'<small>/ '+S.kps.length+'</small></div><div class="h">归类后才进入车型 × 部位矩阵</div></div></div>'
+     +'<div class="rd-stat"><div class="l">已归类的知识点</div><div class="n">'+S.kps.filter(k=>Object.keys(k.dims||{}).length).length+'<small>/ '+S.kps.length+'</small></div><div class="h">归类后才进入车型 × 标签矩阵</div></div></div>'
    +'<div class="card"><h3>维度列表 <span class="hint">起步模板 7 个维度,开箱即用</span></h3>'
    +'<div class="tw"><table class="t nw"><tr><th>维度</th><th>形态</th><th>角色</th><th>多选</th><th>必填对象</th><th>来源</th><th>值数量</th><th>被知识点引用</th><th>操作</th></tr>'
    +S.dims.map(x=>{const rt=roleTxt[x.role];
