@@ -1,29 +1,191 @@
-/* ========== 入店辅导 ========== */
+/* ========== 入店辅导 v25 ==========
+   按《入店辅导五维度提炼参考》组织：学 / 练 / 检 / 用 / 馈。
+   工单是“辅导项目”，不是一张状态卡；从发现 → 定计划 → 到店执行 → 陪跑反馈 → 复测结案，全程留痕。 */
+const COACH_STEPS=[['触发','为什么去'],['计划','学什么·练什么'],['到店','现场检核'],['陪跑','用起来·日周月反馈'],['复测','效果是否回来'],['结案','结论与沉淀']];
+const COACH_LEARN=[
+ ['关键岗位','店长 / 主管 / 内训师工作标准与看板','岗位标准、管理看板、例会机制'],
+ ['产品知识','本品知识、竞品对比话术','产品卖点、竞品攻防、配置折算'],
+ ['销售流程','邀约 → 接待 → 试驾 → 关单','全流程动作、CEMN 判断工具'],
+ ['标杆参访','当地标杆门店参访交流','现场观察、复盘、可复制动作']
+];
+const COACH_PRACTICE=[
+ ['产品强化','双 7 系列 / 澎程系列 / 竞品应对','按门店实际短板选 1-2 项'],
+ ['政策权益','权益 / 政策 / 金融 / 服务促单话术','必须用最新政策口径'],
+ ['话术工具','SPIN / 问听应 / FROM-NEEDS / CEMN','选一个主工具练透'],
+ ['动作固化','电话邀约 → 接待 → 试乘试驾 → 商谈关单','按真实场景串联演练']
+];
+const COACH_CHECK={
+ pre:[['留资回访效率','是否及时、是否留下下一步'],['邀约话术','是否给出两个时间选项'],['企微沟通','是否合规、是否可追踪'],['新媒体合规','宣传口径是否符合规范'],['现场接待全流程','迎宾 → 探需 → 讲车 → 试驾 → 商谈']],
+ during:[['运营维度','明检与合规内容是否到位'],['展厅接待能力','开场、探需、讲车是否完整'],['试乘试驾能力','路线、讲解、体验点是否到位'],['购车商谈能力','报价、异议、关单推进'],['客户跟进能力','回访节奏与记录'],['员工心声','发展需求、对管理的反馈']]
+};
+const COACH_TRACK=[
+ ['留资率','线索留资 / 到店客流'],['首触率','首次触达 / 分配线索'],['排程试驾率','排程试驾 / 邀约到店'],['HAD 试驾率','HAD 试驾 / 总试驾'],
+ ['试驾质检达标率','质检达标 / 抽检试驾'],['心愿单保存率','试驾后保存心愿单 / 试驾'],['试驾满意度','满意样本 / 有效评价']
+];
+function coachPlanOf(x){
+  x.learn=x.learn||COACH_LEARN.slice(0,3).map(r=>({name:r[0],detail:r[1],on:true}));
+  x.practice=x.practice||COACH_PRACTICE.slice(0,3).map(r=>({name:r[0],detail:r[1],on:true}));
+  x.checks=x.checks||{pre:COACH_CHECK.pre.map(r=>({name:r[0],detail:r[1],done:false})),during:COACH_CHECK.during.map(r=>({name:r[0],detail:r[1],done:false}))};
+  x.track=x.track||COACH_TRACK.slice(0,5).map(r=>({name:r[0],formula:r[1],on:true,base:'',target:''}));
+  x.post=x.post||null;x.feedback=x.feedback||[];x.log=x.log||[];
+  return x;
+}
+function coachStepIndex(st){return Math.max(0,COACH_STEPS.findIndex(x=>x[0]===st))}
+function coachProgress(x){
+  coachPlanOf(x);let n=0,d=0;
+  d++;if(x.st!=='触发')n++;
+  d+=2;if(x.st!=='触发')n++;if((x.learn||[]).some(y=>y.on)&&(x.practice||[]).some(y=>y.on))n++;
+  d+=2;if(['到店','陪跑','复测','结案'].includes(x.st))n++;if((x.checks.pre||[]).every(y=>y.done)&&(x.checks.during||[]).filter(y=>y.done).length>=2)n++;
+  d+=2;if(['陪跑','复测','结案'].includes(x.st))n++;if((x.feedback||[]).length>=2)n++;
+  d++;if(x.post)n++;
+  d++;if(x.st==='结案')n++;
+  return Math.round(n/d*100);
+}
+function coachNext(x){
+  if(x.st==='触发')return {t:'先确认辅导目标',d:'看触发原因，补齐门店负责人和到店时间。',act:'tPlan',label:'去定计划'};
+  if(x.st==='计划')return {t:'带着学 / 练计划到店',d:'现场按检核清单走一遍，记录真实卡点。',act:'tGoStore',label:'开始到店'};
+  if(x.st==='到店')return {t:'把检核结果转成陪跑动作',d:'至少记录 1 条日反馈、1 条周反馈，再进入复测。',act:'tCoaching',label:'进入陪跑'};
+  if(x.st==='陪跑')return {t:'复测效果有没有回来',d:'填辅导后的数据和结论，不要只看一个数字。',act:'tRetest',label:'去复测'};
+  if(x.st==='复测')return {t:'写结论并沉淀',d:'有效就复制动作，无效就调整计划或升级支持。',act:'tClose',label:'结案'};
+  return {t:'已结案',d:'回看结论与动作，决定是否复制到其他门店。',act:'',label:''};
+}
+function coachMetricOf(x){
+  const goal=String(x.goal||'');
+  const known=['留资率','首触率','排程试驾率','HAD 试驾率','试驾质检达标率','心愿单保存率','试驾满意度','邀约→试驾转化比例','关键词开口率','到店率','试驾率','转化率','掌握度'];
+  const found=known.find(n=>goal.includes(n));
+  const name=found||'本店目标指标';
+  const formula=(COACH_TRACK.find(r=>r[0]===name)||[])[1]||'与项目培训目标一致';
+  const target=(goal.match(/→\s*([^·;；,，]+)/)||[])[1]||'';
+  return {name,formula,base:x.pre,target:(x.goalTarget||target).trim()};
+}
+function coachGoalText(x){const m=coachMetricOf(x);return m.name+' '+x.pre+'% → '+(m.target||x.goal)}
+function coachNewTicket(o){
+  const x=coachPlanOf(Object.assign({id:'W'+(S.tickets.length+1),st:'触发',owner:'-',trig:'目标未达成',src:'推荐辅导店',log:[]},o));
+  x.log.unshift({t:today,who:meShort(),act:'创建辅导项目',note:x.src});
+  S.tickets.push(x);return x;
+}
 function mkTickets(p,n,src){
   if(!p.eff)return 0;const rows=storeRows(p).filter(r=>!metV(p,r.v)).sort((a,b)=>p.goal.main.dir==='低'?b.v-a.v:a.v-b.v).slice(0,n);let c=0;
-  rows.forEach(r=>{if(S.tickets.some(t=>t.store===r.store&&t.proj===p.id))return;S.tickets.push({id:'W'+(S.tickets.length+1),store:r.store,proj:p.id,src,goal:p.metric+' '+r.v+'% → '+p.target+'%',pre:r.v,st:'触发',owner:'-',trig:'目标未达成'});c++});return c}
+  rows.forEach(r=>{if(S.tickets.some(t=>t.store===r.store&&t.proj===p.id))return;coachNewTicket({store:r.store,proj:p.id,src,goal:p.metric+' '+r.v+'% → '+p.target+'%',pre:r.v,trig:'目标未达成'});c++});return c}
 function recStores(){
-  const m={};visibleP().filter(p=>p.eff).forEach(p=>storeRows(p).forEach(r=>{if(!metV(p,r.v)){const gap=Math.abs(p.target-r.v);const x=m[r.store]||(m[r.store]={store:r.store,score:0,why:[],proj:p.id});x.score+=Math.min(60,40+gap*5);x.why.push('「'+p.name+'」'+r.v+'% 未达目标 '+p.target+'%')}}));
+  const inRegion=store=>UI.role.type!=='region'||pp2(store)===UI.role.region;
+  const m={};visibleP().filter(p=>p.eff).forEach(p=>storeRows(p).forEach(r=>{if(!inRegion(r.store)||metV(p,r.v))return;const gap=Math.abs(p.target-r.v);const x=m[r.store]||(m[r.store]={store:r.store,score:0,why:[],proj:p.id});x.score+=Math.min(60,40+gap*5);x.why.push('「'+p.name+'」'+r.v+'% 未达目标 '+p.target+'%')}));
   return Object.values(m).map(x=>({...x,score:Math.min(99,Math.round(x.score))})).sort((a,b)=>b.score-a.score).slice(0,8)}
+A.mkTicket=el=>{const p=proj(el.dataset.p);const r=p&&storeRows(p).find(x=>x.store===el.dataset.s);if(!p||!r)return toast('找不到门店或项目','err');if(UI.role.type==='region'&&pp2(r.store)!==UI.role.region)return toast('不能给本区域外的门店创建辅导','err');if(S.tickets.some(x=>x.store===r.store&&x.st!=='结案'))return toast('该门店已有进行中的辅导','warn');coachNewTicket({store:r.store,proj:p.id,src:'推荐辅导店',goal:p.metric+' '+r.v+'% → '+p.target+'%',pre:r.v,trig:'目标未达成'});UI.tab.coach='辅导总览';toast('已创建辅导项目（触发）','ok');render()};
 const tkVis=()=>S.tickets.filter(t=>UI.role.type!=='region'||pp2(t.store)===UI.role.region);
-function pgCoach(){
-  const tabs=['工单看板','推荐辅导店'];const t=curTab('coach',tabs);let b='';
-  if(t==='工单看板'){
-    const cols=['触发','派单','到店','复测'];
-    b=srcBar('工单来自:① 「推荐辅导店」手工创建;② 项目结项时选「转入店辅导」自动生成(按效果下钻中未达标的门店)。工单阶段:触发 → 派单 → 到店 → 复测(2 周后对照)。')
-     +(S.tickets.length?'<div class="kan">'+cols.map(c=>'<div class="col"><h4>'+c+'<span class="tag">'+tkVis().filter(x=>x.st===c).length+'</span></h4>'+tkVis().filter(x=>x.st===c).map(x=>'<div class="kc" data-act="ticket" data-id="'+x.id+'"><b>'+x.store+'</b><div class="s">'+x.src+'</div><div class="s">'+x.goal+'</div>'+(x.owner!=='-'?'<div class="s">辅导人:'+x.owner+'</div>':'')+'</div>').join('')+'</div>').join('')+'</div>':cta('还没有辅导工单','工单来自「推荐辅导店」或项目结项「转入店辅导」。推荐辅导店需要先有项目进入「评估中」。','<button class="btn" data-act="tab" data-k="coach" data-v="推荐辅导店">看推荐辅导店</button>'));
-  }else{
-    const rec=recStores();
-    b=srcBar('推荐店由效果追踪中「未达成目标的门店」评分得出(目标差距越大、涉及项目越多分越高)。没有项目进入「评估中」就没有推荐。')
-     +(rec.length?'<div class="tw"><table class="t"><tr><th>门店</th><th>评分</th><th>推荐理由</th><th>操作</th></tr>'+rec.map(r=>'<tr><td>'+r.store+'</td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:100px"><i style="width:'+r.score+'%"></i></div>'+r.score+'</div></td><td>'+r.why.join(';')+'</td><td>'+(S.tickets.some(x=>x.store===r.store)?'<span class="hint">已有工单</span>':'<button class="link" data-act="mkTicket" data-s="'+r.store+'" data-p="'+r.proj+'">创建辅导工单</button>')+'</td></tr>').join('')+'</table></div>':cta('暂无推荐辅导店','需要有项目进入「评估中」并存在未达标门店。','<button class="btn" data-act="go" data-p="projects">去培训项目推进阶段</button>'));
-  }
-  return '<div class="ph"><h2>入店辅导</h2></div>'+tabsH('coach',tabs)+b;
+function coachTabs(){return ['辅导总览','推荐辅导店']}
+function coachMetricRow(x){
+  const m=coachMetricOf(x);const base=m.base!==''&&m.base!=null?m.base:x.pre;
+  return '<div class="coach-metric"><span class="coach-metric-l">核心指标</span><b>'+esc(m.name)+'</b><span class="hint">辅导前 '+esc(base==null?'—':base+'%')+' → 目标 '+esc(m.target||'待定')+'</span></div>';
 }
-A.mkTicket=el=>{const p=proj(el.dataset.p);const r=storeRows(p).find(x=>x.store===el.dataset.s);S.tickets.push({id:'W'+(S.tickets.length+1),store:el.dataset.s,proj:p.id,src:'推荐辅导店',goal:p.metric+' '+r.v+'% → '+p.target+'%',pre:r.v,st:'触发',owner:'-',trig:'目标未达成'});UI.tab.coach='工单看板';toast('已创建辅导工单(触发)','ok');render()};
-A.ticket=el=>{const x=S.tickets.find(t=>t.id===el.dataset.id);const nxt={触发:'派单',派单:'到店',到店:'复测'}[x.st];
-  openDlg('辅导工单 · '+x.store,'<dl class="kv"><dt>来源</dt><dd>'+x.src+(x.proj?' · 项目 '+esc(proj(x.proj).name):'')+'</dd><dt>触发原因</dt><dd>'+x.trig+'</dd><dt>当前阶段</dt><dd>'+x.st+'</dd><dt>辅导目标</dt><dd>'+x.goal+'(辅导前确认)</dd><dt>辅导人</dt><dd>'+x.owner+'</dd></dl><h4>复测对照(辅导 2 周后)</h4>'+(x.st==='复测'?'<div class="grid g3"><div class="stat"><div class="l">辅导前</div><div class="n">'+x.pre+'%</div></div><div class="stat"><div class="l">复测</div><div class="n" style="color:var(--ok)">'+(+(x.pre+2.5+hsh(x.id)%20/10).toFixed(1))+'%</div></div><div class="stat"><div class="l">变化</div><div class="n">+'+(+(2.5+hsh(x.id)%20/10).toFixed(1))+'pt</div></div></div><div class="hint">只有几个人,仅作参考,不下结论;数据来自北斗 BI。</div>':'<div class="hint">到店辅导完成 2 周后复测,与辅导前对比(北斗 BI)。</div>'),
-   '<button class="btn" data-act="close">关闭</button>'+(nxt?'<button class="btn pri" data-act="tnext" data-id="'+x.id+'">推进到「'+nxt+'」</button>':''))};
-A.tnext=el=>{const x=S.tickets.find(t=>t.id===el.dataset.id);x.st={触发:'派单',派单:'到店',到店:'复测'}[x.st];if(x.owner==='-')x.owner='周丽';closeDlg();toast('工单已推进到「'+x.st+'」','ok');render()};
+function coachStepBar(x){
+  const cur=coachStepIndex(x.st);
+  return '<div class="coach-steps">'+COACH_STEPS.map((s,i)=>'<div class="coach-step '+(i<cur?'done':i===cur?'on':'')+'"><span>'+String(i+1).padStart(2,'0')+'</span><b>'+s[0]+'</b><small>'+s[1]+'</small></div>').join('')+'</div>';
+}
+function coachAiSuggestions(){
+  const L=tkVis().filter(x=>x.st!=='结案').map(x=>{coachPlanOf(x);const reasons=[];let score=0;
+    if(x.st==='复测'){score+=50;reasons.push('已到复测，结果最接近可复用')}
+    if(x.st==='陪跑'){score+=30;reasons.push('正在陪跑，适合看执行是否走样')}
+    if(x.st==='到店'){score+=20;reasons.push('已到店，适合先补检核记录')}
+    if(x.st==='触发'){score+=10;reasons.push('还没定计划，容易拖成“只建了工单”')}
+    if(!(x.feedback||[]).length&&['陪跑','复测'].includes(x.st)){score+=12;reasons.push('没有日/周/月反馈，效果无法解释')}
+    if(!x.post&&x.st==='复测'){score+=18;reasons.push('还没复测，无法判断是否有效')}
+    if(!x.owner||x.owner==='-'){score+=8;reasons.push('还没派辅导人')}
+    return {x,score,reasons:reasons.slice(0,3)};
+  }).sort((a,b)=>b.score-a.score).slice(0,3);
+  return L;
+}
+function coachAiHtml(){
+  const L=coachAiSuggestions();if(!L.length)return '';
+  return '<div class="coach-ai"><div class="coach-ai-h"><span class="ai-dot">AI</span><b>先跟哪家店</b><span class="hint">按阶段 / 缺失反馈 / 是否复测排序；只建议，不自动推进</span><button class="link" data-act="aiWhy">依据</button></div>'
+   +L.map(({x,reasons})=>'<div class="coach-ai-row"><div><b>'+esc(x.store)+'</b><span class="tag '+(x.st==='复测'?'warn':'blue')+'">'+x.st+'</span><span class="hint">'+esc(reasons.join(' · '))+'</span></div><button class="btn sm" data-act="ticket" data-id="'+x.id+'">打开</button></div>').join('')
+   +'</div>';
+}
+
+function coachOverview(){
+  const L=tkVis();L.forEach(coachPlanOf);const active=L.filter(x=>x.st!=='结案');const st={触发:0,计划:0,到店:0,陪跑:0,复测:0,结案:0};L.forEach(x=>st[x.st]=(st[x.st]||0)+1);
+  const done=L.filter(x=>x.post).length;const metrics=L.map(x=>coachProgress(x));const next=L.filter(x=>x.st!=='结案').sort((a,b)=>coachStepIndex(b.st)-coachStepIndex(a.st)).slice(0,3);
+  const metric=(l,v,h,color)=>'<div class="stat"><div class="l">'+l+'</div><div class="n" '+(color?'style="color:'+color+'"':'')+'>'+v+'</div><div class="hint">'+h+'</div></div>';
+  return srcBar('这页按「学 → 练 → 检 → 用 → 馈」组织入店辅导。工单不是一张卡，而是一个有目标、有检核、有陪跑反馈、有复测结案的辅导项目；建议只提示动作，是否推进由辅导人决定。')
+   +((UI.role.type==='region'&&!L.length)?'<div class="card" style="border-color:#f3dc9b;background:#fffbf4"><b>当前区域还没有辅导项目</b><div class="hint" style="margin-top:4px">入店辅导来自两个入口：① 项目进入「评估中」后，在「推荐辅导店」发现未达标门店；② 项目结项时选「转入店辅导」。先确认项目是否已进入评估中，或切换到总部视角查看。</div></div>':'')
+   +'<div class="coach-status">'+COACH_STEPS.map((s,i)=>'<span><b>'+s[0]+'</b><em>'+(st[s[0]]||0)+'</em></span>').join('')+'</div>'
+   +'<div class="grid g4" style="margin-bottom:16px">'+metric('进行中',active.length,'另有已结案 '+st.结案+' 个')+metric('待复测',st.陪跑+st.复测,'陪跑后要回看数据')+metric('已有复测',done,'结案前必须留结论')+metric('平均完成度',metrics.length?Math.round(metrics.reduce((a,b)=>a+b,0)/metrics.length)+'%':'—','按学/练/检/用/馈计算')+'</div>'
+   +coachAiHtml()
+   +(L.length?'<div class="coach-board">'+L.map(x=>{const next=coachNext(x);const pct=coachProgress(x);const m=coachMetricOf(x);const base=m.base!==''&&m.base!=null?m.base:x.pre;return '<div class="coach-card" data-act="ticket" data-id="'+x.id+'"><div class="coach-card-h"><div><b>'+esc(x.store)+'</b><span class="tag '+(x.st==='结案'?'ok':x.st==='复测'?'warn':'blue')+'">'+x.st+'</span></div><button class="link" data-act="ticket" data-id="'+x.id+'">打开 →</button></div>'+coachStepBar(x)+coachMetricRow(x)+'<div class="coach-evidence">'+esc(x.trig||'目标未达成')+' · '+esc(x.goal||'')+'</div><div class="coach-next"><span class="coach-next-t">下一步</span><b>'+esc(next.t)+'</b><span>'+esc(next.d)+'</span>'+(next.act?'<button class="btn sm pri" data-act="'+next.act+'" data-id="'+x.id+'">'+next.label+'</button>':'')+'</div><div class="coach-progress"><i style="width:'+pct+'%"></i><span>完成度 '+pct+'%</span></div><div class="coach-card-f">'+(x.owner&&x.owner!=='-'?'辅导人 '+esc(x.owner):'<span class="tag warn">未派辅导人</span>')+'<span class="hint">'+esc(x.src)+(x.feedback&&x.feedback.length?' · 反馈 '+x.feedback.length+' 条':'')+'</span></div></div>'}).join('')+'</div>':'<div class="card"><div class="empty">还没有辅导项目。先从「推荐辅导店」发现一家，或从项目结项「转入店辅导」生成。</div><button class="btn pri" data-act="tab" data-k="coach" data-v="推荐辅导店">看推荐辅导店</button></div>');
+}
+function coachRec(){
+  const rec=recStores();
+  return srcBar('推荐店由效果追踪中「未达成目标的门店」评分得出：目标差距越大、涉及项目越多分越高。推荐只说明“值得看”，是否辅导由人决定。')
+   +(rec.length?'<div class="tw"><table class="t"><tr><th>门店</th><th>推荐分</th><th>推荐理由</th><th>操作</th></tr>'+rec.map(r=>'<tr><td><b>'+esc(r.store)+'</b></td><td><div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:100px"><i style="width:'+r.score+'%"></i></div>'+r.score+'</div></td><td style="white-space:normal">'+r.why.map(esc).join('；')+'</td><td>'+(S.tickets.some(x=>x.store===r.store&&x.st!=='结案')?'<span class="hint">已有进行中辅导</span>':'<button class="btn sm pri" data-act="mkTicket" data-s="'+esc(r.store)+'" data-p="'+r.proj+'">发起辅导</button>')+'</td></tr>').join('')+'</table></div>':'<div class="card"><div class="empty">暂无推荐辅导店。需要有项目进入「评估中」，并且有门店未达目标。</div><button class="btn" data-act="go" data-p="projects">去学习项目</button></div>');
+}
+function pgCoach(){
+  const tabs=coachTabs();const t=curTab('coach',tabs);let b='';
+  if(t==='辅导总览')b=coachOverview();else b=coachRec();
+  return '<div class="ph"><h2>入店辅导 <span class="hint" style="font-weight:400">从发现门店问题到效果回来，按「学 → 练 → 检 → 用 → 馈」走完一个辅导项目</span></h2></div>'+tabsH('coach',tabs)+b;
+}
+function coachPanel(x,tab){
+  coachPlanOf(x);const m=coachMetricOf(x);
+  if(tab==='计划'){
+    return '<div class="coach-two"><div class="card"><h3>学：到店教什么 <span class="hint">只选门店真正需要的</span></h3>'+COACH_LEARN.map((r,i)=>{const on=(x.learn||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachLearn" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[2])+'</span></div></label>'}).join('')+'</div>'
+     +'<div class="card"><h3>练：让门店伙伴练什么 <span class="hint">按短板选，不贪多</span></h3>'+COACH_PRACTICE.map(r=>{const on=(x.practice||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachPractice" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div></label>'}).join('')+'</div></div>'
+     +'<div class="card"><h3>辅导目标 <span class="hint">先锁定一个主指标，后面复测才有对照</span></h3><div class="coach-target"><div><label>主指标</label><b>'+esc(m.name)+'</b></div><div><label>辅导前</label><b>'+esc(x.pre==null?'—':x.pre+'%')+'</b></div><div><label>目标</label><input id="coach_goal" data-id="'+x.id+'" value="'+esc(x.goalTarget||m.target||'')+'" placeholder="如 +5pt 或 70%"></div></div><div class="coach-assist"><span>不知道目标怎么定？</span><span class="hint">可参考同城优秀店或项目目标；Demo 中建议 +3~5pt 作为可验证的起步目标。</span><button class="btn sm" data-act="coachGoalSuggest" data-id="'+x.id+'">用 +5pt 起步目标</button></div><div class="hint" style="margin-top:6px">'+esc(m.formula)+'；复测时只对比这个指标，不拿多个数混在一起下结论。</div></div>'
+     +'<div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="tPlanSave" data-id="'+x.id+'">保存计划，开始到店</button></div>';
+  }
+  if(tab==='检核'){
+    const preDone=(x.checks.pre||[]).filter(r=>r.done).length;const duringDone=(x.checks.during||[]).filter(r=>r.done).length;
+    return '<div class="coach-two"><div class="card"><h3>入店前检核 <span class="hint">'+preDone+' / '+(x.checks.pre||[]).length+' 完成</span></h3>'+(x.checks.pre||[]).map((r,i)=>'<label class="coach-check"><input type="checkbox" data-wc="coachCheck" data-id="'+x.id+'" data-phase="pre" data-i="'+i+'" '+(r.done?'checked':'')+'><div><b>'+esc(r.name)+'</b><span>'+esc(r.detail)+'</span></div></label>').join('')+'</div>'
+     +'<div class="card"><h3>辅导中检核 <span class="hint">'+duringDone+' / '+(x.checks.during||[]).length+' 完成，至少 2 项</span></h3>'+(x.checks.during||[]).map((r,i)=>'<label class="coach-check"><input type="checkbox" data-wc="coachCheck" data-id="'+x.id+'" data-phase="during" data-i="'+i+'" '+(r.done?'checked':'')+'><div><b>'+esc(r.name)+'</b><span>'+esc(r.detail)+'</span></div></label>').join('')+'</div></div>'
+     +'<div class="card"><h3>本次到店记录 <span class="hint">不是打分，是留下可复盘的事实</span></h3><textarea class="w" id="coach_note" data-wc="coachNote" data-id="'+x.id+'" placeholder="例：顾问能讲卖点，但客户说贵时马上让价；试驾路线没有结合家庭场景。">'+esc(x.note||'')+'</textarea><div class="hint">建议写“看到了什么 + 影响了什么 + 下次改什么”。</div></div>'
+     +'<div class="coach-actions"><span class="hint" style="margin-right:auto">'+((duringDone>=2&&(x.note||'').trim())?'<span class="tag ok">可以进入陪跑</span>':'<span class="tag warn">完成 2 项检核 + 写一条记录后可进入陪跑</span>')+'</span><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="tGoSave" data-id="'+x.id+'">完成到店，进入陪跑</button></div>';
+  }
+  if(tab==='陪跑'){
+    const need=['日','周','月'].filter(k=>!(x.feedback||[]).some(f=>f.kind===k));
+    const mark=k=>(x.feedback||[]).some(f=>f.kind===k)?'<span class="tag ok">已留</span>':'<span class="tag warn">待留</span>';
+    return '<div class="coach-two"><div class="card"><h3>用：辅导后跟踪什么 <span class="hint">选指标，实时跟踪</span></h3>'+(x.track||[]).map((r,i)=>'<label class="coach-check"><input type="checkbox" data-wc="coachTrack" data-id="'+x.id+'" data-i="'+i+'" '+(r.on?'checked':'')+'><div><b>'+esc(r.name)+'</b><span>'+esc(r.formula)+'</span></div></label>').join('')+'<div class="hint">日看动作、周看趋势、月看结果；不要用单日波动下结论。</div></div>'
+     +'<div class="card"><h3>反馈节奏 <span class="hint">日 / 周 / 月各留一条，辅导才不是“来一趟就走”</span></h3><div class="coach-feedback"><div><span class="tag blue">日</span><b>每日关注数据与动作</b><span>'+mark('日')+'<em>问题点当天复盘、纠偏</em></span></div><div><span class="tag pri">周</span><b>周度复盘数据变化</b><span>'+mark('周')+'<em>纵向看自己，横向看同城优秀店</em></span></div><div><span class="tag warn">月</span><b>陪跑结束总结</b><span>'+mark('月')+'<em>数据变化 + 店长反馈 + 后续动作</em></span></div></div>'+(need.length?'<div class="coach-empty-ai"><span>还缺 '+need.join(' / ')+' 反馈，补一条再进入复测更稳。</span><button class="btn sm" data-act="coachFocusFb" data-id="'+x.id+'" data-v="'+need[0]+'">现在补'+need[0]+'反馈</button></div>':'')+'</div></div>'
+     +'<div class="card"><h3>已留反馈 <span class="hint">'+(x.feedback||[]).length+' 条</span></h3>'+((x.feedback||[]).length?'<div class="coach-feed-list">'+x.feedback.map(f=>'<div class="coach-feed"><span class="tag '+(f.kind==='日'?'blue':f.kind==='周'?'pri':'warn')+'">'+f.kind+'</span><div><b>'+esc(f.title||'')+'</b><div class="hint">'+esc(f.text||'')+'</div></div><small>'+esc(f.t)+'</small></div>').join('')+'</div>':'<div class="hint">还没有反馈。建议今天先留一条日反馈。</div>')+'<div class="coach-feed-form"><select id="coach_fb_kind">'+['日','周','月'].map(k=>'<option '+(need[0]===k?'selected':'')+'>'+k+'</option>').join('')+'</select><input id="coach_fb_title" placeholder="一句话结论，如「周日到店量下降」"><textarea id="coach_fb_text" placeholder="具体看到什么、准备怎么纠偏"></textarea><button class="btn pri" data-act="coachFb" data-id="'+x.id+'">添加反馈</button></div></div>'
+     +'<div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="tRetest" data-id="'+x.id+'" '+(need.length?'data-warn="1"':'')+'>'+(need.length?'仍要复测':'进入复测')+'</button></div>';
+  }
+  if(tab==='复测'){
+    const done=x.post;const pre=x.pre==null?0:x.pre;const vr=done?+done.value:pre+2.8;const delta=+(vr-pre).toFixed(1);
+    return '<div class="coach-two"><div class="card"><h3>复测：效果有没有回来 <span class="hint">至少 2 周后再看，避免当天波动</span></h3>'+coachMetricRow(x)+'<div class="coach-retest"><div><label>辅导前</label><b>'+esc(pre+'%')+'</b></div><div><label>复测值</label><input id="coach_post" type="number" step="0.1" value="'+esc(done?done.value:vr.toFixed(1))+'" placeholder="%"></div><div><label>变化</label><b class="'+(delta>=0?'coach-up':'coach-down')+'">'+(delta>=0?'+':'')+delta+'pt</b></div></div><div class="fld"><label>复测结论</label><select id="coach_result">'+['有效，继续巩固','有改善，但还不稳定','没有改善，需要调整计划','数据不足，延长观察'].map(o=>'<option '+(done&&done.result===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div><div class="fld"><label>下一步动作</label><textarea id="coach_next" placeholder="例：把有效话术复制到早会；对未改善的顾问再做一次一对一">'+esc(done?done.next:'')+'</textarea></div><div class="hint">复测不是打分，是判断“这次辅导值不值得复制”。</div></div>'
+     +'<div class="card"><h3>过程 → 结果 <span class="hint">过程和结果要对得上</span></h3><div class="coach-review">'+[['学',(x.learn||[]).filter(y=>y.on).map(y=>y.name).join('、')||'未选'],['练',(x.practice||[]).filter(y=>y.on).map(y=>y.name).join('、')||'未选'],['检',(x.checks.pre||[]).filter(y=>y.done).length+' / '+(x.checks.pre||[]).length+' 项完成'],['馈',(x.feedback||[]).length+' 条反馈']].map(r=>'<div><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>').join('')+'</div><div class="coach-interp"><span class="tag '+(delta>=2?'ok':delta>0?'warn':'err')+'">'+(delta>=2?'结果有改善':delta>0?'有改善但幅度小':'没有改善')+'</span><span>'+(delta>=2?'可以复制有效动作':'先回看检核和陪跑记录，再决定是否调整计划')+'</span></div><div class="hint" style="margin-top:6px">如果过程和结果不一致，优先回看“检”与“用”，不要只怪学员。</div></div></div>'
+     +'<div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="coachPostSave" data-id="'+x.id+'">保存复测</button></div>';
+  }
+  if(tab==='结案'){
+    return '<div class="card"><h3>结案结论 <span class="hint">把这次辅导变成下一次可复用的东西</span></h3><div class="coach-summary"><div><span>辅导目标</span><b>'+esc(x.goal)+'</b></div><div><span>复测</span><b>'+(x.post?esc(x.post.value+'% / '+x.post.result):'未复测')+'</b></div><div><span>完成度</span><b>'+coachProgress(x)+'%</b></div></div><div class="fld"><label>结论</label><select id="coach_close_res">'+['有效，复制到其他门店','部分有效，继续巩固','无效，调整方案','暂不结案'].map(o=>'<option '+(x.closeRes===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div><div class="fld"><label>复盘一句话</label><textarea id="coach_close_why" placeholder="哪件事最有用？哪件事下次不做了？">'+esc(x.closeWhy||'')+'</textarea></div><div class="fld"><label>可沉淀动作</label><div class="coach-tags">'+['话术','检核表','陪跑节奏','门店管理动作','培训内容'].map(t=>'<span class="tag" data-act="coachAsset" data-id="'+x.id+'" data-v="'+t+'">+ '+t+'</span>').join('')+'</div><div class="hint">点击添加；Demo 只留标记，正式版应回写内容中心 / 知识点。</div></div></div><div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="coachClose" data-id="'+x.id+'">结案</button></div>';
+  }
+  return '';
+}
+A.ticket=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;const tab=UI.sel.coachTab||'概览';const next=coachNext(x);const tabs=['概览','计划','检核','陪跑','复测','结案'];
+  const body='<div class="coach-detail">'+coachStepBar(x)+'<div class="coach-detail-h"><div><b>'+esc(x.store)+'</b> <span class="tag '+(x.st==='结案'?'ok':'blue')+'">'+x.st+'</span></div><div class="hint">'+esc(x.src)+(x.proj?' · <a class="link" data-act="go" data-p="detail" data-id="'+x.proj+'">'+esc(proj(x.proj).name)+'</a>':'')+' · 辅导人 '+esc(x.owner||'-')+'</div></div>'+'<div class="coach-evi"><span>触发证据</span><b>'+esc(x.trig||'目标未达成')+'</b> <span class="hint">'+esc(x.goal||'')+'</span></div>'
+   +'<div class="coach-tabs">'+tabs.map(t=>'<span class="'+(tab===t?'on':'')+'" data-act="coachTab" data-id="'+x.id+'" data-v="'+t+'">'+t+'</span>').join('')+'</div>'
+   +(tab==='概览'?'<div class="coach-next"><span class="coach-next-t">下一步</span><b>'+esc(next.t)+'</b><span>'+esc(next.d)+'</span>'+(next.act?'<button class="btn sm pri" data-act="'+next.act+'" data-id="'+x.id+'">'+next.label+'</button>':'')+'</div>'+coachMetricRow(x)+'<div class="coach-two"><div class="card" style="margin:0"><h3>学 / 练 / 检 / 用 / 馈</h3><div class="coach-pillars">'+[['学',(x.learn||[]).filter(y=>y.on).length+' 项'],['练',(x.practice||[]).filter(y=>y.on).length+' 项'],['检',((x.checks.pre||[]).filter(y=>y.done).length+(x.checks.during||[]).filter(y=>y.done).length)+' 项'],['用',(x.track||[]).filter(y=>y.on).length+' 指标'],['馈',(x.feedback||[]).length+' 条']].map(r=>'<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>').join('')+'</div></div><div class="card" style="margin:0"><h3>为什么来 <span class="hint">'+esc(x.trig)+'</span></h3><div class="coach-flow">'+COACH_STEPS.map((s,i)=>'<div class="'+(i<=coachStepIndex(x.st)?'on':'')+'"><i></i><b>'+s[0]+'</b><span>'+s[1]+'</span></div>').join('')+'</div></div></div>'+coachPanel(x,'')+'':coachPanel(x,tab))
+   +'<div class="coach-log"><h4>过程记录</h4>'+((x.log||[]).length?x.log.slice(0,8).map(l=>'<div><span>'+esc(l.t)+'</span><b>'+esc(l.who)+'</b>'+esc(l.act)+(l.note?' <span class="hint">'+esc(l.note)+'</span>':'')+'</div>').join(''):'<div class="hint">还没有记录</div>')+'</div></div>';
+  openDlg('辅导项目 · '+x.store,body,'<button class="btn" data-act="close">关闭</button>',true);
+};
+A.coachTab=el=>{UI.sel.coachTab=el.dataset.v;A.ticket({dataset:{id:el.dataset.id}})};
+A.tPlan=el=>{UI.sel.coachTab='计划';A.ticket({dataset:{id:el.dataset.id}})};
+A.tGoStore=el=>{UI.sel.coachTab='检核';A.ticket({dataset:{id:el.dataset.id}})};
+A.tCoaching=el=>{UI.sel.coachTab='陪跑';A.ticket({dataset:{id:el.dataset.id}})};
+A.tRetest=el=>{UI.sel.coachTab='复测';A.ticket({dataset:{id:el.dataset.id}})};
+A.tClose=el=>{UI.sel.coachTab='结案';A.ticket({dataset:{id:el.dataset.id}})};
+function coachSave(x,st,act,note){if(st)x.st=st;x.log.unshift({t:today,who:meShort(),act,note:note||''});S.tickets=S.tickets.slice();if(UI.page==='coach')render();notify('辅导项目「'+x.store+'」：'+act)}
+A.coachLearn=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const r=(x.learn||[]).find(y=>y.name===el.value);if(r)r.on=el.checked;render()};
+A.coachPractice=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const r=(x.practice||[]).find(y=>y.name===el.value);if(r)r.on=el.checked;render()};
+A.coachGoalSuggest=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));x.goalTarget='+'+(5)+'pt';if(x.track&&x.track[0])x.track[0].target=x.goalTarget;A.ticket({dataset:{id:x.id}});toast('已建议 +5pt，请根据实际调整','ok')};
+A.coachGoal=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));x.goalTarget=el.value;if(x.track&&x.track[0])x.track[0].target=el.value;}
+A.tPlanSave=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const gi=$('#coach_goal');if(gi&&gi.value.trim())x.goalTarget=gi.value.trim();if(!x.goalTarget&&!coachMetricOf(x).target)return toast('请填写辅导目标','err');if(!(x.learn||[]).some(y=>y.on))return toast('至少选 1 项“学”的内容','err');if(!(x.practice||[]).some(y=>y.on))return toast('至少选 1 项“练”的内容','err');x.st='到店';x.owner=x.owner==='-'?UI.role.name:x.owner;coachSave(x,'到店','完成辅导计划','学 '+x.learn.filter(y=>y.on).length+' 项；练 '+x.practice.filter(y=>y.on).length+' 项；目标 '+coachMetricOf(x).target);toast('计划已保存，进入「到店」','ok');UI.sel.coachTab='检核';A.ticket({dataset:{id:x.id}})};
+A.coachCheck=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const i=+el.dataset.i;(x.checks[el.dataset.phase]||[])[i].done=el.checked;render()};
+A.coachNote=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));x.note=el.value};
+A.tGoSave=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const n=($('#coach_note')||{}).value||x.note||'';x.note=n;if(!n.trim())return toast('先写一条到店记录，再进入陪跑','err');const dn=(x.checks.during||[]).filter(y=>y.done).length;if(dn<2)return toast('辅导中检核至少完成 2 项','err');coachSave(x,'陪跑','完成到店检核','检核 '+dn+' 项；记录：'+n.slice(0,30));toast('已记录到店结果，进入「陪跑」','ok');UI.sel.coachTab='陪跑';A.ticket({dataset:{id:x.id}})};
+A.coachTrack=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const i=+el.dataset.i;(x.track[i]||{}).on=el.checked;render()};
+A.coachFocusFb=el=>{const s=document.querySelector('#coach_fb_kind');if(s){s.value=el.dataset.v;const t=document.querySelector('#coach_fb_title');if(t)t.focus()}toast('请填写'+el.dataset.v+'反馈','')};
+A.coachFb=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const kind=$('#coach_fb_kind')?$('#coach_fb_kind').value:'日';const title=($('#coach_fb_title')||{}).value||'';const text=($('#coach_fb_text')||{}).value||'';if(!title.trim()&&!text.trim())return toast('先写一句反馈','err');x.feedback.push({t:today,who:meShort(),kind,title:title.trim()||text.trim().slice(0,20),text:text.trim()});coachSave(x,'陪跑','添加'+kind+'反馈',title||text);toast('反馈已记录','ok');A.ticket({dataset:{id:x.id}})};
+A.coachPostSave=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const v=parseFloat(($('#coach_post')||{}).value);if(isNaN(v))return toast('请填写复测值','err');const result=($('#coach_result')||{}).value||'有改善，但还不稳定';const next=($('#coach_next')||{}).value||'';x.post={value:v,result,next,pre:x.pre,t:today};x.st='复测';coachSave(x,'复测','记录复测结果',result+'；'+(v-x.pre).toFixed(1)+'pt；'+next);toast('复测已保存，可以结案','ok');UI.sel.coachTab='结案';A.ticket({dataset:{id:x.id}})};
+A.coachAsset=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));x.assets=x.assets||[];if(!x.assets.includes(el.dataset.v))x.assets.push(el.dataset.v);toast('已标记可沉淀：'+el.dataset.v,'ok');A.ticket({dataset:{id:x.id}})};
+A.coachClose=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const res=($('#coach_close_res')||{}).value||'';const why=($('#coach_close_why')||{}).value||'';if(!why.trim())return toast('请写一句复盘结论','err');x.st='结案';x.closeRes=res;x.closeWhy=why;coachSave(x,'结案','结案：'+res,why);toast('辅导已结案','ok');A.ticket({dataset:{id:x.id}})};
+
 
 /* ========== 效果追踪 ========== */
 const smallNow=p=>{const e=p.eff;return Math.min(e.a,e.noCtrl?e.a:e.b)<S.cfg.minN};

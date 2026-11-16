@@ -51,17 +51,17 @@ function aiOverrideKey(){return ((typeof UI!=='undefined'&&UI&&UI.role&&UI.role.
 function aiSnoozed(){S.aiSnooze=Object.assign({},S.aiSnooze||{});return S.aiSnooze[aiOverrideKey()]||{}}
 function aiTagChips(items,act,extra,accepted,ignoreAct){
   if(!items||!items.length)return '<span class="hint">暂无推荐</span>';
-  return items.map(x=>{
+  return '<div class="ai-sug-list">'+items.map(x=>{
     const t=x.tag;const reason=x.reason||'';const on=(accepted||[]).includes(t.id);
-    return '<span class="tag pri" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(t.name)+' <span class="hint" style="color:inherit;opacity:.75">'+esc(reason)+'</span> '+(on?'<span class="tag ok" style="margin:0 0 0 4px">已采纳</span>':'<a class="link" data-act="'+act+'" data-v="'+t.id+'" '+(extra||'')+'>采纳</a>'+(ignoreAct?' <a class="link" style="color:#98a2b3" data-act="'+ignoreAct+'" data-v="'+t.id+'">忽略</a>':''))+'</span>';
-  }).join('');
+    return '<div class="ai-sug"><div class="ai-sug-main"><span class="ai-sug-name">'+esc(t.name)+'</span><span class="ai-sug-why">'+esc(reason)+'</span></div><div class="ai-sug-act">'+(on?'<span class="tag ok">已采纳</span>':'<button class="btn sm" aria-label="采纳标签 '+esc(t.name)+'" data-act="'+act+'" data-v="'+t.id+'" '+(extra||'')+'>采纳</button>'+(ignoreAct?'<button class="btn sm quiet" aria-label="忽略标签 '+esc(t.name)+'" data-act="'+ignoreAct+'" data-v="'+t.id+'">忽略</button>':''))+'</div></div>';
+  }).join('')+'</div>';
 }
 function aiKpChips(items,act,extra,accepted,ignoreAct){
   if(!items||!items.length)return '<span class="hint">暂无匹配</span>';
-  return items.map(x=>{
+  return '<div class="ai-sug-list">'+items.map(x=>{
     const on=(accepted||[]).includes(x.kp.id);
-    return '<div style="margin:4px 0;line-height:1.6"><span class="tag pri">'+esc(x.kp.name)+'</span> <span class="hint">'+esc((x.reasons||[]).join(' · ')||'文本相似')+'</span> '+(on?'<span class="tag ok">已采纳</span>':'<a class="link" data-act="'+act+'" data-v="'+x.kp.id+'" '+(extra||'')+'>采纳</a>'+(ignoreAct?' <a class="link" style="color:#98a2b3" data-act="'+ignoreAct+'" data-v="'+x.kp.id+'">忽略</a>':''))+'</div>';
-  }).join('');
+    return '<div class="ai-sug"><div class="ai-sug-main"><span class="ai-sug-name">'+esc(x.kp.name)+'</span><span class="ai-sug-why">'+esc((x.reasons||[]).join(' · ')||'文本相似')+'</span></div><div class="ai-sug-act">'+(on?'<span class="tag ok">已采纳</span>':'<button class="btn sm" aria-label="采纳知识点 '+esc(x.kp.name)+'" data-act="'+act+'" data-v="'+x.kp.id+'" '+(extra||'')+'>采纳</button>'+(ignoreAct?'<button class="btn sm quiet" aria-label="忽略知识点 '+esc(x.kp.name)+'" data-act="'+ignoreAct+'" data-v="'+x.kp.id+'">忽略</button>':''))+'</div></div>';
+  }).join('')+'</div>';
 }
 function aiAdoptKpRole(kid,mainKp,kpRole,isMain){
   kpRole=kpRole||{};
@@ -117,12 +117,20 @@ A.kfAdvice=()=>{
   const ab=(/价格|异议|竞品|政策|补贴|异议/.test(text)?'顾虑解除':/探需|需求|场景|邀约/.test(text)?'探需':/带教|辅导|目标|例会/.test(text)?'带人辅导':'场景化讲车');
   UI.sel.kfAdvice={tags,ab,at:Date.now()};render();
 };
+function aiFieldBox(title,body,id){
+  return '<div class="ai-inline" id="'+(id||'')+'"><div class="ai-inline-h"><span class="ai-dot">AI</span><b>'+esc(title)+'</b><span class="hint">只建议，点采纳才写入</span><button class="link ai-inline-why" data-act="aiWhy">依据</button></div><div class="ai-inline-b">'+body+'</div></div>';
+}
 function aiKpFormAdviceHtml(){
-  const a=UI.sel.kfAdvice;if(!a)return '';
+  const a=UI.sel.kfAdvice;
+  if(!a)return '<div class="ai-inline ai-inline-empty"><div class="ai-inline-h"><span class="ai-dot">AI</span><b>需要标签建议？</b></div><button class="link" data-act="kfAdvice">根据名称 / 同义词生成推荐</button></div>';
+  const stale=!a.at;
+  return aiFieldBox('推荐标签',(a.tags.length?'<div>'+aiTagChips(a.tags,'kfAiTag','',null,'kfAiTagIgnore')+'<div class="ai-inline-actions"><button class="btn sm" data-act="kfAiTagAll">采纳全部</button><button class="btn sm quiet" data-act="kfAdvice">重新匹配</button>'+(stale?'<span class="hint">建议基于上一轮输入，改过内容请重新匹配</span>':'')+'</div></div>':'<span class="hint">没有匹配到合适标签；可补充同义词后重试。</span>'),'kfAdv');
+}
+function aiKpAbilityAdviceHtml(){
+  const a=UI.sel.kfAdvice;
+  if(!a)return '';
   const abRow=kpAbRows().find(x=>x.name===a.ab);
-  return '<div class="ai-box" id="kfAdv"><div class="ai-box-h">'+AI_TAG+' <span class="hint">根据名称 / 同义词 / 已选标签推荐；采纳前请核对</span></div>'
-   +(a.tags.length?'<div style="margin-top:4px"><b style="font-size:13px">推荐标签</b> '+aiTagChips(a.tags,'kfAiTag','',null,'kfAiTagIgnore')+' <a class="link" data-act="kfAiTagAll">采纳全部</a></div>':'<div class="hint" style="margin-top:4px">没有匹配到合适标签，可手动选择，或先补充同义词。</div>')
-   +'<div style="margin-top:6px"><b style="font-size:13px">建议主要训练能力</b> <span class="tag pri">'+esc(a.ab)+'</span> '+(abRow&&KF.abId===abRow.id?'<span class="tag ok">已采纳</span>':'<a class="link" data-act="kfAiAb" data-v="'+esc(a.ab)+'">采纳</a>')+'</div></div>';
+  return aiFieldBox('建议主要训练能力','<span class="tag pri">'+esc(a.ab)+'</span> '+(abRow&&KF.abId===abRow.id?'<span class="tag ok">已采纳</span>':'<a class="link" data-act="kfAiAb" data-v="'+esc(a.ab)+'">采纳</a>'),'kfAbAdv');
 }
 A.kfAiTag=el=>{const id=el.dataset.v;if(KF&&!KF.tags.includes(id))KF.tags.push(id);aiLog('知识点推荐标签',KF&&KF.name,[{name:(ptagOf(id)||{}).name}],true);toast('已采纳标签「'+(ptagOf(id)||{}).name+'」','ok');render()};
 A.kfAiTagIgnore=el=>{if(!KF)return;const id=el.dataset.v;KF.__aiIgnoreTags=KF.__aiIgnoreTags||[];KF.__aiIgnoreTags=[...new Set(KF.__aiIgnoreTags.concat(id))];aiLog('知识点忽略标签',KF.name,[{name:(ptagOf(id)||{}).name}],false);toast('已忽略该标签建议','ok');render()};
@@ -134,9 +142,7 @@ function aiKpDetailAdvice(k){
   const text=[k.name,(k.syn||[]).join(' '),kpTagTxt(k).join(' ')].join(' ');
   const tags=aiRecommendTags(text,{limit:4}).filter(x=>!(k.tags||[]).includes(x.tag.id));
   if(!tags.length)return '';
-  return '<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">这个点的标签可能不全；建议基于名称 / 同义词 / 已有标签</span></div>'
-   +tags.map(x=>'<span class="tag pri" style="margin:4px 6px 0 0;padding:3px 8px">'+esc(x.tag.name)+' <span class="hint" style="color:inherit;opacity:.7">'+esc(x.reason)+'</span> <a class="link" data-act="kpAiTag" data-k="'+k.id+'" data-v="'+x.tag.id+'">采纳</a></span>').join('')
-   +'</div>';
+  return aiFieldBox('建议补这些标签',tags.map(x=>'<div class="ai-sug"><div class="ai-sug-main"><span class="ai-sug-name">'+esc(x.tag.name)+'</span><span class="ai-sug-why">'+esc(x.reason)+'</span></div><div class="ai-sug-act"><button class="btn sm" data-act="kpAiTag" data-k="'+k.id+'" data-v="'+x.tag.id+'">采纳</button></div></div>').join(''),'kpTagAdv');
 }
 A.kpAiTag=el=>{const k=kp(el.dataset.k);if(!k)return;k.tags=k.tags||[];const id=el.dataset.v;if(!k.tags.includes(id))k.tags.push(id);kpApplyMeta(k,{cars:kpCars(k),tags:k.tags,abId:(k.dims&&k.dims.Dab||[])[0],owner:k.owner});kpHist(k,'采纳 AI 标签建议',(ptagOf(id)||{}).name||'');aiLog('知识点标签建议',k.name,[{name:(ptagOf(id)||{}).name}],true);toast('已采纳标签「'+(ptagOf(id)||{}).name+'」','ok');render()};
 /* ---------- 内容编辑:推荐知识点 / 标签 / 质量提示 ---------- */
@@ -145,27 +151,35 @@ function aiContentText(){
   const spin=SPIN_K.map(k=>(C.spin||{})[k]||'').join(' ');
   return aiBodyText({title:C.title,subject:C.subject,scene:C.scene,kw:C.kw,intro:C.intro,body:C.kind==='话术'?{scene:C.bscene,spin:C.spin}:{outline:C.intro},kind:C.kind})+' '+spin+' '+C.bscene;
 }
-function aiContentAdviceHtml(){
+function aiContentKpAdviceHtml(){
   if(typeof C==='undefined'||!C)return '';
   const text=aiContentText();
   const rec=aiRecommendKps(text,{car:C.car,limit:3}).filter(x=>!(C.kps||[]).includes(x.kp.id)&&!(C.__aiIgnoreKps||[]).includes(x.kp.id));
-  const tags=aiRecommendTags(text,{limit:4}).filter(x=>!(C.tags||[]).includes(x.tag.id)&&!(C.__aiIgnoreTags||[]).includes(x.tag.id));
   const hard=[];
   if((C.kps||[]).length>1&&!C.mainKp)hard.push('已挂多个知识点，但还没指定主讲解');
   if((C.kps||[]).length===1&&!C.mainKp)hard.push('建议把这条内容的主讲解知识点设为「'+(kp(C.kps[0])||{}).name+'」');
   const dup=S.contents.find(x=>x.id!==C.id&&x.title&&C.title&&aiNorm(x.title)===aiNorm(C.title));
   if(dup)hard.push('标题与已有内容「'+dup.title+'」重复');
-  return '<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">基于标题 / 正文 / 关键词；采纳后仍可修改</span></div>'
-   +(hard.length?'<div style="margin-top:4px">'+hard.map(x=>'<div class="tag warn" style="display:block;margin:3px 0;white-space:normal;line-height:1.6">'+esc(x)+'</div>').join('')+'</div>':'')
-   +(rec.length?'<div style="margin-top:4px"><b style="font-size:13px">推荐知识点</b> '+aiKpChips(rec,'cAiKp','',null,'cAiIgnoreKp')+'</div>':'')
-   +(tags.length?'<div style="margin-top:4px"><b style="font-size:13px">推荐标签</b> '+aiTagChips(tags,'cAiTag','',null,'cAiTagIgnore')+'</div>':'')+ '<div style="margin-top:6px"><button class="btn sm" data-act="cAiRefresh">重新检查</button> <button class="btn sm" data-act="cAiContentAudit">查看链路检查</button> <span class="hint">建议只写进当前编辑表单，保存后才落库</span></div>'
-   +'</div>';
+  if(!rec.length&&!hard.length)return '';
+  return aiFieldBox('推荐知识点 / 链路提醒',(typeof UI!=='undefined'&&UI.sel.cAiStale?'<div class="ai-stale">标题 / 正文已修改，下面的建议可能已过期。建议先重新检查。</div>':'')+(hard.length?hard.map(x=>'<div class="ai-warn">'+esc(x)+'</div>').join(''):'')+(rec.length?aiKpChips(rec,'cAiKp','',null,'cAiIgnoreKp'):'')+'<div class="ai-inline-actions"><button class="link" data-act="cAiRefresh">重新检查</button><button class="link" data-act="cAiContentAudit">查看链路检查</button></div>','cKpAdv');
 }
+function aiContentTagAdviceHtml(){
+  if(typeof C==='undefined'||!C)return '';
+  const tags=aiRecommendTags(aiContentText(),{limit:4}).filter(x=>!(C.tags||[]).includes(x.tag.id)&&!(C.__aiIgnoreTags||[]).includes(x.tag.id));
+  if(!tags.length)return '';
+  return aiFieldBox('推荐内容标签',aiTagChips(tags,'cAiTag','',null,'cAiTagIgnore'),'cTagAdv');
+}
+function aiContentAdviceHtml(){
+  return aiContentKpAdviceHtml()+aiContentTagAdviceHtml();
+}
+A.cAiJumpKp=()=>{closeDlg();const el=document.querySelector('#main [data-wc=clear]');toast('在上方「覆盖哪些知识点」里搜索并采纳','');document.querySelector('#main [data-wc=cKpAdd]')?.focus()};
+A.cAiJumpMain=()=>{closeDlg();toast('在知识点标签里点「设为主讲解」','');};
+A.cAiJumpTag=()=>{closeDlg();document.querySelector('#main .tag-picker select')?.focus()};
 A.cAiKp=el=>{const id=el.dataset.v;if(!C)return;const had=(C.kps||[]).includes(id);C.kps=C.kps||[];C.kpRole=C.kpRole||{};if(!had)C.kps.push(id);const o=aiAdoptKpRole(id,C.mainKp,C.kpRole,!C.mainKp);C.mainKp=o.mainKp;C.kpRole=o.kpRole;aiLog('内容推荐知识点',C.title,[{kp:kp(id)}],true);toast(had?'已设为主讲解':'已采纳「'+kp(id).name+'」为主讲解','ok');render()};
 A.cAiIgnoreKp=el=>{if(!C)return;const id=el.dataset.v;C.__aiIgnoreKps=C.__aiIgnoreKps||[];C.__aiIgnoreKps=[...new Set(C.__aiIgnoreKps.concat(id))];aiLog('内容忽略知识点',C.title,[{kp:kp(id)}],false);toast('已忽略该建议，不会写入','ok');render()};
 A.cAiTag=el=>{const id=el.dataset.v;if(!C)return;C.tags=C.tags||[];const had=C.tags.includes(id);if(!had)C.tags.push(id);aiLog('内容推荐标签',C.title,[{name:(ptagOf(id)||{}).name}],true);toast(had?'该标签已在列表中':'已采纳标签「'+(ptagOf(id)||{}).name+'」',had?'warn':'ok');render()};
 A.cAiRefresh=()=>{if(!C)return;UI.sel.cAiTick=(UI.sel.cAiTick||0)+1;toast('已按当前标题 / 正文重新检查','ok');render()};
-A.cAiContentAudit=()=>{if(!C)return;const rows=aiAuditContent({_form:true});openDlg('AI 链路检查','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">检查这条内容是否挂对知识点、是否有主讲解；不会自动写入</span></div>'+(rows.length?rows.map(r=>'<div style="margin:6px 0"><span class="tag '+(r.lv>=2?'err':'warn')+'">'+esc(r.t)+'</span> <span class="hint">'+esc(r.d)+'</span></div>').join(''):'<div class="chk ok"><b>✓</b><span>当前链路检查通过</span></div>')+'</div>','<button class="btn" data-act="close">关闭</button>')};
+A.cAiContentAudit=()=>{if(!C)return;const rows=aiAuditContent({_form:true});openDlg('AI 链路检查','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">检查这条内容是否挂对知识点、是否有主讲解；不会自动写入</span></div>'+(rows.length?rows.map(r=>'<div style="margin:6px 0"><span class="tag '+(r.lv>=2?'err':'warn')+'">'+esc(r.t)+'</span> <span class="hint">'+esc(r.d)+'</span>'+(r.t==='未挂知识点'?' <button class="btn sm" data-act="cAiJumpKp">去挂知识点</button>':'')+(r.t==='没有主讲解'?' <button class="btn sm" data-act="cAiJumpMain">去设主讲解</button>':'')+(r.t==='缺内容标签'?' <button class="btn sm" data-act="cAiJumpTag">去补标签</button>':'')+'</div>').join(''):'<div class="chk ok"><b>✓</b><span>当前链路检查通过</span></div>')+'</div>','<button class="btn" data-act="close">关闭</button>')};
 function aiAuditContent(c){
   const out=[];
   if(!c)return out;
@@ -301,12 +315,15 @@ const AI_PAGE_GUIDE={
  qform:['一题只考一个知识点','题要挂在知识点上，并从已定稿讲解里找依据；AI 可推荐来源，题干 / 干扰项必须人写。','aiQuizGap','看推荐来源'],
  dform:['一个演练只练一个点','技能型知识点最适合做演练；AI 只推荐来源讲解，客户话 / 必说点 / 思路点要人补。','aiDrillGap','看推荐来源'],
  effect:['先看就绪度，再看错题','就绪度回答「学得好是否卖得好」；错题集找共性；调优只在证据不足时改口径。','aiOpen','AI 检查建议'],
+ coach:['先看门店卡上的“下一步”','每家门店都按「学 → 练 → 检 → 用 → 馈」推进；点“打开辅导”先看下一步，再填计划、检核、陪跑反馈或复测。','coachGuide','看辅导流程'],
 }
 function aiPageGuideHtml(){
   const key=UI.page==='kpform'?'kp':UI.page==='cedit'?'cedit':UI.page==='qform'?'qform':UI.page==='dform'?'dform':UI.page;
   const g=AI_PAGE_GUIDE[key];if(!g)return '';
-  return '<div class="ai-guide"><b>'+esc(g[0])+'</b><span>'+esc(g[1])+'</span><button class="link" data-act="'+g[2]+'">'+esc(g[3])+' →</button></div>';
+  return '<div class="ai-guide"><b>'+esc(g[0])+'</b><span>'+esc(g[1])+'</span><button class="link" data-act="'+g[2]+'">'+esc(g[3])+' →</button><button class="link ai-guide-why" data-act="aiWhy">为什么这样建议</button></div>';
 }
+A.coachGuide=()=>openDlg('入店辅导怎么用','<div style="line-height:1.9"><b>一张门店卡 = 一个辅导项目</b><br>① 触发：先看为什么来（目标未达成 / 项目结项转入）；<br>② 计划：选“学什么、练什么”，锁定一个主指标；<br>③ 到店：完成入店前检核 + 至少 2 项辅导中检核，写一条真实记录；<br>④ 陪跑：日/周/月反馈，日看动作、周看趋势、月看结果；<br>⑤ 复测：填辅导后数据和结论，判断这次辅导值不值得复制；<br>⑥ 结案：写复盘和可沉淀动作。<br><span class="hint">AI 只提示下一步和缺口，所有写入需要你确认。</span></div>','<button class="btn" data-act="close">知道了</button>');
+A.aiWhy=()=>openDlg('AI 建议的依据','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">当前 Demo 用的是可解释规则，不是黑盒</span></div><div style="line-height:1.9"><b>推荐知识点</b>：标题 / 正文 / 关键词命中知识点名称、同义词、标签，同车型再加分。<br><b>推荐标签</b>：文本直接提到标签，或相似知识点挂了这个标签。<br><b>新车检查</b>：先从资料识别新车名，再拿参考车型的知识点 / 标签做差集。<br><b>链路检查</b>：检查有没有挂知识点、有没有主讲解、是否缺内容标签、标题是否重复。<br></div><div class="hint" style="margin-top:8px">所有建议只展示，不会自动写入；点「采纳」才写入当前对象，并记入 AI 留痕。</div></div>','<button class="btn" data-act="close">知道了</button>')
 const _aiOldPageHelp=typeof pageHelp==='function'?pageHelp:null;
 pageHelp=function(){
   const key=UI.page==='kpform'?'kp':UI.page==='cedit'?'cedit':UI.page==='qform'?'qform':UI.page==='dform'?'dform':UI.page;
@@ -338,8 +355,10 @@ A.aiOpen=()=>{const c=aiGlobalCounts();const row=(icon,title,desc,btn)=>'<div cl
    +row('🧹','疑似重复标签 '+c.tagDup.length+' 组','标签治理只提示，不自动合并',c.tagDup.length?'<button class="btn sm" data-act="aiGoTag">去治理</button> <button class="btn sm" data-act="aiSnooze" data-v="tagdup">今天忽略</button>':'')
    +row('🚗','空白车型 '+c.carGap.length+' 款','在售车型还没有任何知识点',c.carGap.length?'<button class="btn sm" data-act="aiGoCarGap">去检查</button>':'')
    +row('⚠️','学员集中薄弱 '+c.weak.length+' 个点','已有讲解仍弱时，优先补练/指派学习包',c.weak.length?'<button class="btn sm" data-act="aiGoWeak">去处理</button>':'')
+   +row('🧑‍🏫','入店辅导：待复测 / 未反馈','陪跑要有日周月反馈，复测后才有结案依据',((typeof S!=='undefined'&&S.tickets&&S.tickets.filter(t=>t.st==='陪跑'||t.st==='复测').length)?'<button class="btn sm" data-act="aiGoCoach">去看辅导</button>':''))
    +row('🚙','新车信息检查','粘贴新车信息，检查标签和知识点齐不齐','<button class="btn sm" data-act="aiGoCar">去检查</button>')
-   +'<div class="hint" style="margin-top:8px">所有建议均需人工采纳；AI 不自动写入业务数据。采纳 / 忽略会留痕。</div>'
+   +((S.aiLog||[]).length?'<div class="ai-log-head"><button class="link" data-act="aiLog">查看全部留痕</button><b>最近采纳 / 忽略</b><span class="hint">谁改的、改了什么，都可追溯</span></div>'+S.aiLog.slice(0,5).map(x=>'<div class="ai-log"><span class="tag '+(x.accepted?'ok':'')+'">'+(x.accepted?'已采纳':'已忽略')+'</span><span>'+esc(x.type)+'</span><span class="hint">'+esc(x.output||x.input)+'</span><span class="hint">'+esc(x.who)+' · '+esc(x.t)+'</span></div>').join(''):'')
+   +'<div class="hint" style="margin-top:8px">所有建议均需人工采纳；AI 不自动写入业务数据。采纳 / 忽略会留痕。当前 AI 是规则模拟，不是真实大模型；正式接入时只替换推荐函数，页面和采纳流程不变。</div>'
    +'</div>','<button class="btn" data-act="close">关闭</button>',true);};
 A.aiGoImport=()=>{const b=S.cimps.find(x=>x.st==='待确认');if(!b)return toast('没有待确认批次','err');closeDlg();UI.page='content';UI.tab.content='导入';UI.sel.ciB=b.id;render()};
 A.aiGoUnlinked=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';UI.sel.caf={kp:'未挂载'};UI.sel.cadv=true;render()};
@@ -348,6 +367,8 @@ A.aiGoKpNoTag=()=>{closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;UI.sel
 A.aiGoContent=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';UI.sel.caf={};UI.sel.cadv=true;render();toast('可到内容详情补内容标签','')};
 A.aiGoTag=()=>{closeDlg();UI.page='tagmanage';render()};
 A.aiGoCarGap=()=>{const c=aiGlobalCounts();const car=c.carGap[0];closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_BATCH;render();if(car){UI.sel.kpCar=aiCheckNewCar(car);render()}setTimeout(()=>{const e=document.getElementById('kp_car_info');if(e)e.scrollIntoView({block:'center'})},50)};
+A.aiLog=()=>{openDlg('AI 建议留痕','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">只记录采纳 / 忽略，不记录模型隐私或完整输入</span></div>'+((S.aiLog||[]).length?S.aiLog.slice(0,30).map(x=>'<div class="ai-log"><span class="tag '+(x.accepted?'ok':'')+'">'+(x.accepted?'已采纳':'已忽略')+'</span><span>'+esc(x.type)+'</span><span class="hint">'+esc(x.output||x.input)+'</span><span class="hint">'+esc(x.who)+' · '+esc(x.t)+'</span></div>').join(''):'<div class="hint">还没有采纳或忽略记录</div>')+'</div>','<button class="btn" data-act="close">关闭</button>')};
+A.aiGoCoach=()=>{closeDlg();UI.page='coach';UI.tab.coach='辅导总览';render()};
 A.aiGoWeak=()=>{closeDlg();UI.page='catalog';UI.tab.catalog='总览';render()};
 A.aiGoCar=()=>{closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_BATCH;render();setTimeout(()=>{const e=document.getElementById('kp_car_info');if(e)e.scrollIntoView({block:'center'})},50)};
 function aiWorkbenchCard(){

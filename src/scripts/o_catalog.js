@@ -300,7 +300,7 @@ A.kfset=el=>{KF[el.dataset.k]=el.value;if(el.dataset.k==='dim')KF.dimAuto=false;
 A.kfMore=()=>{KF.more=!KF.more;render()};
 A.kfTagAdd=el=>{const v=el.value;if(!v)return;if(!KF.tags.includes(v))KF.tags.push(v);render()};
 A.kfTagDel=el=>{KF.tags=KF.tags.filter(x=>x!==el.dataset.v);render()};
-document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.kf&&KF)KF[el.dataset.kf]=el.value});
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.kf&&KF){KF[el.dataset.kf]=el.value;if(UI.sel.kfAdvice)UI.sel.kfAdvice.at=0}});
 function pgKpForm(){
   if(!KF){UI.page='catalog';return pgCatalog()}
   const sel=(k,arr)=>'<select data-wc="kfset" data-k="'+k+'">'+arr.map(o=>'<option '+(KF[k]===o?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>';

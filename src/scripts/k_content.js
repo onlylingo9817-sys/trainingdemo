@@ -145,6 +145,7 @@ function pgContent(){
   if(t==='导入')b=pgImport();
   if(t==='使用与反馈')b=cUsage(V);
   return head+tabsH('content',CTABS)+b}
+A.cTab=el=>{UI.tab.content=el.dataset.v||'全部内容';render()};
 A.cNewMenu=()=>{openDlg('新增什么?','<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+[['话术','一条一线话术(SPIN 四段)'],['课程','图文 / 视频 / PDF / 外链'],['题','单选 / 多选 / 判断,带解析'],['演练','客户一句 → 学员答 → 评分点评']].map(x=>'<div class="card kp-click" style="cursor:pointer;margin:0;text-align:center" data-act="cNewAny" data-v="'+x[0]+'"><b style="font-size:16px">'+x[0]+'</b><div class="hint" style="margin-top:6px">'+x[1]+'</div></div>').join('')+'</div>','<button class="btn" data-act="close">取消</button>')};
 const _cNewAny=A.cNewAny;A.cNewAny=el=>{closeDlg();const k=el.dataset.v;if(k==='题')return A.qNew();if(k==='演练')return A.drNew();A.cNew({dataset:{}});C.kind=k;if(k==='课程')C.type='图文';render()};
 A.cafAdv=()=>{UI.sel.cadv=true;render()};A.cafAdvOff=()=>{UI.sel.cadv=false;render()};

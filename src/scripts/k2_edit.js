@@ -32,14 +32,14 @@ function cFromC(c){c=cEnsure(c);c.mainKp=c.mainKp||(c.kps||[])[0]||'';c.kpRole=O
 function cAsObj(){ // 把表单状态转成可检查的内容对象
   const body=C.kind==='话术'?{scene:C.bscene,spin:{S:(C.spin.S||'').trim(),P:(C.spin.P||'').trim(),I:(C.spin.I||'').trim(),N:(C.spin.N||'').trim()}}:{outline:C.intro};
   return {id:C.id,kind:C.kind,type:C.type,title:C.title,lecturer:C.lecturer,cover:C.cover,chan:C.chan,link:C.link,assets:C.assets,body,kw:C.kw,subject:C.subject,expire:C.expire,source:C.source}}
-A.cNew=el=>{if(!['hq','region'].includes(UI.role.type))return toast('当前身份不能新增内容','err');
+A.cNew=el=>{if(!['hq','region'].includes(UI.role.type))return toast('当前身份不能新增内容','err');UI.sel.cAiStale=false;
   const tid=(el&&el.dataset&&el.dataset.t)||'';const t=tid&&topic(tid);C=cBlank({tid,aiOpen:!!(el&&el.dataset&&(el.dataset.ai||el.dataset.t))});
   if(t){C.kind=['强竞品','政策类','技能类·约试驾'].includes(t.sug.sub)?'话术':'课程';cFromTopic(t);if(t.kpId){C.kps=[t.kpId];const kk=kp(t.kpId);if(kk&&kk.car&&kk.car!=='通用车型')C.car=kk.car}}
   if(C.kind==='课程')C.type='图文';
   UI.page='cedit';render();$('#main').scrollTop=0};
 function cFromTopic(t){const i=ind(t.sug.ind);C.goal='让顾问遇到「'+(t.obj&&t.obj!=='-'?t.obj:t.title.slice(0,10))+'」相关场景时能讲对、讲全'+(i?',提升「'+i.name+'」':'');C.desc=t.desc||t.title;const k=CK[cKeyOf(t.title+t.obj+(t.sug.kw||''))];if(k&&C.subjectAuto)C.subject=k[0]}
-A.cEdit=el=>{closeDlg();C=cFromC(content(el.dataset.id));UI.page='cedit';render();$('#main').scrollTop=0};
-document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.cf&&C){setPath(C,el.dataset.cf,el.value);cLive()}});
+A.cEdit=el=>{closeDlg();C=cFromC(content(el.dataset.id));UI.sel.cAiStale=false;UI.page='cedit';render();$('#main').scrollTop=0};
+document.addEventListener('input',e=>{const el=e.target;if(el.dataset&&el.dataset.cf&&C){setPath(C,el.dataset.cf,el.value);cLive();if(UI.sel.cAiStale!==false)UI.sel.cAiStale=true;const adv=document.querySelector('#cKpAdv');if(adv)adv.classList.add('stale')}});
 function cLive(){const e=$('#qcbox');if(e&&C)e.innerHTML=qcHtml();const p=$('#spinpv');if(p&&C)p.innerHTML=spinHtml(C.spin)}
 const SPIN_HINT={S:'情境:客户现在的场景 / 一句话开场(称呼 + 具体场景)',P:'痛点:这个场景下客户遇到的难处',I:'影响:不解决会怎样(把后果加亮)',N:'需求-收益:我们的产品怎么解决,带上客户的感受'};
 A.spinHl=el=>{const t=$('#sp_'+el.dataset.k);const s=t.selectionStart,e=t.selectionEnd;if(s===e)return toast('先在文本框里选中要加亮的短语','err');const v=t.value;C.spin[el.dataset.k]=v.slice(0,s)+'**'+v.slice(s,e)+'**'+v.slice(e);render()};
@@ -113,7 +113,7 @@ function pgContentEdit(){
    +FR('内容性质','<div class="rels">'+KINDS.map(k=>'<span class="'+(C.kind===k?'on':'')+'" data-act="ckind" data-v="'+k+'">'+k+'</span>').join('')+'</div>',{req:1,nw:1,h:C.kind==='话术'?'话术 = 「图文」内容 + 话术字段(SPIN 四段、关键词组),用于「关键词开口率」等指标':'课程 = 现有学堂内容(图文 / 视频 / PDF / 外部链接)'})
    +FR('内容类型','<div class="rels">'+CTYPES.map(x=>'<span class="'+(C.type===x?'on':'')+'" '+(C.kind==='话术'&&x!=='图文'?'style="opacity:.4;pointer-events:none"':'')+' data-act="ctype" data-v="'+x+'">'+x+'</span>').join('')+'</div>',{req:1})
    +FR('覆盖哪些知识点'+NEW,kpPicker(),{h:'一门课可以覆盖多个点：主讲解算作该点的可用讲解；提及只用于检索和推荐，不会让知识点误判为已备齐'})
-   +FR('AI 链路检查',(typeof aiContentAuditHtml==='function'?aiContentAuditHtml(C):'')+(typeof aiContentAdviceHtml==='function'?'':''),{h:'只提示，不自动改；每条建议都可回表单确认'})
+   +(typeof aiContentKpAdviceHtml==='function'?aiContentKpAdviceHtml():'')
    +FR('课程讲师','<select data-wc="cset" data-k="lecturer">'+LECTURERS.map(x=>'<option '+(C.lecturer===x?'selected':'')+'>'+x+'</option>').join('')+'</select> <span class="hint">新增讲师请先在「讲师管理」新建哦</span>',{req:1})
    +FR('封面图',C.cover?'<span class="cov" style="width:64px;height:44px">封面</span> '+esc(C.cover)+' <a class="link err" data-act="cCoverDel">删除</a>':'<label class="btn sm" style="cursor:pointer">上传封面图<input type="file" style="display:none" data-wc="cCover" accept=".png,.jpg,.jpeg"></label> <a class="link" data-act="cCoverDemo">使用示例封面</a><div class="fh">图片固定尺寸 324px×220px,格式 JPG / PNG(沿用现有规则)</div>',{req:1})
    +(C.type==='外部链接'?FR('链接地址','<input type="text" data-cf="link" value="'+esc(C.link)+'" placeholder="配置链接时请确认授权了文档应用知识服务中心-汽车学堂" style="width:100%;max-width:520px">',{req:1}):'')
@@ -131,8 +131,7 @@ function pgContentEdit(){
    +FR('发布到零售通','<span class="hint">曝光相关设置(分类、可见范围、发布方式、首页推荐、权威)在内容定稿后,到详情「发布到零售通」里做;这里只维护内容本身</span>')
    +'</div>';
   let nw='<div class="card frm"><h3 style="margin-bottom:4px">内容属性'+NEW+'</h3><div class="hint" style="margin-bottom:14px">用于检索、到期提醒和效果归因;现有「内容管理」没有这组字段</div>'
-   +(C.kind==='话术'?FR('车型',sel('car',tax.car,C.car))+FR('场景分类',sel('theme',['']  .concat(tax.theme),C.theme),{h:'与团队话术文档一致:空间与舒适 / 商务与工作 / 亲子与家庭 …'}):'')+FR('主题对象',sel('subject',tax.subject,C.subject))+FR('场景',sel('scene',tax.scene,C.scene))+FR('能力维度',sel('ability',tax.ability,C.ability))+FR('内容标签',typeof tagPickerHtml==='function'?tagPickerHtml('ctag',C.tags||[],{}):'')+FR('适用人群',sel('aud',tax.aud,C.aud))
-   +(typeof aiContentAdviceHtml==='function'?aiContentAdviceHtml():'')
+   +(C.kind==='话术'?FR('车型',sel('car',tax.car,C.car))+FR('场景分类',sel('theme',['']  .concat(tax.theme),C.theme),{h:'与团队话术文档一致:空间与舒适 / 商务与工作 / 亲子与家庭 …'}):'')+FR('主题对象',sel('subject',tax.subject,C.subject))+FR('场景',sel('scene',tax.scene,C.scene))+FR('能力维度',sel('ability',tax.ability,C.ability))+FR('内容标签',(typeof tagPickerHtml==='function'?tagPickerHtml('ctag',C.tags||[],{}):'')+(typeof aiContentTagAdviceHtml==='function'?aiContentTagAdviceHtml():''))+FR('适用人群',sel('aud',tax.aud,C.aud))
    +FR('有效期','<input type="date" data-cf="expire" value="'+esc(C.expire)+'">',{req:isPolicy({subject:C.subject,title:C.title}),h:'空 = 长期有效;到期前 '+S.cfg.expWarn+' 天提醒,到期自动下架。政策类必填'})
    +FR('出处','<input type="text" data-cf="source" value="'+esc(C.source)+'" placeholder="文件名 / 文号 / 链接,如 国补实施细则(2026 年 10 月版)" style="width:100%;max-width:520px">',{req:isPolicy({subject:C.subject,title:C.title}),h:'政策类必填'})
    +FR('附件素材','<div id="astbox">'+(C.assets.filter(a=>!['视频','PDF'].includes(a.kind)||C.type!==a.kind).map(a=>'<div style="margin-bottom:6px"><span class="tag">'+a.kind+'</span> '+esc(a.name)+(FMT_NEW.includes(a.kind)?' <span class="tag warn">需学堂新增上传</span>':'')+' <span class="hint">'+esc(a.size)+'</span> <a class="link err" data-act="cAssetDel" data-i="'+C.assets.indexOf(a)+'">删除</a></div>').join(''))+'<label class="btn sm" style="cursor:pointer">上传附件<input type="file" style="display:none" data-wc="cAsset" accept=".mp4,.mov,.pdf,.ppt,.pptx,.mp3,.m4a,.wav,.png,.jpg,.jpeg"></label></div>',{h:'PPT / 音频 / 图片等随内容挂的参考资料。视频、PDF 沿用现有上传规则;PPT、音频是新增形态,需学堂侧新增。Demo 只记录文件名'})
@@ -145,7 +144,7 @@ function pgContentEdit(){
 A.cpt=el=>{C.publishType=el.dataset.v;render()};
 A.cPreview=()=>{const o=cAsObj();const L=C.kind==='话术'?[]:spl(C.intro);
   openDlg('零售通预览(示意)','<div class="phone-pv"><div class="pv-nav">学堂 › 学习专区 › '+esc(C.cat)+'</div><div class="pv-card"><div class="pv-cov">'+(C.cover?'封面':'未上传封面')+'</div><div><b>'+esc(C.title||'(未填标题)')+'</b><div class="hint">'+C.type+(C.kind==='话术'?' · 话术':'')+' · 讲师 '+esc(C.lecturer)+'</div></div></div><div class="pv-body">'+(C.kind==='话术'?spinHtml(C.spin,1):L.length?L.slice(0,6).map(x=>'<div>'+esc(x)+'</div>').join(''):'<span class="hint">(无正文)</span>')+'</div><div class="pv-lk">这条'+C.kind+'对你有用吗?  👍 有用   👎 没用   · 内容有误?纠错</div></div><div class="hint" style="margin-top:8px">发布后出现在零售通学堂「学习专区」的「'+esc(C.cat)+'」分类,可见:'+esc(C.chan.join('、')||'未选')+' · '+esc(C.vis)+'</div>','<button class="btn" data-act="close">关闭</button>')};
-A.cSave=el=>{const mode=el.dataset.s;
+A.cSave=el=>{const mode=el.dataset.s;UI.sel.cAiStale=false;
   if(!C.title.trim())return toast('请输入课程标题','err');
   let c=C.id?content(C.id):null;const isNew=!c;const me=meFull();
   const t=C.tid&&topic(C.tid);const sug=t?JSON.parse(JSON.stringify(t.sug)):(c&&c.sug)||inferSug(C.title+C.goal+C.desc,'');

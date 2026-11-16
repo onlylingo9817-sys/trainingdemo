@@ -11,7 +11,7 @@ const tid=adv.tags[0].tag.id;A.kfAiTag({dataset:{v:tid}});
 CK('采纳后写入表单标签',KF.tags.includes(tid),KF.tags.join(','));
 const n0=KF.tags.length;A.kfAiTagIgnore({dataset:{v:adv.tags[1]?adv.tags[1].tag.id:tid}});A.kfAdvice();
 CK('忽略建议不会新增标签',KF.tags.length===n0,'before='+n0+' after='+KF.tags.length);
-CK('知识点表单可见 AI 建议',/AI 建议/.test(document.querySelector('#main').innerText));
+CK('知识点表单可见 AI 建议',!!document.querySelector('#kfAbAdv')&&/建议主要训练能力/.test((document.querySelector('#main')||{}).innerText||''));
 /* 内容编辑：推荐知识点 / 标签 */
 A.cNew({dataset:{}});C.kind='话术';C.title='露营外放电 · 电磁炉和电水壶';C.bscene='露营时客户问能不能用电';C.spin={S:'周末露营',P:'没电不方便',I:'影响体验',N:'6.6kW 外放电,电磁炉电水壶都能带'};C.cover='x.png';render();
 CK('内容编辑页出现 AI 建议',/AI 建议/.test(tx()));

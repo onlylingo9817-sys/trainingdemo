@@ -208,7 +208,7 @@ function pgKpForm(){
   const tags=tagOptions({});
   const dup=S.kps.find(k=>k.id!==KF.id&&k.name===KF.name.trim()&&k.cars.some(c=>KF.cars.includes(c)));
   const carBox='<div class="kp-checks">'+cars.map(c=>'<label class="kp-check"><input type="checkbox" data-wc="kfCar" value="'+esc(c)+'" '+(KF.cars.includes(c)?'checked':'')+'> '+esc(c)+'</label>').join('')+'</div>';
-  const tagBox=tagPickerHtml('kfTag',KF.tags,{});
+  const tagBox=tagPickerHtml('kfTag',KF.tags,{})+'<div class="tag-ai-slot">'+(typeof aiKpFormAdviceHtml==='function'?aiKpFormAdviceHtml():'')+'</div>';
   const more=KF.more?'<div class="kp-more">'+FR('标签',tagBox,{h:'可以是车上部位，也可以是政策、卖点、场景等；一个点可挂多个标签'})
    +FR('同义词','<input type="text" data-kf="syn" value="'+esc(KF.syn)+'" placeholder="用户会怎么说，如 后备箱、装得下" style="width:100%;max-width:460px">',{h:'用于搜索和内容挂载推荐'})
    +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'没有负责人不能启用'})+'</div>':'<div class="hint" style="margin:8px 0"><a class="link" data-act="kfMore">展开：标签 / 同义词 / 负责人</a> · 当前负责人 '+esc(KF.owner||'暂无')+' · 标签 '+KF.tags.length+' 个</div>';
@@ -216,11 +216,9 @@ function pgKpForm(){
    +'<div class="card frm">'+FR('名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="一个能单独讲一次、单独出一道题的点，如：6.6kW 外放电" style="width:100%;max-width:460px">',{req:1,h:'太粗就拆，太细就并'})
    +FR('适用车型',carBox,{req:1,h:'可以多选。同一个卖点同时适用多款车时，建一个点就够了，不用复制多条'})
    +FR('知识类型','<div class="rels">'+[['事实型','产品知识'],['技能型','销售动作']].map(x=>'<span class="'+(KF.type===x[0]?'on':'')+'" data-act="kfType" data-v="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>',{req:1,h:KF.type==='事实型'?'产品知识：记住这款车有什么、怎么讲':'销售动作：探需、讲车、处理异议等，看练得怎么样'})
-   +FR('主要训练能力','<select data-wc="kfAb">'+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id?'selected':'')+'>'+esc(x.root+' · '+x.name)+'</option>').join('')+'</select>',{req:1,h:'和岗位画像使用同一套能力项；这样诊断、画像、效果看板才对得上'})
+   +FR('主要训练能力','<select data-wc="kfAb">'+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id?'selected':'')+'>'+esc(x.root+' · '+x.name)+'</option>').join('')+'</select>'+(typeof aiKpAbilityAdviceHtml==='function'?aiKpAbilityAdviceHtml():''),{req:1,h:'和岗位画像使用同一套能力项；这样诊断、画像、效果看板才对得上'})
    +more
-   +'<div class="kp-actions" style="margin:6px 0 10px"><button class="btn sm" data-act="kfAdvice">AI 匹配标签</button><span class="hint">按名称 / 同义词 / 已选标签推荐，只建议</span></div>'
-   +(typeof aiKpFormAdviceHtml==='function'?aiKpFormAdviceHtml():'')
-   +(KF.type==='事实型'&&!KF.tags.length?'<div class="chk rec"><b>·</b><span>产品知识建议挂至少一个标签，否则标签筛选里容易漏掉它</span></div>':'')
+   +((KF.type==='事实型'&&!KF.tags.length)?'<div class="chk rec"><b>·</b><span>产品知识建议挂至少一个标签，否则标签筛选里容易漏掉它</span></div>':'')
    +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」适用这些车型，不要重复建</span></div>':'')
    +'</div><div class="dock"><span class="sp"></span><button class="btn" data-act="kfCancel">取消</button><button class="btn pri" data-act="kfSave">保存</button></div>';
 }

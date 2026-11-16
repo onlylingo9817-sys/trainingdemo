@@ -140,9 +140,9 @@ function seedDemo(){
   /* 辅导工单(由 P5 未达标门店 + 手工推荐生成) */
   mkTickets(p5,3,'推荐辅导店');
   const tk3=S.tickets.filter(t=>t.proj===p5.id);
-  if(tk3[0]){tk3[0].st='复测';tk3[0].owner='周丽';tk3[0].post=+(tk3[0].pre+3.1).toFixed(1)}
-  if(tk3[1]){tk3[1].st='到店';tk3[1].owner='陈磊'}
-  if(tk3[2]){tk3[2].st='派单';tk3[2].owner='吴芳'}
+  if(tk3[0]){tk3[0].st='复测';tk3[0].owner='周丽';tk3[0].post={value:+(tk3[0].pre+3.1).toFixed(1),pre:tk3[0].pre,result:'有改善，但还不稳定',next:'把有效话术放进早会，继续观察一周',t:addDays(today,-2)};tk3[0].feedback=[{t:addDays(today,-7),who:'周丽',kind:'日',title:'日反馈：留资回访有遗漏',text:'抽查 5 条线索，2 条超过 2 小时未回访；已要求当天补齐。'},{t:addDays(today,-3),who:'周丽',kind:'周',title:'周反馈：邀约到店回升',text:'本周邀约到店 42%，高于上周 36%；同城标杆 48%，还有差距。'}]}
+  if(tk3[1]){tk3[1].st='陪跑';tk3[1].owner='陈磊';tk3[1].feedback=[{t:addDays(today,-5),who:'陈磊',kind:'日',title:'现场动作有改善',text:'试驾前会主动确认家庭场景，但报价时仍先让价。'}]}
+  if(tk3[2]){tk3[2].st='到店';tk3[2].owner='吴芳';tk3[2].checks.during[0].done=true;tk3[2].checks.during[1].done=true;tk3[2].note='顾问接待完整，试驾路线单一，商谈时缺少总拥有成本对比。'}
   mkTickets(p4,1,'项目结项转入');
   // 项目内容版本锁定:已有项目节点锁定当时版本
   S.projects.forEach(p=>p.nodes.forEach(n=>{if(n.contentId&&content(n.contentId)){const c=content(n.contentId);const vv=(c.vers||[]).find(x=>x.v===1)||(c.vers||[])[0]||{v:1,snap:snapOf(c)};n.contentVer=vv.v;n.snap=JSON.parse(JSON.stringify(vv.snap))}}));
