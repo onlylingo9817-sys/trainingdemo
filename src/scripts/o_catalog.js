@@ -39,7 +39,12 @@ const ptagLeaf=id=>!PTAGS.filter(t=>t.pid===id&&t.status!=='off').length;
 const kpTagTxt=k=>(k.tags||[]).map(id=>{const t=ptagOf(id);return t?t.path:''}).filter(Boolean);
 const kpTagNames=k=>(k.tags||[]).map(id=>{const t=ptagOf(id);return t?t.name:''}).filter(Boolean);
 const kp=id=>S.kps.find(k=>k.id===id);
-const kpMounted=k=>S.contents.filter(c=>(c.kps||[]).includes(k.id));
+/* 主讲解 / 关联提及:课程可能覆盖多个点，但只有"主讲解"才算备齐了该点的讲解；
+   关联提及只用于推荐和检索，不用于完备度。老数据没有 kpRole 时一律按主讲解兼容。 */
+const kpMountedAll=k=>S.contents.filter(c=>(c.kps||[]).includes(k.id));
+const kpMounted=k=>kpMountedAll(k).filter(c=>!c.kpRole||c.kpRole[k.id]!=='提及');
+const kpMentioned=k=>kpMountedAll(k).filter(c=>c.kpRole&&c.kpRole[k.id]==='提及');
+const kpRoleOf=(c,kid)=>(c.kpRole&&c.kpRole[kid])||'主讲解';
 const kpUsesQH=k=>(k.ext||[]).some(e=>e.src==='清河大学');
 const kpLabel=k=>k.name+(k.cars&&k.cars.length?' · '+k.cars.join('/'):(k.car&&k.car!=='通用车型'?' · '+k.car:''));
 const kpOwners=()=>[...new Set(LECTURERS.concat(S.roles.map(r=>r.name)).concat(UI.role.type==='boss'?[]:[UI.role.name]))];
@@ -80,13 +85,16 @@ function kpPicker(){
   const has=C.kps||[];const sel=has.map(kp).filter(Boolean);
   const rec=recKpsFor({title:C.title,kw:C.kw,car:C.car,text:(C.kind==='话术'?SPIN_K.map(k=>C.spin[k]||'').join(' '):C.intro)+' '+C.bscene},3).filter(k=>!has.includes(k.id));
   const opts=S.kps.filter(k=>k.st==='启用'&&!has.includes(k.id)&&kpCarOk(k,C.kind==='话术'?C.car:''));
-  return (sel.length?'<div style="margin-bottom:8px">'+sel.map(k=>'<span class="tag pri" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(kpLabel(k))+' <a class="link" data-act="cKpDel" data-v="'+k.id+'">×</a></span>').join('')+'</div>':'<div class="hint" style="margin-bottom:6px">还没有挂知识点。不挂也能提交,但进不了完备度检查。</div>')
+  const role=kid=>(C.kpRole&&C.kpRole[kid])||(C.mainKp===kid||(!C.mainKp&&has[0]===kid)?'主讲解':'提及');
+  return (sel.length?'<div style="margin-bottom:8px">'+sel.map(k=>{const r=role(k.id);return '<span class="tag '+(r==='主讲解'?'pri':'')+'" style="margin:0 6px 6px 0;padding:3px 8px">'+(r==='主讲解'?'主讲解 · ':'提及 · ')+esc(k.name)+' <a class="link" data-act="cKpRole" data-v="'+k.id+'">'+(r==='主讲解'?'改为提及':'设为主讲解')+'</a> <a class="link" data-act="cKpDel" data-v="'+k.id+'">×</a></span>'}).join('')+'</div>':'<div class="hint" style="margin-bottom:6px">还没有挂知识点。不挂也能提交,但进不了完备度检查。</div>')
+   +(sel.length>1?'<div class="hint" style="margin-bottom:6px;line-height:1.7">一门课可以覆盖多个知识点，但只有「主讲解」算作该点的可用讲解；「提及」只用于检索和推荐，不会让知识点误判为已备齐。</div>':'')
    +(rec.length?'<div style="margin-bottom:8px"><span class="hint">系统推荐(点一下确认):</span> '+rec.map(k=>'<span class="tag blue" style="cursor:pointer;margin:0 6px 4px 0;padding:3px 8px" data-act="cKpRec" data-v="'+k.id+'">+ '+esc(kpPickLbl(k))+'</span>').join('')+'</div>':'')
    +'<input list="cp_kl" data-wc="cKpAdd" placeholder="输入关键词搜索知识点,如 储物、外放电" style="width:100%;max-width:420px"><datalist id="cp_kl">'+opts.map(k=>'<option value="'+esc(kpPickLbl(k))+'"></option>').join('')+'</datalist>'
    +'<div class="hint" style="margin-top:4px">'+(C.kind==='话术'&&C.car&&C.car!=='通用车型'?'已按这条话术的车型预过滤(「'+esc(C.car)+'」+ 通用车型),可选 '+opts.length+' 个':'可选 '+opts.length+' 个')+'</div>'}
-A.cKpAdd=el=>{const v=(el.value||'').trim();if(!v)return;const k=S.kps.find(x=>x.id===v)||S.kps.find(x=>kpPickLbl(x)===v||kpLabel(x)===v);if(!k)return toast('没有这个知识点,请从提示列表里选','err');C.kps=C.kps||[];if(!C.kps.includes(k.id))C.kps.push(k.id);render()};
-A.cKpRec=el=>{C.kps=C.kps||[];if(!C.kps.includes(el.dataset.v))C.kps.push(el.dataset.v);render()};
-A.cKpDel=el=>{C.kps=(C.kps||[]).filter(x=>x!==el.dataset.v);render()};
+A.cKpAdd=el=>{const v=(el.value||'').trim();if(!v)return;const k=S.kps.find(x=>x.id===v)||S.kps.find(x=>kpPickLbl(x)===v||kpLabel(x)===v);if(!k)return toast('没有这个知识点,请从提示列表里选','err');C.kps=C.kps||[];C.kpRole=C.kpRole||{};if(!C.kps.includes(k.id)){C.kps.push(k.id);C.kpRole[k.id]=C.mainKp?'提及':'主讲解';if(!C.mainKp)C.mainKp=k.id}render()};
+A.cKpRec=el=>{C.kps=C.kps||[];C.kpRole=C.kpRole||{};if(!C.kps.includes(el.dataset.v)){C.kps.push(el.dataset.v);C.kpRole[el.dataset.v]=C.mainKp?'提及':'主讲解';if(!C.mainKp)C.mainKp=el.dataset.v}render()};
+A.cKpDel=el=>{C.kps=(C.kps||[]).filter(x=>x!==el.dataset.v);if(C.kpRole)delete C.kpRole[el.dataset.v];if(C.mainKp===el.dataset.v)C.mainKp=(C.kps||[])[0]||'';render()};
+A.cKpRole=el=>{C.kpRole=C.kpRole||{};const id=el.dataset.v;if(C.mainKp===id)C.mainKp='';else C.mainKp=id;C.kps.forEach(kid=>{C.kpRole[kid]=kid===C.mainKp?'主讲解':'提及'});render()};
 /* ---- 种子:知识点(试点:销售顾问 · 讲车)。在售车型 10 多个,这里只做 N70 / N90 / 通用三组 ---- */
 const KP_SEED=[
  // [id, 名称, 类型, 标签(路径,可多个), 能力维度, 车型, 同义词, 负责人]
@@ -127,6 +135,8 @@ function kpSeed(){
       if(m&&!['N108','N124'].includes(c.id)){c.kps=[m[1]];if(c.id==='N105'||c.id==='N107')c.kps=['K2']}}});
   /* 其中有一条话术同时讲两个点:空间 + 家庭出行 */
   const n15=content('N115');if(n15&&n15.kps)n15.kps=['K9','K1'];
+  /* 老内容没有主讲解/提及区分时，按历史口径把已挂点都视为主讲解（不改变原有完备度），并让详情有明确标注 */
+  S.contents.forEach(c=>{if(!(c.kps||[]).length)return;c.kpRole=c.kpRole||{};(c.kps||[]).forEach(kid=>{c.kpRole[kid]=c.kpRole[kid]||'主讲解'});c.mainKp=c.mainKp||c.kps[0]||''});
   S.kpCand=[
     {id:'C1',name:'充电与补能规划',type:'事实型',car:'N90 Max',from:'汽车语料 badcase 聚类',why:'近 14 天 86 条会话客户问"路上怎么充电",现有内容没有对应知识点',st:'待确认',sug:['长续航与补能']},
     {id:'C2',name:'智驾功能边界说明',type:'技能型',car:'通用车型',from:'一线点踩反馈',why:'「辅助驾驶省心」被点踩 3 次,原因"夸大"',st:'待确认',sug:['辅助驾驶与主动安全']},
@@ -208,7 +218,7 @@ function kpUnmounted(){
   const rows=S.contents.filter(c=>visC(c)&&!(c.kps||[]).length&&c.st!=='已归档');
   return srcBar('这些内容还没挂到任何知识点,所以进不了完备度检查,诊断出短板时也推荐不到。点「挂载」会按标题、关键词、车型给出最多 3 个推荐,点一下确认即可;也可以一键采纳全部推荐。')
    +'<div class="card"><h3>未挂载的内容 <span class="hint">共 '+rows.length+' 条</span> <button class="btn sm" data-act="kpAcceptAll" style="margin-left:10px">采纳全部首选推荐</button></h3>'+(rows.length?'<table class="t"><tr><th>ID</th><th>标题</th><th>性质</th><th>车型</th><th>状态</th><th>系统推荐(点击挂载)</th><th></th></tr>'+rows.map(c=>{const r=recKps(c);return '<tr><td>'+c.id+'</td><td style="white-space:normal;min-width:200px"><a class="link" data-act="cView" data-id="'+c.id+'">'+esc(c.title)+'</a></td><td>'+kindTag(c.kind)+'</td><td>'+esc(c.car||'-')+'</td><td>'+cchip(c.st)+'</td><td>'+(r.length?r.map(k=>'<span class="tag blue" style="cursor:pointer;margin:0 6px 4px 0;padding:3px 8px" data-act="kpMount" data-id="'+c.id+'" data-k="'+k.id+'">+ '+esc(kpLabel(k))+'</span>').join(''):'<span class="hint">没有合适的,先新增知识点</span>')+'</td><td><a class="link" data-act="cView" data-id="'+c.id+'">打开</a></td></tr>'}).join('')+'</table>':'<div class="chk ok"><b>✓</b><span>所有内容都已挂载到知识点</span></div>')+'</div>'}
-A.kpMount=el=>{const c=content(el.dataset.id);c.kps=c.kps||[];if(!c.kps.includes(el.dataset.k))c.kps.push(el.dataset.k);chist(c,'挂载知识点',kpLabel(kp(el.dataset.k)));toast('已挂载到「'+kp(el.dataset.k).name+'」','ok');render()};
+A.kpMount=el=>{const c=content(el.dataset.id);c.kps=c.kps||[];c.kpRole=c.kpRole||{};if(!c.kps.includes(el.dataset.k)){c.kps.push(el.dataset.k);c.kpRole[el.dataset.k]=c.mainKp?'提及':'主讲解';if(!c.mainKp)c.mainKp=el.dataset.k}chist(c,'挂载知识点',kpLabel(kp(el.dataset.k)));toast('已挂载到「'+kp(el.dataset.k).name+'」','ok');render()};
 A.kpAcceptAll=()=>{let n=0;S.contents.filter(c=>visC(c)&&!(c.kps||[]).length&&c.st!=='已归档').forEach(c=>{const r=recKps(c);if(r.length){c.kps=[r[0].id];chist(c,'挂载知识点','采纳系统推荐:'+kpLabel(r[0]));n++}});toast(n?'已采纳 '+n+' 条首选推荐':'没有可采纳的推荐',n?'ok':'err');render()};
 function kpCands(){
   const rows=S.kpCand;
@@ -363,7 +373,7 @@ function kpPubHint(c){
   if((c.kps||[]).length)return '<div class="tag blue" style="display:block;margin-bottom:10px;padding:6px 12px;white-space:normal">已挂载知识点:'+(c.kps||[]).map(kp).filter(Boolean).map(k=>esc(kpLabel(k))).join('、')+'。上架后会计入这些知识点的「讲解」,学员的提升清单里也能点到它。</div>';
   const r=recKps(c);
   return '<div class="tag warn" style="display:block;margin-bottom:10px;padding:8px 12px;white-space:normal;line-height:1.8"><b>还没挂知识点</b>:可以正常上架,但不会进入完备度检查,学员的提升清单也推荐不到它。'+(r.length?'<br>系统推荐:'+r.map(k=>'<span class="tag blue" style="cursor:pointer;margin:2px 6px 2px 0;padding:3px 8px" data-act="kpPubMount" data-id="'+c.id+'" data-k="'+k.id+'">+ 挂到「'+esc(kpLabel(k))+'」</span>').join(''):'<br><span class="hint">没有合适的知识点,可先到「知识点」新增。</span>')+'</div>'}
-A.kpPubMount=el=>{const c=content(el.dataset.id);c.kps=c.kps||[];if(!c.kps.includes(el.dataset.k))c.kps.push(el.dataset.k);chist(c,'挂载知识点',kpLabel(kp(el.dataset.k))+'(上架时)');toast('已挂载到「'+kp(el.dataset.k).name+'」','ok');A.cPub({dataset:{id:c.id}})};
+A.kpPubMount=el=>{const c=content(el.dataset.id);c.kps=c.kps||[];c.kpRole=c.kpRole||{};if(!c.kps.includes(el.dataset.k)){c.kps.push(el.dataset.k);c.kpRole[el.dataset.k]=c.mainKp?'提及':'主讲解';if(!c.mainKp)c.mainKp=el.dataset.k}chist(c,'挂载知识点',kpLabel(kp(el.dataset.k))+'(上架时)');toast('已挂载到「'+kp(el.dataset.k).name+'」','ok');A.cPub({dataset:{id:c.id}})};
 /* ② 零售通发布列表的「知识点」列 */
 const kpCol=c=>{const ks=(c.kps||[]).map(kp).filter(Boolean);return ks.length?ks.map(k=>'<a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>').join('、'):'<span class="tag warn" title="没挂知识点:不进完备度检查,也不进提升清单">未挂载</span>'};
 /* ② 知识点详情:讲解格红 / 新鲜度黄时,直达修复入口(去审核 / 去上架 / 去续期 / 去处理反馈) */

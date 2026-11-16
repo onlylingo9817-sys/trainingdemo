@@ -12,7 +12,7 @@ const desired = process.argv.slice(2);
 const DEFAULT_ORDER = [
   't17a', 't17b', 't18a', 't18b', 't192', 't193',
   't19a', 't19b', 't20a', 't20b', 't20c', 't21a',
-  't22a', 't23a', 't23b', 't23c', 't24a', 't24b', 't24c'
+  't22a', 't23a', 't23b', 't23c', 't24a', 't24b', 't24c', 't24d'
 ];
 const available = new Set(fs.readdirSync(testsDir)
   .filter(name => /^t\d+[a-z]?\.js$/.test(name))
