@@ -456,7 +456,7 @@ function v23Packs(){
   });
   return S.packs;
 }
-const packsOf=mid=>S.packs.filter(p=>p.mid===mid);
+const packsOf=mid=>S.packs.filter(p=>p.mid===mid||(p.mids||[]).includes(mid)||(!p.mid&&p.kp&&(S.mastery[mid]||{})[p.kp]&&(S.mastery[mid]||{})[p.kp].v<S.cfg.pass));
 
 /* ---------- 11. 配置版本与调优剧本 ---------- */
 const V23_CFG_KEYS=[['srcW','来源权重'],['win','掌握度:最近 N 次'],['decay','掌握度:时间衰减'],['shrinkA','证据少时收缩系数'],['shrinkB','证据少时向 50 的占比'],['retestDays','复测间隔(天)'],['behWin','行为统计窗口(周)'],['behN','行为最小样本数'],['weakN','弱点预警:最少人数'],['weakR','弱点预警:未过关占比'],['obsWeeks','观察期(周)'],['smallN','小样本门槛(人)'],['corrTh','相关性预警阈值'],['pass','过关线']];

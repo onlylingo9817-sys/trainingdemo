@@ -369,6 +369,13 @@ const kpCol=c=>{const ks=(c.kps||[]).map(kp).filter(Boolean);return ks.length?ks
 /* ② 知识点详情:讲解格红 / 新鲜度黄时,直达修复入口(去审核 / 去上架 / 去续期 / 去处理反馈) */
 function kpFix(k,h){
   const m=kpMounted(k);const a=[];
+  const tested=kpTested(k),weak=kpWeak(k);
+  if(tested>=KP_WEAK_N&&weak/tested>=KP_WEAK_R){
+    a.push('<span class="tag kp-lv-err">学员集中薄弱</span> '+weak+'/'+tested+' 人未过关。已有讲解还弱，通常是<b>讲法或练习不够</b>；建议组合：补演练 / 补题 / 指派学习包。'
+      +' <a class="link" data-act="kpWeakPack" data-id="'+k.id+'">指派补练包</a>'
+      +' · <a class="link" data-act="kpToTopic" data-id="'+k.id+'">生成课题</a>'
+      +(drsOf(k.id,'已定稿').length?'':' · <a class="link" data-act="kpWeakDrill" data-id="'+k.id+'">去建演练</a>'));
+  }
   if(!k.owner)a.push('<span class="tag err">没有负责人</span> 在右侧「管理」里指定后才能启用');
   if(h.cells.exp.s==='err'&&m.length){
     m.filter(c=>c.st==='审核中').forEach(c=>a.push('<span class="tag kp-lv-warn">待审核</span> '+esc(c.title)+' <a class="link" data-act="cView" data-id="'+c.id+'">去审核</a>'));
@@ -389,7 +396,9 @@ const kpTopicOf=k=>S.topics.find(t=>t.kpId===k.id);
 function kpWeakList(){return S.kps.filter(k=>k.st==='启用').map(k=>({k,t:kpTested(k),w:kpWeak(k)})).filter(x=>x.t>=KP_WEAK_N&&x.w/x.t>=KP_WEAK_R).sort((a,b)=>b.w-a.w)}
 function kpWeakCard(){
   const LL=kpWeakList();const L=LL.slice(0,5);
-  return '<div class="card"><h3>学员集中薄弱的知识点 <span class="hint">已测 ≥ '+KP_WEAK_N+' 人且未过关占比 ≥ '+Math.round(KP_WEAK_R*100)+'%(演示阈值)'+(LL.length>5?';共 '+LL.length+' 个,这里显示最严重的 5 个':'')+'</span></h3>'+(L.length?'<table class="t"><tr><th>知识点</th><th>车型</th><th>未过关 / 已测</th><th>讲解</th><th>课题</th><th></th></tr>'+L.map(x=>{const t=kpTopicOf(x.k);const h=kpHealth(x.k);return '<tr><td><a class="link" data-act="kpOpen" data-id="'+x.k.id+'">'+esc(x.k.name)+'</a></td><td>'+esc(x.k.car)+'</td><td><b>'+x.w+'</b> / '+x.t+'</td><td>'+(h.cells.exp.s==='ok'?'<span class="tag ok">有可用讲解</span>':'<span class="tag err">缺讲解</span>')+'</td><td>'+(t?'<a class="link" data-act="topicOpen" data-id="'+t.id+'">'+t.id+'</a>':'<span class="hint">未生成</span>')+'</td><td>'+(t?'':'<button class="btn sm pri" data-act="kpToTopic" data-id="'+x.k.id+'">生成课题</button>')+'</td></tr>'}).join('')+'</table><div style="margin-top:8px"><button class="btn sm" data-act="kpToTopicAll">全部生成课题</button> <span class="hint">生成后进「课题池」,走 课题 → 内容 → 上架 → 学员再诊断 的闭环</span></div>':'<div class="chk ok"><b>✓</b><span>目前没有集中薄弱的知识点</span></div>')+'</div>'}
+  return '<div class="card"><h3>学员集中薄弱的知识点 <span class="hint">已测 ≥ '+KP_WEAK_N+' 人且未过关占比 ≥ '+Math.round(KP_WEAK_R*100)+'%'+(LL.length>5?';共 '+LL.length+' 个,这里显示最严重的 5 个':'')+'</span></h3>'+(L.length?'<table class="t"><tr><th>知识点</th><th>车型</th><th>未过关 / 已测</th><th>讲解</th><th>建议动作</th></tr>'+L.map(x=>{const t=kpTopicOf(x.k);const h=kpHealth(x.k);const noD=!drsOf(x.k.id,'已定稿').length;return '<tr><td><a class="link" data-act="kpOpen" data-id="'+x.k.id+'">'+esc(x.k.name)+'</a></td><td>'+esc(kpCarText(x.k))+'</td><td><b>'+x.w+'</b> / '+x.t+'</td><td>'+(h.cells.exp.s==='ok'?'<span class="tag ok">有可用讲解</span>':'<span class="tag err">缺讲解</span>')+'</td><td style="white-space:nowrap">'+(h.cells.exp.s==='ok'
+    ?'<button class="btn sm pri" data-act="kpWeakPack" data-id="'+x.k.id+'">指派补练包</button> '+(noD?'<a class="link" data-act="kpWeakDrill" data-id="'+x.k.id+'">建演练</a> ':'')+(t?'<a class="link" data-act="topicOpen" data-id="'+t.id+'">'+t.id+'</a>':'<a class="link" data-act="kpToTopic" data-id="'+x.k.id+'">生成课题</a>')
+    :'<a class="link" data-act="kpOpen" data-id="'+x.k.id+'">去补讲解</a>')+'</td></tr>'}).join('')+'</table><div style="margin-top:8px"><button class="btn sm" data-act="kpToTopicAll">全部生成课题</button> <span class="hint">已有讲解却仍薄弱时，优先补练/指派学习包；缺讲解才先补内容</span></div>':'<div class="chk ok"><b>✓</b><span>目前没有集中薄弱的知识点</span></div>')+'</div>'}
 function kpMkTopic(k){
   if(kpTopicOf(k))return kpTopicOf(k);const t=kpTested(k),w=kpWeak(k);
   const tp=mkTopic({title:'学员在「'+kpLabel(k)+'」上集中薄弱:'+w+'/'+t+' 人未过关',desc:'来自零售通「提升清单」的诊断汇总。'+(kpHealth(k).cells.exp.s==='ok'?'目前已有可用讲解,可能需要补测评或改写讲法。':'目前缺可用讲解,需要先补内容。'),scene:'展厅',obj:k.name,sess:t*30,stores:t*4,prov:Math.max(1,Math.round(t/3)),trend:Math.round(w/t*20),
@@ -397,3 +406,11 @@ function kpMkTopic(k){
   kpHist(k,'生成课题',tp.id);return tp}
 A.kpToTopic=el=>{const t=kpMkTopic(kp(el.dataset.id));toast('已生成课题 '+t.id+',在「课题池」里处理','ok');render()};
 A.kpToTopicAll=()=>{let n=0;kpWeakList().forEach(x=>{if(!kpTopicOf(x.k)){kpMkTopic(x.k);n++}});toast(n?'已生成 '+n+' 个课题':'没有需要生成的',n?'ok':'err');render()};
+/* 从薄弱点直接指派补练包：这是“发现问题 → 让人练起来”的最短路径 */
+A.kpWeakPack=el=>{
+  const k=kp(el.dataset.id);const tested=kpTested(k),weak=kpWeak(k);
+  const tpl=(S.packTpl||[]).find(t=>t.id==='PT1')||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};
+  const mids=Object.keys(S.mastery||{}).filter(mid=>{const o=(S.mastery[mid]||{})[k.id];return o&&o.v<KP_PASS});const n=Math.max(1,mids.length||weak);
+  S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:'',mids,kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:n});
+  kpHist(k,'指派补练包','覆盖 '+n+' 个未过关学员');toast('已指派补练包给 '+n+' 位薄弱学员：'+tpl.steps.map(s=>s[0]).join(' → ')+'，截止 '+addDays(today,tpl.dueDays),'ok');render()};
+A.kpWeakDrill=el=>{UI.sel.caf={k:'演练',kp:el.dataset.id};UI.sel.cadv=false;UI.page='content';UI.tab.content='全部内容';A.drNewFor();};

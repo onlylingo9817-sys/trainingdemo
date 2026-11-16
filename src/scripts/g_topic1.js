@@ -64,13 +64,17 @@ function tpList(){
   return h}
 function tCard(t){
   const g=t.sug,s=t.stats,i=ind(g.ind);
+  /* 闭环不是流程状态:必须能看到内容、上架、学习项目、复测四段证据 */
+  const cs=(t.cids||[]).map(content).filter(Boolean);const hasContent=cs.length>0;const hasPub=cs.some(isPub);const hasProj=!!t.proj;const hasResult=!!t.result;
+  const closeGap=t.flow==='已闭环'&&(!hasContent||!hasPub||!hasProj||!hasResult);
   const acts=[];
   if(t.flow==='新发现'||t.flow==='暂不做'){if(canUseT(t)){acts.push('<button class="btn pri sm" data-act="tGenContent" data-id="'+t.id+'">生成内容</button>');acts.push('<button class="btn sm" data-act="tToProject" data-id="'+t.id+'">直接建学习项目</button>')}}
   if(t.flow==='新发现')acts.push('<button class="btn sm" data-act="tSkip" data-id="'+t.id+'">暂不做</button>');
   if(t.flow==='暂不做')acts.push('<button class="btn sm" data-act="tRestore" data-id="'+t.id+'">恢复</button>');
   if(t.flow==='已采纳'&&canUseT(t))acts.push('<button class="btn sm" data-act="tGenContent" data-id="'+t.id+'">再生成内容</button>');
   if((t.flow==='已采纳'||t.flow==='已闭环')&&t.proj)acts.push('<button class="btn sm" data-act="go" data-p="detail" data-id="'+t.proj+'">查看项目</button>');
-  return '<div class="card" style="padding:14px 18px"><div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0"><div>'+pchip(t)+' <a class="link" style="font-weight:600;font-size:15px;margin-right:6px" data-act="topicOpen" data-id="'+t.id+'">'+esc(t.title)+'</a> '+tipChip(t.flow)+(t.reopen?' <span class="tag warn">回炉 ×'+t.reopen+'</span>':'')+'</div>'
+  return '<div class="card" style="padding:14px 18px"><div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0"><div>'+pchip(t)+' <a class="link" style="font-weight:600;font-size:15px;margin-right:6px" data-act="topicOpen" data-id="'+t.id+'">'+esc(t.title)+'</a> '+tipChip(t.flow)+(closeGap?' <span class="tag err">闭环证据不全</span>':'')+(t.reopen?' <span class="tag warn">回炉 ×'+t.reopen+'</span>':'')+'</div>'
+   +(t.flow==='已闭环'?'<div class="hint" style="margin:4px 0;line-height:1.7">闭环证据:'+(hasContent?'<span class="tag ok">内容 '+cs.length+'</span>':'<span class="tag err">无内容</span>')+(hasPub?'<span class="tag ok">已上架</span>':'<span class="tag err">未上架</span>')+(hasProj?'<span class="tag ok">学习项目 '+t.proj+'</span>':'<span class="tag err">无项目</span>')+(hasResult?'<span class="tag ok">已复测/结项</span>':'<span class="tag err">无复测</span>')+'</div>':'')
    +'<div class="hint" style="margin:6px 0">'+esc(t.desc||'')+'</div>'
    +'<div style="font-size:13px;line-height:1.9">'+(t.st==='分析中'?'<span class="tag blue">AI 分析中…</span>':t.st==='分析失败'?'<span class="tag err">AI 分析失败</span> <a class="link" data-act="tRetry" data-id="'+t.id+'">重试</a>':'<b>'+s.sess+'</b> 条会话 · <b>'+s.stores+'</b> 家门店 · 近 4 周 <b style="color:'+(s.trend>0?'var(--err)':'var(--ok)')+'">'+(s.trend>0?'↑':'↓')+Math.abs(s.trend)+'%</b> '+(t.ev==='不足'?'<span class="tag warn">证据偏少</span>':'<span class="tag ok">证据充分</span>')+'<br><span class="hint">AI 建议:</span>'+g.type+(g.sub?' · '+g.sub:'')+',看「'+(i?i.name:'-')+'」'+(g.kw?',关键词 '+esc(g.kw):'')+(g.regions?',区域 '+rgTxt(g.regions):''))+'</div>'
    +'<div class="hint" style="margin-top:4px"><span class="tag '+({'系统出题':'pri','自主提出':'blue','对外洞察':'warn'}[t.src])+'">'+t.src+'</span> '+esc(t.by)+' · '+t.time+(t.proj?' · 关联项目 <a class="link" data-act="go" data-p="detail" data-id="'+t.proj+'">'+t.proj+'</a>':'')+((t.cids||[]).length?' · 已生成内容 '+t.cids.map(id=>'<a class="link" data-act="cView" data-id="'+id+'">'+id+'</a>').join('、'):'')+'</div></div><div style="display:flex;flex-direction:column;gap:6px;flex:none">'+acts.join('')+'<button class="btn sm" data-act="topicOpen" data-id="'+t.id+'">看分析</button></div></div></div>';}
