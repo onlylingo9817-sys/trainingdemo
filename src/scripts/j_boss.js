@@ -29,22 +29,20 @@ function scatter(pts){const w=560,h=300,pl=44,pb=34,pt=14,pr=14;const X=v=>pl+(v
 function bossView(){
   const d=bossData();const regs=Object.keys(BOSS_REG).filter(r=>UI.role.type!=='region'||r===UI.role.region);
   /* 1 KPI */
-  const k='<div class="hero-kpi" style="grid-template-columns:repeat(6,1fr);margin-bottom:16px;background:#fff">'
+  const k='<div class="hero-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;background:#fff">'
    +kpi('新人首月开单率',d.nbRate+'%',d.hasNB?'目标 '+d.nbTarget+'% · 基线 77%':'基线 77% · 暂无新人训数据')
-   +kpi('受训 vs 对照 锁单差',d.lift==null?'—':'+'+d.lift.toFixed(1)+'pt',d.lift==null?'样本不足不下结论':'已评估 '+d.done.length+' 个项目均值','color:var(--ok)')
-   +kpi('项目目标达成',d.E.length?d.hit+' / '+d.E.length:'—','样本不足 '+d.E.filter(smallNow).length+' 个不计入')
    +kpi('三层指标可查率',d.traceable+'%','能出对照的项目占比')
    +kpi('双周课题按时产出',d.topicOnTime+'%',S.batches.length+' 个批次已跑')
    +kpi('报告按时产出',d.reportOk+'%',(S.reports||[]).length+' 份已产出(周报 / 月报)')+'</div>';
   /* 2 趋势 + 目标达成榜 */
   const wk=[0,1,2,3,4,5,6,7];const nbTrend=wk.map(i=>+(72+i*0.7+(hsh('nb'+i)%10)/10).toFixed(1)),lockT=wk.map(i=>+(21.4+i*0.35+(hsh('lt'+i)%6)/10).toFixed(1)),lockC=wk.map(i=>+(21.2+i*0.06+(hsh('lc'+i)%4)/10).toFixed(1));
   const ps=d.E.map(p=>({p,v:pct(p)})).sort((a,b)=>b.v-a.v);
-  const row2='<div class="grid g2" style="grid-template-columns:3fr 2fr"><div class="card"><h3>受训 vs 未受训 · 试驾→锁单率(近 8 周)'+ds('北斗 BI')+'</h3>'+lineSvg([{n:'受训',c:'#ff6700',d:lockT},{n:'未受训 / 对照',c:'#4e8cff',d:lockC,dash:1}],{w:520,h:190})+'<div class="hint">展示相关性,不作因果结论;效果数据不直接用于绩效考核或 PIP 判定。</div></div>'
-   +'<div class="card"><h3>新人首月开单率趋势'+ds('北斗 BI')+'</h3>'+lineSvg([{n:'开单率',c:'#12a36b',d:nbTrend}],{w:360,h:190})+'<div class="hint">口径:过训后 30 天内有锁单的新人 ÷ 已过训新人</div></div></div>';
+  const row2='<div class="grid g2" style="grid-template-columns:3fr 2fr"><div class="card"><h3>受训 vs 未受训 · 试驾→锁单率(近 8 周)'+dsDemo('北斗 BI')+'</h3>'+demoNote('曲线为演示占位，不是真实读数')+lineSvg([{n:'受训',c:'#ff6700',d:lockT},{n:'未受训 / 对照',c:'#4e8cff',d:lockC,dash:1}],{w:520,h:190})+'<div class="hint">展示相关性,不作因果结论;效果数据不直接用于绩效考核或 PIP 判定。</div></div>'
+   +'<div class="card"><h3>新人首月开单率趋势'+dsDemo('北斗 BI')+'</h3>'+demoNote('趋势为演示占位')+lineSvg([{n:'开单率',c:'#12a36b',d:nbTrend}],{w:360,h:190})+'<div class="hint">口径:过训后 30 天内有锁单的新人 ÷ 已过训新人</div></div></div>';
   const row3='<div class="grid g2"><div class="card"><h3>项目目标达成榜</h3>'+(ps.length?hbars(ps.map(x=>[x.p.name,x.v,smallNow(x.p)?'#d0d5dd':x.v>=100?'var(--ok)':'var(--pri)']),120,'%')+'<div class="hint">灰色 = 样本不足(无法判断)。达成率 =(当前 − 基线)÷(目标 − 基线)。</div>':'<div class="empty">暂无项目进入评估</div>')+'</div>'
    +'<div class="card"><h3>需要你决策的项目</h3>'+(()=>{const L=d.P.filter(p=>p.status==='评估中');return L.length?'<table class="t"><tr><th>项目</th><th>现状</th><th>建议</th><th></th></tr>'+L.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+goalTxt(p)+'<div class="hint">当前 '+p.cur+p.unit+'</div></td><td>'+(smallNow(p)?'<span class="tag warn">样本不足</span> 延长观察期或并入下一批':metV(p,p.cur)?'<span class="tag ok">已达成</span> 复制到其他区域':'<span class="tag err">未达成</span> 回炉 / 转入店辅导')+'</td><td><button class="link" data-act="go" data-p="effect" data-t="复制与回炉">去处理</button></td></tr>').join('')+'</table>':'<div class="empty">没有待决策的项目</div>'})()+'</div></div>';
   /* 3 竞品攻防 */
-  const comp='<div class="card"><h3>竞品攻防 · 谁在赢我们、哪里有解法'+ds('汽车语料 + 北斗 BI')+'<span class="hint">全国 27 个省</span></h3><table class="t"><tr><th>竞品</th><th>对比省份</th><th>战败省份</th><th>战败单量</th><th>战败占比</th><th>有解法的区域</th><th>做法</th><th></th></tr>'
+  const comp='<div class="card"><h3>竞品攻防 · 谁在赢我们、哪里有解法'+dsDemo('汽车语料 + 北斗 BI')+'<span class="hint">全国 27 个省</span></h3><table class="t"><tr><th>竞品</th><th>对比省份</th><th>战败省份</th><th>战败单量</th><th>战败占比</th><th>有解法的区域</th><th>做法</th><th></th></tr>'
    +COMP.map(c=>'<tr><td><b>'+c.n+'</b></td><td>'+c.cmp+' / 27</td><td><b style="color:var(--err)">'+c.lose+'</b></td><td>'+c.orders+'</td><td><div class="bar" style="width:90px"><i style="width:'+Math.round(c.lose/c.cmp*100)+'%;background:var(--err)"></i></div></td><td>'+(c.fix.length?c.fix.map(r=>'<span class="tag ok">'+r+'</span>').join(''):'<span class="tag err">无</span>')+'</td><td style="max-width:260px">'+c.fixNote+'</td><td>'+(S.topics.some(t=>t.title.includes(c.topic))?'<button class="link" data-act="go" data-p="topics">看课题</button>':'<button class="link" data-act="go" data-p="topics" data-t="系统出题">去出题</button>')+'</td></tr>').join('')+'</table><div class="hint" style="margin-top:6px">取长补短:有解法的区域把话术沉淀为内容,由培训部复制到其他区域(项目结项选「复制」)。</div></div>';
   /* 4 学得好-卖得好 + 区域对比 */
   const stores=[...new Set(PEOPLE.map(x=>x.store))];
@@ -56,8 +54,8 @@ function bossView(){
   const nbs=PEOPLE.filter(isNew).filter(p=>UI.role.type!=='region'||p.region===UI.role.region);
   const fun=[['入职新人',nbs.length*38],['完成入职培训',Math.round(nbs.length*38*0.93)],['首周电话量达标',Math.round(nbs.length*38*0.71)],['试驾排程达标',Math.round(nbs.length*38*0.58)],['首月已开单',Math.round(nbs.length*38*(d.nbRate/100)*0.82)]];
   const warn=nbs.filter(p=>hsh(p.mid)%3!==0).slice(0,6).map(p=>({p,why:hsh(p.mid)%2?'首周电话量低于目标 40%':'试驾排程 0 次(第 2 周)',day:p.hire}));
-  const nbC='<div class="grid g2" style="grid-template-columns:2fr 3fr"><div class="card"><h3>新人开单闭环 · 漏斗'+ds('人事 + 北斗 BI')+'</h3>'+hbars(fun.map((f,i)=>[f[0],f[1],i===4?'var(--ok)':'var(--pri)']),fun[0][1],' 人')+'<div class="hint">用转化率倒推过程量:10% 转化 → 1000 组线索 / 100 组试驾,周度追踪电话量、试驾排程。</div></div>'
-   +'<div class="card"><h3>新人过程预警 <span class="hint">异常 → 提醒区域老师介入(只做「建议关注」,不触发 PIP)</span></h3>'+(warn.length?'<table class="t nw"><tr><th>新人</th><th>门店</th><th>入职</th><th>异常</th><th>状态</th><th></th></tr>'+warn.map(w=>{const k2=(S.warned||(S.warned={}))[w.p.mid];return '<tr><td>'+w.p.name+'</td><td>'+w.p.store+'</td><td>第 '+w.day+' 天</td><td>'+w.why+'</td><td>'+(k2?'<span class="tag ok">已通知 '+k2+'</span>':'<span class="tag warn">待介入</span>')+'</td><td>'+(k2?'':'<button class="link" data-act="warnTo" data-m="'+w.p.mid+'">通知区域老师</button>')+'</td></tr>'}).join('')+'</table>':'<div class="empty">暂无预警</div>')+'<div class="hint" style="margin-top:6px">效果数据只作「选样」和「验收」,不直接用于绩效考核或 PIP 判定;首月未开单是否启动 PIP,由区域老师人工确认。</div></div></div>';
+  const nbC='<div class="grid g2" style="grid-template-columns:2fr 3fr"><div class="card"><h3>新人开单闭环 · 漏斗'+dsDemo('人事 + 北斗 BI')+'</h3>'+demoNote('漏斗为按人数估算的演示值')+hbars(fun.map((f,i)=>[f[0],f[1],i===4?'var(--ok)':'var(--pri)']),fun[0][1],' 人')+'<div class="hint">用转化率倒推过程量:10% 转化 → 1000 组线索 / 100 组试驾,周度追踪电话量、试驾排程。</div></div>'
+   +'<div class="card"><h3>新人过程预警 <span class="hint">异常 → 提醒区域老师介入(只做「建议关注」,不触发 PIP)</span>'+dsDemo('演示规则')+'</h3>'+demoNote('预警名单与原因由演示规则生成')+''+(warn.length?'<table class="t nw"><tr><th>新人</th><th>门店</th><th>入职</th><th>异常</th><th>状态</th><th></th></tr>'+warn.map(w=>{const k2=(S.warned||(S.warned={}))[w.p.mid];return '<tr><td>'+w.p.name+'</td><td>'+w.p.store+'</td><td>第 '+w.day+' 天</td><td>'+w.why+'</td><td>'+(k2?'<span class="tag ok">已通知 '+k2+'</span>':'<span class="tag warn">待介入</span>')+'</td><td>'+(k2?'':'<button class="link" data-act="warnTo" data-m="'+w.p.mid+'">通知区域老师</button>')+'</td></tr>'}).join('')+'</table>':'<div class="empty">暂无预警</div>')+'<div class="hint" style="margin-top:6px">效果数据只作「选样」和「验收」,不直接用于绩效考核或 PIP 判定;首月未开单是否启动 PIP,由区域老师人工确认。</div></div></div>';
   /* 6 内容与回路 + 培训部运营 */
   const up=S.contents.reduce((a,c)=>a+c.up,0),dn=S.contents.reduce((a,c)=>a+c.down,0);
   const mine=S.contents.filter(c=>!c.orig),gen=mine.filter(c=>c.srcTag).length;
@@ -82,6 +80,15 @@ function bossView(){
    +cell('一线反馈待处理',S.feedback.filter(f=>f.st==='待处理').length,'点踩原因 + 纠错')
    +'</div><div class="hint" style="margin-top:8px">回路:课题 → agent 出初稿 → 审核入库 → 做成学习任务(新内容先灰度)→ 点赞 / 点踩 + 语料命中 → 好的留在资产库复制,无效的回炉。</div></div>'
    +'<div class="card"><h3>培训部运营度量</h3><table class="t"><tr><th>指标</th><th>当前</th></tr><tr><td>项目绑定目标比例</td><td>'+(S.projects.length?'100%':'—')+'</td></tr><tr><td>线下培训线上化比例</td><td>'+(S.projects.filter(p=>p.off).length?'100%(报名 / 分班 / 成绩均在系统内)':'—')+'</td></tr><tr><td>结项并给出结论的比例</td><td>'+d.closeRate+'%</td></tr><tr><td>课题 → 项目转化</td><td>'+(S.topics.length?Math.round(S.topics.filter(t=>['已采纳','已闭环'].includes(t.flow)).length/S.topics.length*100)+'%':'—')+'('+S.topics.filter(t=>['已采纳','已闭环'].includes(t.flow)).length+' / '+S.topics.length+')</td></tr><tr><td>辅导工单复测回升</td><td>'+(S.tickets.filter(t=>t.post).length?S.tickets.filter(t=>t.post).length+' 张已复测,均值 +'+(S.tickets.filter(t=>t.post).reduce((a,t)=>a+((t.post.value!=null?t.post.value:t.post)-t.pre),0)/S.tickets.filter(t=>t.post).length).toFixed(1)+'pt · 有效 '+S.tickets.filter(t=>t.post&&/有效|改善/.test(t.post.result||'')).length+' 张':'暂无复测')+'</td></tr></table></div></div>';
-  return '<div class="src"><b>老板视图</b><span>关心「目标有没有达成、培训有没有用、哪里要决策」。所有数字实时取自项目、效果同步、内容和外部数据(人事 / 北斗 BI / 语料 / 清河);'+(UI.role.type==='region'?'当前按区域老师身份过滤。':'')+'</span></div>'+k+row2+row3+comp+'<div class="grid g2" style="grid-template-columns:1fr 1fr">'+sc+regT+'</div>'+nbC+ops;
+  const verdict=(function(){
+  const judged=d.done.length,hit=d.hit,small=d.E.filter(smallNow).length;
+  const decide=d.P.filter(p=>p.status==='评估中').length;
+  return '<div class="grid g3" style="margin-bottom:14px">'
+   +'<div class="card" style="margin:0"><div class="hint">目标有没有达成</div><div style="font-size:22px;font-weight:650">'+(judged?hit+' / '+judged:'—')+'</div><div class="hint">可判断项目中达标数'+(small?'；另有 '+small+' 个样本不足不计入':'')+'</div><span class="srcs" style="background:#eefaf3;color:#067647">实测</span></div>'
+   +'<div class="card" style="margin:0"><div class="hint">培训有没有用</div><div style="font-size:22px;font-weight:650">'+(d.lift==null?'—':'+'+d.lift.toFixed(1)+'pt')+'</div><div class="hint">'+(d.lift==null?'样本不足，不下结论':'受训 vs 对照锁单差均值（'+judged+' 个项目）· 仅相关不作因果')+'</div><span class="srcs" style="background:#eefaf3;color:#067647">实测</span></div>'
+   +'<div class="card" style="margin:0;border-color:#f3dc9b;background:#fffbf4"><div class="hint">需要你拍板</div><div style="font-size:22px;font-weight:650;color:#b54708">'+decide+'</div><div class="hint">评估中待选结项结论的项目</div>'+(decide?'<button class="btn sm pri" style="margin-top:6px" data-act="go" data-p="effect" data-t="复制与回炉">去处理</button>':'')+'</div></div>';
+})();
+return '<div class="src"><b>老板视图</b><span>关心「目标有没有达成、培训有没有用、哪里要决策」。<b>实测</b>来自系统内真实记录(项目 / 报名 / 结业 / 内容 / 反馈);<b>示意</b>为接入外部数据前的演示值,带橙色虚线标记,不能当作业务结论。</span></div>'
+  +verdict+k+row2+row3+comp+'<div class="grid g2" style="grid-template-columns:1fr 1fr">'+sc+regT+'</div>'+nbC+ops;
 }
 A.warnTo=el=>{(S.warned||(S.warned={}))[el.dataset.m]=today;notify('已通知区域老师介入新人 '+pp(el.dataset.m).name+' 的过程异常');toast('已通知区域老师','ok');render()};

@@ -10,6 +10,9 @@ const curTab=(k,list)=>UI.tab[k]||list[0];
 const srcBar=h=>'<div class="src"><b>数据来源</b><span>'+h+'</span></div>';
 const lk=(label,p,extra)=>'<a data-act="go" data-p="'+p+'" '+(extra||'')+'>'+label+'</a>';
 const ds=n=>'<span class="srcs">'+n+'</span>';
+/* 示意数据标记：凡是接入外部数据前用占位生成的，都必须带这个标记 */
+const dsDemo=n=>'<span class="srcs" style="background:#fff4e5;color:#b54708;border:1px dashed #f0b46a">'+n+' · 示意待接入</span>';
+const demoNote=t=>'<div class="boss-demo-note">⚠ 演示数据：'+t+'；接入真实数据源后以实际口径为准。</div>';
 const cta=(t,d,btn)=>'<div class="cta"><b style="font-size:15px;color:#1f2329">'+t+'</b><p>'+d+'</p>'+btn+'</div>';
 function pct(p){if(p.cur==null)return null;return Math.max(0,Math.min(120,Math.round((p.cur-p.base)/(p.target-p.base)*100)))}
 function progLayers(p){
