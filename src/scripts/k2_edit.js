@@ -131,7 +131,14 @@ function pgContentEdit(){
    +FR('发布到零售通','<span class="hint">曝光相关设置(分类、可见范围、发布方式、首页推荐、权威)在内容定稿后,到详情「发布到零售通」里做;这里只维护内容本身</span>')
    +'</div>';
   let nw='<div class="card frm"><h3 style="margin-bottom:4px">内容属性'+NEW+'</h3><div class="hint" style="margin-bottom:14px">用于检索、到期提醒和效果归因;现有「内容管理」没有这组字段</div>'
-   +(C.kind==='话术'?FR('车型',sel('car',tax.car,C.car))+FR('场景分类',sel('theme',['']  .concat(tax.theme),C.theme),{h:'与团队话术文档一致:空间与舒适 / 商务与工作 / 亲子与家庭 …'}):'')+FR('主题对象',sel('subject',tax.subject,C.subject))+FR('场景',sel('scene',tax.scene,C.scene))+FR('能力维度',sel('ability',tax.ability,C.ability))+FR('内容标签',(function(){
+   +(C.kind==='话术'?FR('车型',sel('car',tax.car,C.car))+FR('场景分类',sel('theme',['']  .concat(tax.theme),C.theme),{h:'与团队话术文档一致:空间与舒适 / 商务与工作 / 亲子与家庭 …'}):'')+FR('主题对象 / 场景 / 能力',(function(){
+     const inh=kpMetaOfContent(C);
+     const lines=[];
+     if(inh.kps.length)lines.push('<div class="hint">来自所选知识点：<b>'+inh.kps.map(esc).join('、')+'</b>'+(inh.ab.length?' · 能力 '+inh.ab.map(esc).join('、'):'')+(inh.cars.length?' · 车型 '+inh.cars.map(esc).join('、'):'')+'</div>');
+     return lines.join('')
+      +'<details class="ppl-extra-tag"'+(inh.kps.length?'':' open')+'><summary class="link" style="font-size:12px">'+(inh.kps.length?'这条内容需要单独指定时展开':'没有选知识点,这里需要手填')+'</summary>'
+      +'<div class="filg" style="margin-top:8px">'+sel('subject',tax.subject,C.subject)+sel('scene',tax.scene,C.scene)+sel('ability',tax.ability,C.ability)+'</div></details>';
+   })(),{h:'不重复填:选了知识点就自动带出主题对象与能力;只有这条内容另有口径时才展开覆盖'})+FR('内容标签',(function(){
      const inherited=kpTagsOfContent(C);
      const extra=(C.tags||[]).filter(id=>!inherited.includes(id));
      return ((C.kps||[]).length&&inherited.length?'<div style="margin-bottom:6px"><span class="hint">自动继承所选知识点的标签：</span>'+inherited.map(id=>{const t=ptagOf(id);return t?'<span class="tag blue" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(t.name)+'</span>':''}).join('')+'</div>':'')
@@ -178,3 +185,5 @@ A.cpset=el=>{CP[el.dataset.k]=el.value;cpOpen()};
 A.cpPick=el=>{setPath(F,CP.f,el.dataset.id);F.modDirty=true;closeDlg();render()};
 
 function kpTagsOfContent(c){const out=[];(c.kps||[]).forEach(id=>{const k=kp(id);if(k)(k.tags||[]).forEach(t=>{if(!out.includes(t))out.push(t)})});return out}
+
+function kpMetaOfContent(c){const kps=[],ab=[],cars=[];(c.kps||[]).forEach(id=>{const k=kp(id);if(!k)return;kps.push(k.name);const a=kpAbText(k);if(a&&a!=='未指定'&&!ab.includes(a))ab.push(a);kpCars(k).forEach(x=>{if(x!=='通用车型'&&!cars.includes(x))cars.push(x)})});return {kps,ab,cars}}

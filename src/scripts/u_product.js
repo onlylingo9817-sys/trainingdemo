@@ -218,8 +218,8 @@ function pgKpForm(){
   return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+(KF.id?'编辑 '+KF.id:'新增知识点'))+'<div class="ph"><h2>'+(KF.id?'编辑知识点':'新增知识点')+' <span class="hint" style="font-weight:400">必填：名称、适用车型、知识类型；其他可以后补</span></h2></div>'
    +'<div class="card frm">'+FR('名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="一个能单独讲一次、单独出一道题的点，如：6.6kW 外放电" style="width:100%;max-width:460px">',{req:1,h:'太粗就拆，太细就并'})
    +FR('适用车型',carBox+'<div style="margin-top:8px"><input type="text" id="kf_newcar" placeholder="没有你要的车型？输入新车型名称" style="width:220px"> <button class="btn sm" data-act="kfAddCar">新增车型</button></div>',{req:1,h:'可以多选。同一个卖点同时适用多款车时，建一个点就够了，不用复制多条'})
-   +FR('知识类型','<div class="rels">'+[['事实型','产品知识'],['技能型','销售动作']].map(x=>'<span class="'+(KF.type===x[0]?'on':'')+'" data-act="kfType" data-v="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>',{req:1,h:KF.type==='事实型'?'产品知识：记住这款车有什么、怎么讲':'销售动作：探需、讲车、处理异议等，看练得怎么样'})
-   +FR('主要训练能力','<select data-wc="kfAb">'+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id?'selected':'')+'>'+esc(x.root+' · '+x.name)+'</option>').join('')+'</select>'+(typeof aiKpAbilityAdviceHtml==='function'?aiKpAbilityAdviceHtml():''),{req:1,h:'和岗位画像使用同一套能力项；这样诊断、画像、效果看板才对得上'})
+   +FR('知识类型','<div class="rels">'+[['事实型','产品知识'],['技能型','销售动作']].map(x=>'<span class="'+(KF.type===x[0]?'on':'')+'" data-act="kfType" data-v="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>',{req:1,h:'决定「怎么测」：产品知识用客观题，销售动作用演练。它不影响下面的能力项'})
+   +FR('主要训练能力','<select data-wc="kfAb">'+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id?'selected':'')+'>'+esc(x.root+' · '+x.name)+'</option>').join('')+'</select>'+(typeof aiKpAbilityAdviceHtml==='function'?aiKpAbilityAdviceHtml():''),{req:1,h:'决定「归到画像哪一维」：和岗位画像用同一套能力项，诊断、个人画像、效果看板才对得上。和上面的知识类型是两个维度'})
    +more
    +((KF.type==='事实型'&&!KF.tags.length)?'<div class="chk rec"><b>·</b><span>产品知识建议挂至少一个标签，否则标签筛选里容易漏掉它</span></div>':'')
    +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」适用这些车型，不要重复建</span></div>':'')
