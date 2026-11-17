@@ -64,6 +64,19 @@ function coachNewTicket(o){
   x.log.unshift({t:today,who:meShort(),act:'创建辅导项目',note:x.src});
   S.tickets.push(x);return x;
 }
+const COACH_SOP=['入店前两周','入店前一周','入店前两天','入店当天 Day1','入店当天 Day2','入店第3天','远程陪跑','30天总结'];
+A.coachNewManual=()=>{openDlg('新建辅导项目','<div class="hint" style="margin-bottom:10px">线下辅导在门店里做，不一定有系统推荐。手动建一个辅导项目，之后按 SOP 阶段记录现场过程。</div>'
+  +'<div class="f"><label><b>*</b>门店名称</label><div class="in"><input type="text" id="cm_store" placeholder="如：北京望京店" style="width:100%"></div></div>'
+  +'<div class="f"><label>辅导目标</label><div class="in"><input type="text" id="cm_goal" placeholder="如：留资率 40% → 45%" style="width:100%"></div></div>'
+  +'<div class="f"><label>辅导前数据(%)</label><div class="in"><input type="number" id="cm_pre" step="0.1" style="width:160px"></div></div>'
+  +'<div class="f"><label>触发原因</label><div class="in"><input type="text" id="cm_trig" placeholder="如：新店开业 3 个月未达预期" style="width:100%"></div></div>'
+  +'<div class="f"><label>辅导人</label><div class="in"><input type="text" id="cm_owner" value="'+esc(UI.role.name)+'" style="width:200px"></div></div>',
+  '<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="coachNewManualSave">创建</button>',true)};
+A.coachNewManualSave=()=>{const store=(($('#cm_store')||{}).value||'').trim();if(!store)return toast('请填写门店名称','err');
+  const goal=(($('#cm_goal')||{}).value||'').trim();const pre=parseFloat(($('#cm_pre')||{}).value);const trig=(($('#cm_trig')||{}).value||'').trim()||'手动创建';const owner=(($('#cm_owner')||{}).value||'').trim()||'-';
+  const x=coachNewTicket({store,proj:null,src:'手动新建',goal:goal,pre:isNaN(pre)?null:pre,trig,owner,sop:[]});
+  closeDlg();toast('已创建「'+store+'」辅导项目,可按 SOP 阶段记录现场过程','ok');UI.sel.coachTab='概览';A.ticket({dataset:{id:x.id}});render()};
+A.coachSopLog=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;x.sop=x.sop||[];const v=el.dataset.v;const note=((document.getElementById('sop_note')||{}).value||'').trim();x.sop.push({stage:v,t:today,who:meShort(),note});coachSave(x,null,'记录 SOP 节点:'+v,note);toast('已记录「'+v+'」','ok');A.ticket({dataset:{id:x.id}})};
 function mkTickets(p,n,src){
   if(!p.eff)return 0;const rows=storeRows(p).filter(r=>!metV(p,r.v)).sort((a,b)=>p.goal.main.dir==='低'?b.v-a.v:a.v-b.v).slice(0,n);let c=0;
   rows.forEach(r=>{if(S.tickets.some(t=>t.store===r.store&&t.proj===p.id))return;coachNewTicket({store:r.store,proj:p.id,src,goal:p.metric+' '+r.v+'% → '+p.target+'%',pre:r.v,trig:'目标未达成'});c++});return c}
@@ -121,12 +134,12 @@ function coachRec(){
 function pgCoach(){
   const tabs=coachTabs();const t=curTab('coach',tabs);let b='';
   if(t==='辅导总览')b=coachOverview();else b=coachRec();
-  return '<div class="ph"><h2>入店辅导 <span class="hint" style="font-weight:400">从发现门店问题到效果回来，按「学 → 练 → 检 → 用 → 馈」走完一个辅导项目</span></h2></div>'+tabsH('coach',tabs)+b;
+  return '<div class="ph"><h2>入店辅导 <span class="hint" style="font-weight:400">从发现门店问题到效果回来，按「学 → 练 → 检 → 用 → 馈」走完一个辅导项目</span></h2><div><button class="btn pri" data-act="coachNewManual">+ 新建辅导项目</button></div></div>'+tabsH('coach',tabs)+b;
 }
 function coachPanel(x,tab){
   coachPlanOf(x);const m=coachMetricOf(x);
   if(tab==='计划'){
-    return '<div class="coach-two"><div class="card"><h3>学：到店教什么 <span class="hint">只选门店真正需要的</span></h3>'+COACH_LEARN.map((r,i)=>{const on=(x.learn||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachLearn" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[2])+'</span></div></label>'}).join('')+'</div>'
+    return coachSopHtml(x)+'<div class="coach-two"><div class="card"><h3>学：到店教什么 <span class="hint">只选门店真正需要的</span></h3>'+COACH_LEARN.map((r,i)=>{const on=(x.learn||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachLearn" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[2])+'</span></div></label>'}).join('')+'</div>'
      +'<div class="card"><h3>练：让门店伙伴练什么 <span class="hint">按短板选，不贪多</span></h3>'+COACH_PRACTICE.map(r=>{const on=(x.practice||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachPractice" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div></label>'}).join('')+'</div></div>'
      +coachPrescribeHtml(x)+'<div class="card"><h3>辅导目标 <span class="hint">先锁定一个主指标，后面复测才有对照</span></h3><div class="coach-target"><div><label>主指标</label><b>'+esc(m.name)+'</b></div><div><label>辅导前</label><b>'+esc(x.pre==null?'—':x.pre+'%')+'</b></div><div><label>目标</label><input id="coach_goal" data-id="'+x.id+'" value="'+esc(x.goalTarget||m.target||'')+'" placeholder="如 +5pt 或 70%"></div></div><div class="coach-assist"><span>不知道目标怎么定？</span><span class="hint">可参考同城优秀店或项目目标；Demo 中建议 +3~5pt 作为可验证的起步目标。</span><button class="btn sm" data-act="coachGoalSuggest" data-id="'+x.id+'">用 +5pt 起步目标</button></div><div class="hint" style="margin-top:6px">'+esc(m.formula)+'；复测时只对比这个指标，不拿多个数混在一起下结论。</div></div>'
      +'<div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="tPlanSave" data-id="'+x.id+'">保存计划，开始到店</button></div>';
@@ -349,6 +362,12 @@ A.coachPrescribeFill=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.datase
   if(rx.goal&&!x.goalTarget)x.goalTarget='+5pt';
   aiLog('门店处方填入计划',x.store,[{name:rx.learn.concat(rx.practice).join('、')}],true);
   toast('已按处方填入学 / 练项与目标,请核对后保存计划','ok');A.ticket({dataset:{id:x.id}})};
+function coachSopHtml(x){
+  const done=x.sop||[];
+  return '<div class="card coach-sop"><h3>线下 SOP 记录 <span class="hint">按门店实际发生的阶段记录，没做的可以不记；每次记录都会留痕</span></h3>'
+   +'<div class="coach-sop-grid">'+COACH_SOP.map(v=>{const hit=done.filter(r=>r.stage===v);return '<div class="coach-sop-row'+(hit.length?' on':'')+'"><b>'+esc(v)+'</b>'+(hit.length?'<span class="tag ok">已记录 '+hit.length+' 次</span><span class="hint">最近 '+esc(hit[hit.length-1].t)+'</span>':'<span class="hint">未记录</span>')+'<button class="btn sm" data-act="coachSopLog" data-id="'+x.id+'" data-v="'+esc(v)+'">记一次</button></div>'}).join('')+'</div>'
+   +'<div style="margin-top:8px"><input id="sop_note" placeholder="这次发生了什么（选填，如：Day1 完成关键岗位沟通，店长认可 3 条问题）" style="width:100%"></div></div>';
+}
 function coachPrescribeHtml(x){
   const rx=coachPrescribe(x);
   return '<div class="ai-box coach-rx"><div class="ai-box-h">'+AI_TAG+' <span class="hint">门店处方（草稿）：根据触发证据和未完成的检核生成，只填表不保存</span></div>'
