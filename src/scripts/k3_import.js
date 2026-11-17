@@ -95,12 +95,21 @@ function ciCourseLinkItem(f,st){
 function ciCourseKpSuggestions(title,text){
   const t=String(title||'')+' '+String(text||'');const out=[];
   const add=(name,why,syn)=>{if(name&&!out.some(x=>x.name===name))out.push({name,why,type:'技能型',syn:syn||[]})};
-  if(/CEMN|购买层级|四个层级|Why Car|Why EV|Why MI|Why Now/.test(t))add('CEMN 购买层级识别','课程把购买拆成四个层级，是本课的核心概念',['CEMN','四个 Why','购买层级']);
-  if(/诊断|卡点|处在哪个层级/.test(t))add('客户购买层级诊断','课程要求先判断客户卡在哪一层，再决定推进动作',['层级诊断','卡点诊断']);
-  if(/开放式提问|封闭式提问|锁定范围/.test(t))add('开放式与封闭式提问','课程明确区分收集范围和锁定范围两类提问',['开放式','封闭式','锁定']);
-  if(/反向验证|逐层上推|往回推/.test(t))add('反向验证与逐层推进','课程用反向验证确认上一层级是否成立',['反向验证','逐层上推']);
-  if(/顾虑|治疗|解除|推进/.test(t))add('顾虑解除与关单推进','课程把诊断后的动作定义为治疗、解除顾虑并推进',['治疗','关单','推进']);
-  if(/演练|案例|Case|customer/i.test(t))add('CEMN 实战演练','课程包含案例、对练和全流程演练',['案例演练','对练']);
+  const isSpin=/SPIN|场景化讲车|场景化销售/.test(t);
+  if(!isSpin)if(/CEMN|购买层级|四个层级|Why Car|Why EV|Why MI|Why Now/.test(t))add('CEMN 购买层级识别','课程把购买拆成四个层级，是本课的核心概念',['CEMN','四个 Why','购买层级']);
+  if(!isSpin)if(/诊断|卡点|处在哪个层级/.test(t))add('客户购买层级诊断','课程要求先判断客户卡在哪一层，再决定推进动作',['层级诊断','卡点诊断']);
+  if(!isSpin)if(/开放式提问|封闭式提问|锁定范围/.test(t))add('开放式与封闭式提问','课程明确区分收集范围和锁定范围两类提问',['开放式','封闭式','锁定']);
+  if(!isSpin)if(/反向验证|逐层上推|往回推/.test(t))add('反向验证与逐层推进','课程用反向验证确认上一层级是否成立',['反向验证','逐层上推']);
+  if(!isSpin)if(/顾虑|治疗|解除|推进/.test(t))add('顾虑解除与关单推进','课程把诊断后的动作定义为治疗、解除顾虑并推进',['治疗','关单','推进']);
+  if(!isSpin)if(/演练|案例|Case|customer/i.test(t))add('CEMN 实战演练','课程包含案例、对练和全流程演练',['案例演练','对练']);
+  /* 场景化讲车 / SPIN 类课程 */
+  if(/SPIN|场景化/.test(t)){
+    add('场景化讲车 SPIN 四步','课程把讲车拆成现状、问题、影响、方案四步',['SPIN','场景化讲车','四步']);
+    add('从现状切入了解客户','先问家庭、职业、用车场景，再讲车',['现状','Situation','家庭信息']);
+    add('找到并放大客户痛点','把生活里的不完美说出来，放大影响',['痛点','Problem','影响','Implication']);
+    add('用产品方案回应场景','把卖点翻译成该场景下的解决方案',['需求','方案','Need','场景匹配']);
+  }
+  if(/案例|李先生|王哥|孙先生|刘叔/.test(t))add('场景化讲车案例演练','课程含多类客户案例，可做对练脚本',['案例','对练','角色扮演']);
   return out;
 }
 function ciCourseKpToCand(item,contentId){
@@ -140,6 +149,40 @@ function ciCourseSampleText(){
 按四个层级准备推进理由与话术，小组共创、上台展示、AI 收纳资料库。
 ## P46–P48 · 全流程演练：诊断 + 治疗
 先诊断具体层级和卡点，再开启治疗并尝试推进；案例难度逐步增加。`;
+}
+function ciSpinSampleText(){
+  return `# 场景化讲车小技巧 — SPIN
+## 常见讲车问题
+习惯讲性能、参数、功能配置；习惯讲自己的车好在哪。
+## 什么是场景化销售：4 步招术
+Step1 从现状入手，了解对方的基本情况。
+Step2 找到对方生活中有一点不完美的地方。
+Step3 放大当前的不完美，挖掘痛点，暗示对方需要立即改变。
+Step4 提供完美的解决方案，创造向往。
+## 对应 SPIN
+S Situation：用户的基本情况、现状（家庭信息、休闲方式、职业信息、现用车型与用车场景）。
+P Problem：用户生活或者用车中的问题（麻烦、不方便、没法更好照顾家人）。
+I Implication：问题不解决会带来的影响（时间精力成本、家庭和睦、身体健康）。
+N Need：产品可以满足需求，激发向往（介绍功能、激发拥有冲动）。
+## 案例一：李先生，三代同堂
+一家五口，父母七十多岁腿脚不便上下车得扶，五岁女儿要坐安全座椅、放婴儿车。
+担心底盘高了老人孩子迈不上来，低了老人弯腰难受。
+父母出行意愿下降，慢慢就不愿意去了；等孩子大了老人也走不动了，陪伴家人的窗口期很短。
+N90 Max 电动门开启 90 度、开口大，电动侧踏三节台阶，老人不用弯腰、小朋友不用爬。
+## 案例二：王哥，写字楼午休
+中午只有一小时，办公室没地方休息，只能趴桌睡，脖子酸手麻。
+下午最累，没歇好脑子昏沉，长期颈椎腰椎受不了。
+N70 后排一放倒就是大床模式，隐私玻璃一拉，安静睡一小时；接客户时就是独立会客空间。
+## 案例三：孙先生，油车换新能源
+开了十多年油车，最在意省心靠谱，又怕充电排队、续航没底。
+担心续航焦虑、技术可靠、保值率三件事。
+顾虑不解决就下不了决心，油费涨、老车掉价，犹豫本身也在花钱。
+N90 Max 增程，综合续航 1700 多公里只加 92 号油，日常纯电一公里不到 1 毛，北方冬天电池不冻。
+## 案例四：刘叔，退休自驾
+退休时间自由，想和老伴走遍全国。
+怕车操作复杂学不会，长途续航和充电不方便。
+退休了更要趁身体好多走走，车学不会、怕趴窝，自驾游就变成受罪。
+N90 Max 探索版按键沿用传统习惯，万事皆可小爱；综合续航 1600 多公里，后排放倒就是大床房。`;
 }
 A.ciCourseSet=()=>{const st=ciState();const txt=($('#ci_course_text')||{}).value||'';const target=st.files.filter(f=>f.link).slice(-1)[0];if(!target)return toast('先添加一个课程链接','err');if(!txt.trim())return toast('请粘贴课程正文','err');target.courseText=txt;st.courseText=txt;toast('已把正文挂到课程链接，解析时会生成课程骨架','ok');render()};
 A.ciCourseFile=el=>{const f=el.files&&el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const st=ciState();const txt=String(r.result||'');st.courseText=txt;const target=st.files.filter(x=>x.link).slice(-1)[0];if(target)target.courseText=txt;render();toast('已读取 '+f.name+'，解析时会生成课程骨架','ok')};r.readAsText(f,'utf-8')};
