@@ -2,7 +2,7 @@ const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')
 const tx=()=>document.querySelector('#main').innerText;
 try{
 A.roleSwitch({value:'hq'});closeDlg();
-CK('标签根是业务分类',tagRoots().map(t=>t.name).join('/')==='车型卖点/政策口径/销售场景',tagRoots().map(t=>t.name).join('/'));
+CK('标签根是业务分类',['车型卖点','政策口径','销售场景','带人辅导'].every(n=>tagRoots().some(t=>t.name===n)),tagRoots().map(t=>t.name).join('/'));
 CK('标签支持车上部位之外的政策',!!tagOptions().find(t=>/政策口径/.test(t.path)),tagOptions().filter(t=>/政策/.test(t.path)).map(t=>t.path).slice(0,3).join(' | '));
 UI.page='tagmanage';UI.sel.tagMgr='';render();
 const before=PTAGS.length;

@@ -28,6 +28,8 @@ function kpApplyMeta(k,o){
   if(k.tags.length)k.dims.Dprod=k.tags.slice(0,2);else delete k.dims.Dprod;
   if(o.abId){const v=dimVal('Dab',o.abId);if(v){k.dims.Dab=[o.abId];k.dim=v.name}}
   if(o.owner!==undefined)k.owner=o.owner||null;
+  if(o.pre!==undefined)k.pre=(o.pre||[]).filter(id=>id!==k.id);
+  if(o.rel!==undefined)k.rel=(o.rel||[]).filter(id=>id!==k.id);
   return k;
 }
 function kpStatFor(tagId,car){
@@ -83,7 +85,7 @@ function kpOverviewNew(){
   return srcBar('这页回答「我们的知识点清单全不全」。先看车型 × 标签矩阵，再看要补哪几个点；学员薄弱只放在页尾，用来决定先补哪块。')
    +kpNextCard()
    +'<div class="grid g4" style="margin-bottom:16px">'+metric('在售车型',kpCarsHost().length,'N70 / N90 / 探索版 / 其他')+metric('已启用知识点',act.length,'停用 '+S.kps.filter(k=>k.st==='停用').length+' 个')+metric('能上课',ready+' / '+act.length,'有负责人 + 已上架讲解')+metric('缺可用讲解',noExp,'这 '+noExp+' 个要先补内容')+'</div>'
-   +kpCarMatrix()+kpIssueList()+kpTagTree()
+   +kpGraphView()+kpGovernance()+kpCarMatrix()+kpIssueList()+kpTagTree()
    +'<div class="kp-panel"><div class="kp-ph"><h3>学员集中薄弱</h3><span class="hint">来自零售通诊断，只用于决定「先补哪块」，具体任务在工作台</span></div>'+kpWeakCard().replace(/^<div class="card">/,'<div>').replace(/<\/div>$/,'</div>')+'</div>';
 }
 function kpLibFilter(){return UI.sel.kpf||(UI.sel.kpf={})}
@@ -126,6 +128,83 @@ function kpLibrary(){
    +'</table>'+lstPager('kpPage',pg)+(rows.length?'':'<div class="empty">没有符合条件的知识点，换个标签或新建一个。</div>')+'</div></div>'+'</div></div>';
 }
 function kpStatForKp(k,car){if(!kpCarsHas(k,car))return '—';return kpReady(k)?'✓':'缺'}
+
+/* ---------- 知识图谱：按能力维度分列布局，节点=知识点 ---------- */
+function kgNodes(){
+  const act=S.kps.filter(k=>k.st==='启用');
+  const groups=KP_DIMS.map(dim=>({dim,list:act.filter(k=>kpAbText(k)===dim)}));
+  const rest=act.filter(k=>!KP_DIMS.includes(kpAbText(k)));
+  if(rest.length)groups.push({dim:'未分能力',list:rest});
+  return groups;
+}
+function kpGraphSvg(opt){
+  opt=opt||{};const W=opt.w||900;
+  const act=S.kps.filter(k=>k.st==='启用');
+  /* 按能力维度分列；列内按关系聚簇：有连线的排在一起，孤岛排最后 */
+  const groups=KP_DIMS.map(dim=>({dim,list:act.filter(k=>kpAbText(k)===dim)})).filter(g=>g.list.length);
+  const rest=act.filter(k=>!KP_DIMS.includes(kpAbText(k)));
+  if(rest.length)groups.push({dim:'未分能力',list:rest});
+  const linked=id=>(k)=>((k.pre||[]).includes(id))||((k.rel||[]).includes(id))||((k.pre||[]).length&&(k.pre||[]).some(p=>p===id));
+  const score=k=>((k.pre||[]).length+(k.rel||[]).length)*2+S.kps.filter(x=>(x.pre||[]).includes(k.id)||(x.rel||[]).includes(k.id)).length;
+  groups.forEach(g=>g.list.sort((a,b)=>score(b)-score(a)));
+  const colW=W/Math.max(1,groups.length);
+  const pos={};const rowH=32;
+  groups.forEach((g,gi)=>{const x=colW*(gi+0.5);g.list.forEach((k,i)=>{pos[k.id]={x,y:62+i*rowH,k}})});
+  const maxRows=Math.max(...groups.map(g=>g.list.length),1);const H=Math.max(260,80+maxRows*rowH);
+  /* 连线：前置实线带箭头，相关虚线 */
+  let edges='';
+  Object.values(pos).forEach(n=>{
+    (n.k.pre||[]).forEach(id=>{const t=pos[id];if(!t)return;
+      const mx=(n.x+t.x)/2;edges+='<path d="M'+t.x+','+t.y+' Q'+mx+','+((t.y+n.y)/2)+' '+n.x+','+n.y+'" fill="none" stroke="#98a2b3" stroke-width="1.1" stroke-opacity=".55" marker-end="url(#kgArrow)"/>'});
+    (n.k.rel||[]).forEach(id=>{const t=pos[id];if(!t||n.k.id>id)return;
+      edges+='<line x1="'+n.x+'" y1="'+n.y+'" x2="'+t.x+'" y2="'+t.y+'" stroke="#d4dae3" stroke-width="1" stroke-dasharray="3 3"/>'});
+  });
+  const defs='<defs><marker id="kgArrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#98a2b3"/></marker></defs>';
+  let heads='';groups.forEach((g,gi)=>{const x=colW*(gi+0.5);heads+='<text x="'+x+'" y="26" font-size="12" fill="#475467" text-anchor="middle">'+esc(g.dim)+' ('+g.list.length+')</text>'});
+  let nodes='';
+  Object.values(pos).forEach(n=>{const w=kpWeak(n.k);const r=8+Math.min(9,Math.sqrt(w)*1.7);const h=kpHealth(n.k);
+    const color=h.cells.exp.s==='ok'?(kpReady(n.k)?'#12a36b':'#e8830c'):'#e5484d';
+    nodes+='<g class="kg-n" data-act="kpOpen" data-id="'+n.k.id+'" style="cursor:pointer"><circle cx="'+n.x+'" cy="'+n.y+'" r="'+r+'" fill="'+color+'" fill-opacity=".2" stroke="'+color+'" stroke-width="1.6"><title>'+esc(n.k.name+' · 薄弱 '+w+' 人')+'</title></circle>'
+      +'<text x="'+(n.x+r+7)+'" y="'+(n.y+4)+'" font-size="10.5" fill="#344054" style="paint-order:stroke;stroke:#fff;stroke-width:3">'+esc(n.k.name.length>9?n.k.name.slice(0,9)+'…':n.k.name)+'</text></g>'});
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;background:#fff;border-radius:10px">'+defs+heads+edges+nodes+'</svg>';
+}
+function kpGraphView(){
+  const act=S.kps.filter(k=>k.st==='启用');
+  const noRel=act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length&&!S.kps.some(x=>(x.pre||[]).includes(k.id)||(x.rel||[]).includes(k.id)));
+  const legend='<div class="hint" style="margin:6px 0 8px;line-height:1.7">节点颜色：绿=能上课（有负责人+已上架讲解），橙=有负责人但讲解不全，红=缺讲解；节点越大 = 学员薄弱人数越多。实线=前置关系，虚线=相关关系。点节点进知识点详情。</div>';
+  return '<div class="kp-panel"><div class="kp-ph"><h3>知识图谱 <span class="hint">按能力维度分列；看谁依赖谁、哪块是孤岛</span></h3><span class="hint">'+act.length+' 个启用点 · '+noRel.length+' 个还没有任何关系</span></div>'
+   +legend+kpGraphSvg()
+   +(noRel.length?'<div style="margin-top:10px"><b style="font-size:13px">孤岛知识点（没有前置/相关关系）</b><div class="hint" style="margin-top:4px">'+noRel.slice(0,12).map(k=>'<a class="link" data-act="kpOpen" data-id="'+k.id+'" style="margin-right:10px">'+esc(k.name)+'</a>').join('')+(noRel.length>12?' …还有 '+(noRel.length-12)+' 个':'')+'</div></div>':'')+'</div>';
+}
+
+/* ---------- 知识点治理：没标签 / 没画像 / 没课题 / 孤岛 / 没被培训过 ---------- */
+function kpGovernance(){
+  const act=S.kps.filter(k=>k.st==='启用');
+  const noTag=act.filter(k=>!(k.tags||[]).length);
+  const profIds=new Set();(S.profiles||[]).forEach(pf=>pf.items.forEach(it=>pfKps(it).forEach(k=>profIds.add(k.id))));
+  const noProfile=act.filter(k=>!profIds.has(k.id));
+  const topicKp=new Set(S.topics.map(t=>t.kpId).filter(Boolean));
+  const cidsOf=k=>(k.tags||[]).length;
+  const noTopic=act.filter(k=>!topicKp.has(k.id)&&tpNoKp(k));
+  const usedKp=new Set();S.projects.forEach(p=>(p.nodes||[]).forEach(n=>{const c=n.contentId&&content(n.contentId);if(c)(c.kps||[]).forEach(id=>usedKp.add(id))}));
+  const noTrain=act.filter(k=>!usedKp.has(k.id));
+  const isolated=act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length&&!S.kps.some(x=>(x.pre||[]).includes(k.id)||(x.rel||[]).includes(k.id)));
+  const blk=(title,n,cls,hint,list)=>'<div class="card" style="margin:0"><div style="display:flex;justify-content:space-between;align-items:baseline"><b>'+title+'</b><span class="tag '+(cls||'')+'">'+n+' 个</span></div><div class="hint" style="margin:4px 0 6px">'+hint+'</div>'
+    +(list.length?'<div style="line-height:2">'+list.slice(0,8).map(k=>'<a class="link" data-act="kpOpen" data-id="'+k.id+'" style="margin-right:10px">'+esc(k.name)+'</a>').join('')+(list.length>8?'<span class="hint">…还有 '+(list.length-8)+' 个</span>':'')+'</div>':'<div class="chk ok" style="margin:0"><b>✓</b><span>没有缺口</span></div>')+'</div>';
+  return '<div class="kp-panel"><div class="kp-ph"><h3>知识点治理 <span class="hint">清单是否真的被人管、被用起来</span></h3><span class="hint">'+act.length+' 个启用点</span></div>'
+   +'<div class="grid g2" style="gap:12px">'
+   +blk('没挂标签',noTag.length,noTag.length?'warn':'', '标签树和车型矩阵里会漏掉它们', noTag)
+   +blk('没进岗位画像',noProfile.length,noProfile.length?'warn':'', '不会出现在任何岗位的就绪度计算里', noProfile)
+   +blk('没有课题来源',noTopic.length,'', '既不是系统/人工发现的缺口，也没被培训过', noTopic)
+   +blk('没被任何学习项目用过',noTrain.length,'', '从没进入过培训任务，学员碰不到', noTrain)
+   +blk('孤岛知识点',isolated.length,'', '没有前置/相关关系，无法看出学习先后', isolated)
+   +'</div></div>';
+}
+function tpNoKp(k){
+  const tp=kpTopicOf(k);if(tp)return false;
+  const cs=kpMounted(k);if(!cs.length)return true;
+  return true;
+}
 function kpImportResultHtml(){
   const r=UI.sel.kpImportResult;if(!r)return '';
   return '<div class="kp-import-result'+(r.total?' warn':' ok')+'"><b>上次导入：成功 '+r.ok+' 条'+(r.total?'，跳过 '+r.total+' 条':'')+'</b>'+(r.errs.length?'<ul>'+r.errs.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'')+(r.total>r.errs.length?'<div class="hint">…还有 '+(r.total-r.errs.length)+' 条</div>':'')+'<a class="link" data-act="kpClearImportResult">收起</a></div>';
@@ -208,10 +287,18 @@ A.kpCloneRun=()=>{let st=UI.sel.kpc||{};if(!st.to){st={from:$('#kp_clone_from').
 A.kpQuickAdd=()=>{const name=($('#kp_multi_name')||{}).value||'';const tag=$('#kp_multi_tag')?$('#kp_multi_tag').value:'';const ab=$('#kp_multi_ab')?$('#kp_multi_ab').value:'';const owner=$('#kp_multi_owner')?$('#kp_multi_owner').value:'';const cars=[...document.querySelectorAll('.kp_multi_car:checked')].map(x=>x.value);if(!name.trim())return toast('请填写名称','err');if(!cars.length)return toast('至少选一个适用车型','err');if(S.kps.some(k=>k.name===name.trim()&&k.cars.some(c=>cars.includes(c))))return toast('同名同车型已经有知识点了','err');cars.forEach(kpEnsureCar);const id='K'+(Math.max(0,...S.kps.map(x=>+String(x.id).replace(/\D/g,'')||0))+1);const k={id,name:name.trim(),type:tag?'事实型':'技能型',tags:tag?[tag]:[],car:cars[0],cars,syn:[],owner:owner||null,st:'启用',ext:[],created:today,hist:[]};kpApplyMeta(k,{cars,tags:k.tags,abId:ab||null,owner:owner||null});S.kps.push(k);kpHist(k,'新增',owner?'':'没有负责人');toast('已建「'+name.trim()+'」，同时适用 '+cars.join('、'),'ok');UI.tab.catalog=KP_TAB_LIB;UI.sel.kpf={};render()};
 
 /* 编辑页:一套能力口径 + 多车型 */
-A.kpNew=()=>{KF={id:null,name:'',type:'事实型',cars:['通用车型'],tags:[],abId:(kpAbRows()[0]||{}).id||'',syn:'',owner:kpDefOwner(),more:false};UI.page='kpform';render()};
-A.kpEdit=()=>{const k=kp(UI.kid);KF={id:k.id,name:k.name,type:k.type,cars:kpCars(k).slice(),tags:(k.tags||[]).slice(),abId:(k.dims&&k.dims.Dab||[])[0]||'',syn:(k.syn||[]).join('、'),owner:k.owner||'',more:true};UI.page='kpform';render()};
+A.kpNew=()=>{KF={id:null,name:'',type:'事实型',cars:['通用车型'],tags:[],abId:(kpAbRows()[0]||{}).id||'',syn:'',owner:kpDefOwner(),more:false,pre:[],rel:[]};UI.page='kpform';render()};
+A.kpEdit=()=>{const k=kp(UI.kid);KF={id:k.id,name:k.name,type:k.type,cars:kpCars(k).slice(),tags:(k.tags||[]).slice(),abId:(k.dims&&k.dims.Dab||[])[0]||'',syn:(k.syn||[]).join('、'),owner:k.owner||'',more:true,pre:(k.pre||[]).slice(),rel:(k.rel||[]).slice()};UI.page='kpform';render()};
 A.kfCar=el=>{const v=el.value;if(el.checked){if(!KF.cars.includes(v))KF.cars.push(v)}else KF.cars=KF.cars.filter(x=>x!==v);if(!KF.cars.length)KF.cars=['通用车型'];render()};
 A.kfAb=el=>{KF.abId=el.value;render()};
+function kfRelPick(field){
+  const cur=(KF[field]||[]).map(kp).filter(Boolean);
+  const others=S.kps.filter(k=>k.id!==KF.id&&!(KF[field]||[]).includes(k.id));
+  return '<div class="kf-rel"><div style="margin-bottom:6px">'+(cur.length?cur.map(k=>'<span class="tag pri" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(kpLabel(k))+' <a class="link" data-act="kfRelDel" data-f="'+field+'" data-v="'+k.id+'">×</a></span>').join(''):'<span class="hint">未选</span>')+'</div>'
+   +'<select data-wc="kfRelAdd" data-f="'+field+'"><option value="">选择知识点…</option>'+others.map(k=>'<option value="'+k.id+'">'+esc(kpLabel(k))+'</option>').join('')+'</select></div>';
+}
+A.kfRelAdd=el=>{const f=el.dataset.f;const id=el.value;if(!id)return;KF[f]=KF[f]||[];if(!KF[f].includes(id))KF[f].push(id);render()};
+A.kfRelDel=el=>{const f=el.dataset.f;KF[f]=(KF[f]||[]).filter(x=>x!==el.dataset.v);render()};
 A.kfType=el=>{KF.type=el.dataset.v;if(KF.type==='事实型'&&!KF.tags.length){const ab=kpAbRows().find(x=>x.name==='场景化讲车');if(ab)KF.abId=ab.id}render()};
 function pgKpForm(){
   if(!KF){UI.page='catalog';return pgCatalog()}
@@ -222,7 +309,9 @@ function pgKpForm(){
   const tagBox=tagPickerHtml('kfTag',KF.tags,{})+'<div class="tag-ai-slot">'+(typeof aiKpFormAdviceHtml==='function'?aiKpFormAdviceHtml():'')+'</div>';
   const more='<div class="kp-more">'+FR('标签',tagBox,{h:'可以是车上部位，也可以是政策、卖点、场景等；一个点可挂多个标签'})
    +FR('同义词','<input type="text" data-kf="syn" value="'+esc(KF.syn)+'" placeholder="用户会怎么说，如 后备箱、装得下" style="width:100%;max-width:460px">',{h:'用于搜索和内容挂载推荐'})
-   +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'没有负责人不能启用'})+'</div>';
+   +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'没有负责人不能启用'})
+   +FR('前置知识点',kfRelPick('pre'),{h:'学这个点之前，学员应该先掌握哪些点；用于知识图谱的先后关系'})
+   +FR('相关知识点',kfRelPick('rel'),{h:'和这个点经常一起讲 / 互相引用的点，没有先后顺序'})+'</div>';
   return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+(KF.id?'编辑 '+KF.id:'新增知识点'))+'<div class="ph"><h2>'+(KF.id?'编辑知识点':'新增知识点')+' <span class="hint" style="font-weight:400">必填：名称、适用车型、知识类型；其他可以后补</span></h2></div>'
    +'<div class="card frm">'+FR('名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="一个能单独讲一次、单独出一道题的点，如：6.6kW 外放电" style="width:100%;max-width:460px">',{req:1,h:'太粗就拆，太细就并'})
    +FR('适用车型',carBox+'<div style="margin-top:8px"><input type="text" id="kf_newcar" placeholder="没有你要的车型？输入新车型名称" style="width:220px"> <button class="btn sm" data-act="kfAddCar">新增车型</button></div>',{req:1,h:'可以多选。同一个卖点同时适用多款车时，建一个点就够了，不用复制多条'})
@@ -233,11 +322,21 @@ function pgKpForm(){
    +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」适用这些车型，不要重复建</span></div>':'')
    +'</div><div class="dock"><span class="sp"></span><button class="btn" data-act="kfCancel">取消</button><button class="btn pri" data-act="kfSave">保存</button></div>';
 }
-A.kfSave=()=>{const n=(KF.name||'').trim();if(!n)return toast('请填写名称','err');if(!KF.cars.length)return toast('至少选一个适用车型','err');if(!KF.abId)return toast('请选择主要训练能力','err');if(S.kps.some(k=>k.id!==KF.id&&k.name===n&&k.cars.some(c=>KF.cars.includes(c))))return toast('已有同名同车型的知识点','err');
+A.kfSave=()=>{const n=(KF.name||'').trim();if(!n)return toast('请填写名称','err');if(!KF.cars.length)return toast('至少选一个适用车型','err');if(!KF.abId)return toast('请选择主要训练能力','err');
+  if(!(KF.tags||[]).length)return toast('请至少挂一个标签：否则标签树和车型矩阵里会漏掉这个知识点','err');if(S.kps.some(k=>k.id!==KF.id&&k.name===n&&k.cars.some(c=>KF.cars.includes(c))))return toast('已有同名同车型的知识点','err');
   const syn=String(KF.syn||'').split(/[、,，\s]+/).filter(Boolean);KF.cars.forEach(kpEnsureCar);let k;
-  if(KF.id){k=kp(KF.id);Object.assign(k,{name:n,type:KF.type,tags:KF.tags.slice(),syn,owner:KF.owner||null});kpApplyMeta(k,{cars:KF.cars,tags:KF.tags,abId:KF.abId,owner:KF.owner||null});if(!k.owner&&k.st==='启用'){k.st='停用';kpHist(k,'停用','没有负责人')}kpHist(k,'编辑')}
-  else{const id='K'+(Math.max(0,...S.kps.map(x=>+String(x.id).replace(/\D/g,'')||0))+1);k={id,name:n,type:KF.type,tags:KF.tags.slice(),car:KF.cars[0],cars:KF.cars.slice(),syn,owner:KF.owner||null,st:KF.owner?'启用':'停用',ext:[],created:today,hist:[]};kpApplyMeta(k,{cars:KF.cars,tags:KF.tags,abId:KF.abId,owner:KF.owner||null});S.kps.push(k);kpHist(k,'新增',KF.owner?'':'没有负责人，先停用')}
+  if(KF.id){k=kp(KF.id);Object.assign(k,{name:n,type:KF.type,tags:KF.tags.slice(),syn,owner:KF.owner||null});kpApplyMeta(k,{cars:KF.cars,tags:KF.tags,abId:KF.abId,owner:KF.owner||null,pre:KF.pre,rel:KF.rel});if(!k.owner&&k.st==='启用'){k.st='停用';kpHist(k,'停用','没有负责人')}kpHist(k,'编辑')}
+  else{const id='K'+(Math.max(0,...S.kps.map(x=>+String(x.id).replace(/\D/g,'')||0))+1);k={id,name:n,type:KF.type,tags:KF.tags.slice(),car:KF.cars[0],cars:KF.cars.slice(),syn,owner:KF.owner||null,st:KF.owner?'启用':'停用',ext:[],created:today,hist:[]};kpApplyMeta(k,{cars:KF.cars,tags:KF.tags,abId:KF.abId,owner:KF.owner||null,pre:KF.pre,rel:KF.rel});S.kps.push(k);kpHist(k,'新增',KF.owner?'':'没有负责人，先停用')}
   KF=null;UI.kid=k.id;UI.page='kp';toast(k.st==='启用'?'已保存并启用':'已保存，待指定负责人后启用','ok');render()};
 
 
 A.kfAddCar=()=>{const n=((($('#kf_newcar')||{}).value)||'').trim();if(!n)return toast('请输入车型名称','err');if(!S.cfg.tax.car.includes(n))kpEnsureCar(n);if(!KF.cars.includes(n))KF.cars=KF.cars.filter(x=>x!=='通用车型').concat([n]);toast('已新增车型「'+n+'」并选中','ok');render()};
+
+function kpRelHtml(k){
+  if(!k)return '';
+  const pre=(k.pre||[]).map(kp).filter(Boolean),rel=(k.rel||[]).map(kp).filter(Boolean);
+  const revPre=S.kps.filter(x=>(x.pre||[]).includes(k.id)),revRel=S.kps.filter(x=>(x.rel||[]).includes(k.id));
+  if(!pre.length&&!rel.length&&!revPre.length&&!revRel.length)return '';
+  const L=(t,arr)=>arr.length?'<div style="margin:3px 0"><span class="hint">'+t+'</span>'+arr.map(x=>'<a class="link" data-act="kpOpen" data-id="'+x.id+'" style="margin-right:8px">'+esc(x.name)+'</a>').join('')+'</div>':'';
+  return '<div class="card sd"><h3>知识关系 <span class="hint">前置 / 相关</span></h3>'+L('前置',pre)+L('相关',rel)+(revPre.length?'<div style="margin:3px 0"><span class="hint">被这些点当作前置</span>'+revPre.map(x=>'<a class="link" data-act="kpOpen" data-id="'+x.id+'" style="margin-right:8px">'+esc(x.name)+'</a>').join('')+'</div>':'')+(revRel.length?'<div style="margin:3px 0"><span class="hint">被这些点当作相关</span>'+revRel.map(x=>'<a class="link" data-act="kpOpen" data-id="'+x.id+'" style="margin-right:8px">'+esc(x.name)+'</a>').join('')+'</div>':'')+'</div>';
+}

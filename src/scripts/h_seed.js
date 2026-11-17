@@ -151,7 +151,7 @@ function seedDemo(){
   /* 内容点赞点踩已体现在 contents;通知 */
   S.notices=[{t:'09:12',m:'课题「国地补口径」所属项目已结项,效果结论已写回'},{t:'09:05',m:'系统出题完成:批次 B2 从汽车语料 badcase 聚类 3 个候选,出题 2 个'},{t:'08:40',m:'项目「新人训第12期」分班结果已发布:第12期一班'},{t:'08:30',m:'项目「技能·邀约试驾」数据同步完成,可在「效果追踪」查看'},{t:'昨天',m:'内容「价格异议处理 · 价值锚点话术」已提交审核,审核人:总部培训部 刘翔'},{t:'08:10',m:'项目「强竞品·问界M8」灰度中:第一批 6 人已收到任务,对照批 4 人暂不下发'}];
   kpSeed();qSeed();drSeed();kpSeedMastery();
-  ciSeedCourse();ciSeedSpinCourse();
+  ciSeedCourse();ciSeedSpinCourse();kpRelSeed();kpTagSeed();
   /* v23:理想态数据层(维度 / 画像 / 12 周证据 / 业务结果 / 错题 / 学习包 / 配置版本),并覆盖掌握度算法 */
   if(typeof v23Seed==='function')v23Seed();
   $('#toast').style.display='none';
@@ -165,6 +165,67 @@ A.clear=()=>{reset();render();toast('已清空,从零开始走闭环','ok')};
    目的：让本地启动后可以直接看到「课程链接 → 课程骨架 + 候选知识点 → 回挂 → 上架」结果，无需依赖飞书登录态。 */
 /* 真实课程样例二：场景化讲车 SPIN（assets/spin_course.md）
    与 CEMN 一样走「课程 → 候选知识点 → 回挂 → 上架」，并额外生成一条演练脚本。 */
+/* 标签补齐：按知识点语义补上标签，避免治理页一打开全是缺口 */
+function kpTagSeed(){
+  const T=(path)=>ptagByPath(path);
+  const set=(id,paths)=>{
+    const k=S.kps.find(x=>x.id===id);if(!k||(k.tags||[]).length)return;
+    const ids=paths.map(T).filter(Boolean).map(t=>t.id);if(ids.length)k.tags=ids;
+  };
+  set('K17',['销售场景_展厅接待']);
+  set('K18',['销售场景_报价谈判']);
+  set('K19',['车型卖点_智驾_辅助驾驶','销售场景_展厅接待']);
+  set('K20',['销售场景_展厅接待']);
+  set('K21',['销售场景_邀约到店']);
+  set('K22',['政策口径_国补地补']);
+  set('K24',['带人辅导_新人带教']);
+  set('K25',['带人辅导_目标与例会']);
+  ['K_CEMN0','K_CEMN1','K_CEMN2','K_CEMN3','K_CEMN4','K_CEMN5','K_CEMN6'].forEach(id=>set(id,['销售场景_展厅接待']));
+  ['K_SPIN0','K_SPIN1','K_SPIN2','K_SPIN3','K_SPIN4'].forEach(id=>set(id,['销售场景_展厅接待']));
+}
+/* 知识关系种子：前置(learn before) / 相关(常一起讲) */
+function kpRelSeed(){
+  const set=(id,pre,rel)=>{const k=S.kps.find(x=>x.id===id);if(!k)return;k.pre=(pre||[]).filter(x=>S.kps.some(y=>y.id===x));k.rel=(rel||[]).filter(x=>S.kps.some(y=>y.id===x))};
+  /* 场景化讲车：按家庭 / 露营 / 商务 / 安全 四组卖点互相关联 */
+  set('K1',[],['K2','K8','K9','K13']);        /* 储物 相关 座椅/办公/儿童/宠物 */
+  set('K2',[],['K3','K9','K11']);             /* 座椅 相关 上下车/儿童/露营 */
+  set('K3',[],['K2','K9']);                   /* 上下车便利 相关 座椅/儿童 */
+  set('K4',[],['K11','K5']);                  /* 外放电 相关 露营/补能 */
+  set('K5',[],['K4','K16']);                  /* 续航补能 相关 外放电/哨兵 */
+  set('K6',[],['K16','K5']);                  /* 辅助驾驶 相关 哨兵/补能 */
+  set('K8',[],['K1','K10']);                  /* 移动办公 相关 储物/影音 */
+  set('K9',[],['K2','K3']);                   /* 儿童座椅 相关 座椅/上下车 */
+  set('K10',[],['K8','K11']);                 /* 影音 相关 办公/露营 */
+  set('K11',[],['K4','K2','K10']);            /* 露营休息 相关 外放电/座椅/影音 */
+  set('K13',[],['K1','K9']);                  /* 宠物出行 相关 储物/儿童 */
+  set('K16',[],['K6','K5']);                  /* 哨兵 相关 智驾/补能 */
+  /* 顾虑解除：先探需 → 再讲价值 → 再处理价格/竞品/政策 */
+  set('K15',['K20'],['K18','K19']);           /* 用车成本 前置探需 */
+  set('K18',['K20','K15'],['K19','K22']);     /* 价格异议 前置探需+成本 */
+  set('K19',['K20'],['K18','K22']);           /* 竞品对比 */
+  set('K22',['K20'],['K18','K19']);           /* 政策口径 */
+  /* 探需 → 讲车 的先后 */
+  set('K20',[],['K21','K18']);                /* 探需提问 相关 邀约/价格 */
+  set('K21',['K20'],['K17']);                 /* 邀约到店 前置探需 */
+  set('K17',['K20'],['K_SPIN0']);             /* 场景化讲车 前置探需 */
+  /* 带人辅导 */
+  set('K24',[],['K25']);                      /* 带教陪访 相关 例会 */
+  set('K25',[],['K24']);                      /* 例会目标 相关 带教 */
+  /* CEMN 链 */
+  set('K_CEMN0',[],['K_CEMN1','K_CEMN2']);
+  set('K_CEMN1',['K_CEMN0'],['K_CEMN3']);
+  set('K_CEMN2',['K_CEMN0'],['K_CEMN3']);
+  set('K_CEMN3',['K_CEMN1','K_CEMN2'],['K_CEMN4']);
+  set('K_CEMN4',['K_CEMN3'],['K_CEMN5']);
+  set('K_CEMN5',['K_CEMN4'],['K_CEMN6']);
+  set('K_CEMN6',['K_CEMN5'],['K_SPIN4']);
+  /* SPIN 链 */
+  set('K_SPIN0',['K20'],['K_SPIN1']);
+  set('K_SPIN1',['K_SPIN0'],['K_SPIN2']);
+  set('K_SPIN2',['K_SPIN1'],['K_SPIN3']);
+  set('K_SPIN3',['K_SPIN2'],['K_SPIN4']);
+  set('K_SPIN4',['K_SPIN3'],['K_CEMN6']);
+}
 function ciSeedSpinCourse(){
   if(S.contents.some(c=>c.id==='N_SPIN1'))return;
   const src=typeof ciSpinSampleText==='function'?ciSpinSampleText():'';

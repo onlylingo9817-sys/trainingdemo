@@ -21,7 +21,8 @@ const PTAG_RAW=[
   ['经济性',['用车成本']]
  ]],
  ['政策口径',['国补地补','以旧换新','金融方案']],
- ['销售场景',['邀约到店','展厅接待','试驾','报价谈判']]
+ ['销售场景',['邀约到店','展厅接待','试驾','报价谈判']],
+ ['带人辅导',['新人带教','目标与例会']]
 ];
 const PTAGS=[];
 function ptagSeed(){
@@ -269,7 +270,7 @@ function pgKp(){
   const cellT=KP_CELLS.map(x=>{const c=h.cells[x[0]];return '<div class="kp-cell s-'+c.s+'"><i></i><div><b>'+x[1]+'</b><div class="hint">'+esc(c.t)+'</div></div></div>'}).join('');
   const ext=(k.ext||[]);
   const dimBox=(typeof kpDimsHtml==='function'?kpDimsHtml(k):'');
-  const sideInfo=(dimBox?'<div class="card sd"><h3>这个点教什么 <span class="hint">给内容和学员看的信息</span></h3>'+dimBox+'</div>':'')+'<div class="card sd"><h3>基本信息</h3><dl class="kv sm"><dt>知识类型</dt><dd>'+(typeof kpTypeText==='function'?kpTypeText(k):k.type)+'</dd><dt>适用车型</dt><dd>'+esc((k.cars||[k.car]).join(' / '))+'</dd><dt>标签</dt><dd>'+(kpTagTxt(k).map(p=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(p.replace(/^[^_]+_/,''))+'</span>').join('')||'<span class="hint">未挂（销售动作类可以不挂）</span>')+'</dd><dt>同义词</dt><dd>'+((k.syn||[]).map(w=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(w)+'</span>').join('')||'-')+'</dd></dl></div>'
+  const sideInfo=(dimBox?'<div class="card sd"><h3>这个点教什么 <span class="hint">给内容和学员看的信息</span></h3>'+dimBox+'</div>':'')+(typeof kpRelHtml==='function'?kpRelHtml(k):'')+'<div class="card sd"><h3>基本信息</h3><dl class="kv sm"><dt>知识类型</dt><dd>'+(typeof kpTypeText==='function'?kpTypeText(k):k.type)+'</dd><dt>适用车型</dt><dd>'+esc((k.cars||[k.car]).join(' / '))+'</dd><dt>标签</dt><dd>'+(kpTagTxt(k).map(p=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(p.replace(/^[^_]+_/,''))+'</span>').join('')||'<span class="hint">未挂（销售动作类可以不挂）</span>')+'</dd><dt>同义词</dt><dd>'+((k.syn||[]).map(w=>'<span class="tag" style="margin:0 4px 4px 0">'+esc(w)+'</span>').join('')||'-')+'</dd></dl></div>'
    +'<div class="card sd"><h3>管理</h3><dl class="kv sm"><dt>负责人</dt><dd>'+(k.owner?esc(k.owner):'<span class="tag err">无</span>')+'</dd><dt>状态</dt><dd>'+(k.st==='启用'?'<span class="tag ok">启用</span>':'<span class="tag">停用</span>')+'</dd><dt>创建</dt><dd>'+esc(k.created)+'</dd><dt>被项目引用</dt><dd>'+kpUsedBy(k)+' 个学习项目</dd></dl>'
    +'<div style="margin-top:10px"><select data-wc="kpOwner"><option value="">指定负责人…</option>'+kpOwners().map(x=>'<option '+(k.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select> <button class="btn sm" data-act="kpToggle">'+(k.st==='启用'?'停用':'启用')+'</button> <button class="btn sm" data-act="kpEdit">编辑</button></div></div>'
    +'<div class="card sd"><h3>变更记录</h3>'+((k.hist||[]).length?k.hist.slice(0,6).map(x=>'<div style="padding:3px 0;font-size:12.5px"><span class="hint">'+esc(x.t)+'</span> '+esc(x.who)+' '+esc(x.act)+(x.note?'<span class="hint"> · '+esc(x.note)+'</span>':'')+'</div>').join(''):'<div class="hint">无</div>')+'</div>';
