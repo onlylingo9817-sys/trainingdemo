@@ -150,8 +150,12 @@ tr.off{opacity:.62}
 .ai-guide b{font-size:13.5px}.ai-guide span{color:var(--sub);flex:1;min-width:240px}.ai-guide .link{white-space:nowrap;margin:0}
 .ai-wb{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:#fff8ef;border:1px solid #f3dc9b;border-radius:12px;padding:12px 14px;margin-bottom:14px}
 .ai-wb b{font-size:14px}.ai-wb .hint{margin-left:8px}.ai-wb .btn{white-space:nowrap}
-.ai-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #f2f3f5}
-.ai-row:first-of-type{border-top:0}.ai-row>span{font-size:18px;text-align:center}.ai-row b{font-size:13px}.ai-row .hint{margin-top:1px}
+.ai-row{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(176px,auto);gap:12px;align-items:center;padding:12px 0;border-top:1px solid #f2f3f5}
+.ai-row:first-of-type{border-top:0}.ai-row-icon{font-size:18px;text-align:center;line-height:1.2}.ai-row-main{min-width:0}.ai-row b{font-size:13px}.ai-row .hint{margin-top:2px;line-height:1.55}
+.ai-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;white-space:nowrap;min-width:176px}
+.ai-row-actions .btn{flex:0 0 auto;white-space:nowrap}
+.dlg-note{margin-right:auto;max-width:600px;color:var(--mut);font-size:11.5px;line-height:1.55;text-align:left}
+@media(max-width:720px){.ai-row{grid-template-columns:30px minmax(0,1fr);gap:8px 10px}.ai-row-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;min-width:0;white-space:normal}}
 @media(max-width:900px){.ai-wb{flex-direction:column}.ai-wb .btn{width:100%}}
 
 /* 导入确认：AI 建议整行展开，避免把业务字段挤出视口 */

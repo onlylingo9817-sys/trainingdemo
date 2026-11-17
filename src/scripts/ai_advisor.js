@@ -344,7 +344,7 @@ function aiGlobalCounts(){
   return {imports,unlinked,kpNoTag,contentNoTag,weak,noMain,tagDup,carGap};
 }
 A.aiSnooze=el=>{const key=aiOverrideKey();const day=S.aiSnooze&&S.aiSnooze[key]||{};day[el.dataset.v]=today;S.aiSnooze=Object.assign({},S.aiSnooze||{},{[key]:day});toast('已忽略这类提醒（今天不再提示），不会改业务数据','ok');render()};
-A.aiOpen=()=>{const c=aiGlobalCounts();const row=(icon,title,desc,btn)=>'<div class="ai-row"><span>'+icon+'</span><div><b>'+title+'</b><div class="hint">'+desc+'</div></div>'+btn+'</div>';
+A.aiOpen=()=>{const c=aiGlobalCounts();const row=(icon,title,desc,btn)=>'<div class="ai-row"><span class="ai-row-icon">'+icon+'</span><div class="ai-row-main"><b>'+title+'</b><div class="hint">'+desc+'</div></div><div class="ai-row-actions">'+btn+'</div></div>';
   const sn=aiSnoozed();const cnt=(k,n)=>sn[k]?0:n;const total=cnt('imports',c.imports.length)+cnt('unlinked',c.unlinked.length)+cnt('kptag',c.kpNoTag.length)+cnt('contentTag',c.contentNoTag.length)+cnt('noMain',c.noMain.length)+cnt('tagdup',c.tagDup.length)+cnt('weak',c.weak.length)+cnt('carGap',c.carGap.length);
   openDlg('AI 检查建议','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">只在当前 Demo 数据上检查；'+total+' 项可处理，采纳前请核对</span></div>'
    +row('📥','导入待确认 '+c.imports.length+' 批','解析后已给知识点/标签推荐，确认时逐条采纳',c.imports.length?'<button class="btn sm pri" data-act="aiGoImport">去确认</button> <button class="btn sm" data-act="aiSnooze" data-v="imports">今天忽略</button>':'')
@@ -358,8 +358,7 @@ A.aiOpen=()=>{const c=aiGlobalCounts();const row=(icon,title,desc,btn)=>'<div cl
    +row('🧑‍🏫','入店辅导：待复测 / 未反馈','陪跑要有日周月反馈，复测后才有结案依据',((typeof S!=='undefined'&&S.tickets&&S.tickets.filter(t=>t.st==='陪跑'||t.st==='复测').length)?'<button class="btn sm" data-act="aiGoCoach">去看辅导</button>':''))
    +row('🚙','新车信息检查','粘贴新车信息，检查标签和知识点齐不齐','<button class="btn sm" data-act="aiGoCar">去检查</button>')
    +((S.aiLog||[]).length?'<div class="ai-log-head"><button class="link" data-act="aiLog">查看全部留痕</button><b>最近采纳 / 忽略</b><span class="hint">谁改的、改了什么，都可追溯</span></div>'+S.aiLog.slice(0,5).map(x=>'<div class="ai-log"><span class="tag '+(x.accepted?'ok':'')+'">'+(x.accepted?'已采纳':'已忽略')+'</span><span>'+esc(x.type)+'</span><span class="hint">'+esc(x.output||x.input)+'</span><span class="hint">'+esc(x.who)+' · '+esc(x.t)+'</span></div>').join(''):'')
-   +'<div class="hint" style="margin-top:8px">所有建议均需人工采纳；AI 不自动写入业务数据。采纳 / 忽略会留痕。当前 AI 是规则模拟，不是真实大模型；正式接入时只替换推荐函数，页面和采纳流程不变。</div>'
-   +'</div>','<button class="btn" data-act="close">关闭</button>',true);};
+   +'</div>','<div class="dlg-note">所有建议均需人工采纳；AI 不自动写入业务数据。采纳 / 忽略会留痕。当前 AI 是规则模拟，不是真实大模型；正式接入时只替换推荐函数，页面和采纳流程不变。</div><button class="btn" data-act="close">关闭</button>',true);};
 A.aiGoImport=()=>{const b=S.cimps.find(x=>x.st==='待确认');if(!b)return toast('没有待确认批次','err');closeDlg();UI.page='content';UI.tab.content='导入';UI.sel.ciB=b.id;render()};
 A.aiGoUnlinked=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';UI.sel.caf={kp:'未挂载'};UI.sel.cadv=true;render()};
 A.aiGoNoMain=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';UI.sel.caf={};UI.sel.cadv=true;render();toast('点开标题进详情，编辑页可设主讲解','')};
