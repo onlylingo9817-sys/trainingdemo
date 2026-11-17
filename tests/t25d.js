@@ -17,8 +17,8 @@ CK('链路检查能读到表单知识点',!rows.some(x=>x.t==='未挂知识点')
 CK('链路检查能提示缺内容标签',rows.some(x=>x.t==='缺内容标签'));
 A.cAiKp({dataset:{v:'K9'}});CK('内容采纳第二个知识点为提及',C.kps.includes('K9')&&C.kpRole.K9==='提及',JSON.stringify(C.kpRole));
 /* 4. 页面引导和软提示 */
-UI.page='catalog';UI.tab.catalog='总览';render();CK('知识点总览有 AI 找缺口入口',/AI 找缺口/.test(tx()));
-UI.page='tagmanage';render();CK('标签管理有治理提示',/标签治理/.test(tx()));
+UI.page='catalog';UI.tab.catalog='总览';render();CK('知识点总览不再有 AI 找缺口（矩阵已展示）',!/AI 找缺口/.test(tx())&&/车型/.test(tx()));
+UI.page='tagmanage';render();CK('标签管理不再有治理提示块',!/标签治理：只提示/.test(tx()));
 UI.page='catalog';UI.tab.catalog='题库';render();CK('题库有推荐来源或空态',/推荐出题来源|没有题的知识点|AI 从话术出题/.test(tx()));
 UI.tab.catalog='演练';render();CK('演练有推荐来源或空态',/推荐演练来源|技能型知识点没有演练|AI 从话术/.test(tx()));
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}

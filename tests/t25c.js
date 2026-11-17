@@ -19,7 +19,7 @@ A.kpAiAudit();CK('批量导入预检有汇总',UI.sel.kpCsvAudit&&UI.sel.kpCsvAu
 CK('预检页面可见',/导入前预检/.test(tx()));
 const n2=S.kps.length;CK('预检不写入知识点',S.kps.length===n2);
 /* 标签治理 */
-UI.page='tagmanage';render();CK('标签管理页有治理建议',/标签治理/.test(tx())||/未发现明显重复标签/.test(tx()));
+UI.page='tagmanage';render();CK('标签管理页不再常驻治理块（重复校验改在新建时）',!/标签治理：只提示/.test(tx()));
 /* 全站引导 */
 UI.page='workbench';render();CK('工作台有单页引导',/今天先处理/.test(tx()));
 CK('工作台有 AI 建议卡',/AI 检查建议/.test(tx()));

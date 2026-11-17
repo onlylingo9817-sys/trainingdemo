@@ -6,12 +6,12 @@ CK('标签根是业务分类',tagRoots().map(t=>t.name).join('/')==='车型卖�
 CK('标签支持车上部位之外的政策',!!tagOptions().find(t=>/政策口径/.test(t.path)),tagOptions().filter(t=>/政策/.test(t.path)).map(t=>t.path).slice(0,3).join(' | '));
 UI.page='tagmanage';UI.sel.tagMgr='';render();
 const before=PTAGS.length;
-document.querySelector('#tag_new_name').value='金融方案测试';
+document.querySelector('#tag_new_name').value='政策测试专用标签';
 document.querySelector('#tag_new_parent').value=PTAGS.find(t=>t.name==='政策口径').id;A.tagAdd();
-const nt=PTAGS.find(t=>t.name==='金融方案测试');
+const nt=PTAGS.find(t=>t.name==='政策测试专用标签');
 UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={};render();
 CK('可以新建标签',!!nt&&PTAGS.length>before,nt?nt.path:'没建成');
-CK('新标签层级正确',nt&&nt.path==='政策口径_金融方案测试',nt?nt.path:'');
+CK('新标签层级正确',nt&&nt.path==='政策口径_政策测试专用标签',nt?nt.path:'');
 nt.name='金融方案（改）';refreshTagPaths();CK('改名后路径同步',nt.path==='政策口径_金融方案（改）',nt.path);
 UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={};render();
 CK('知识点库有左侧标签树',document.querySelectorAll('.tag-row').length>=4,'nodes='+document.querySelectorAll('.tag-row').length);
