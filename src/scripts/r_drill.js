@@ -68,7 +68,16 @@ const drParse=(txt)=>String(txt||'').split('\n').map(x=>x.trim()).filter(Boolean
 A.drOpen=el=>{const d=drById(el.dataset.id);DF=JSON.parse(JSON.stringify(d));DF.turns=DF.turns.map(t=>({say:t.say,ref:t.ref,emoT:t.emo.join(','),mustT:drLines(t.must),ideaT:drLines(t.idea)}));DF._new=false;UI.page='dform';render();$('#main').scrollTop=0};
 A.drNew=()=>{const f=drFx();DF={id:null,kp:f.kp||(S.kps.find(k=>k.type==='技能型')||S.kps[0]).id,name:'',scene:'展厅',persona:'',src:'',turns:[drBlank()],st:'草稿',owner:UI.role.name,_new:true};UI.page='dform';render()};
 const drBlank=()=>({say:'',ref:'',emoT:'',mustT:'',ideaT:''});
-A.drGen=()=>{let n=0;S.kps.filter(k=>k.st==='启用'&&!drsOf(k.id).length&&kpMounted(k).length).slice(0,2).forEach(k=>{const c=kpMounted(k)[0];const N=((c.body||{}).spin||{}).N||(c.body||{}).lines||'';const id='D'+(S.drills.length+1+n);S.drills.push({id,kp:k.id,name:'(AI 草稿)'+c.title.split(' · ').pop(),scene:'展厅',persona:'(请补客户画像)',src:c.id,turns:[{say:'(请补客户这一句怎么说)',emo:[],must:[],idea:[],ref:String(N).replace(/\*\*/g,'').slice(0,160)}],st:'草稿',owner:k.owner||UI.role.name,created:today,stat:{n:0,sum:0,pass:0}});n++});toast(n?'AI 生成了 '+n+' 个演练草稿:只填了参考话术,客户的话、必说点、思路点要人补':'没有可生成的知识点(都已有演练或没挂内容)',n?'ok':'err');render()};
+A.drGen=()=>{let n=0;S.kps.filter(k=>k.st==='启用'&&k.type==='技能型'&&!drsOf(k.id).length&&kpMounted(k).length).slice(0,3).forEach(k=>{
+  const c=kpMounted(k).find(x=>usableC(x))||kpMounted(k)[0];const sp=(c.body||{}).spin||{};
+  const say=(sp.S||c.title||'').replace(/\*\*/g,'').slice(0,40);
+  const must=(sp.P||'').replace(/\*\*/g,'').split(/[，。、;；]/).map(x=>x.trim()).filter(x=>x.length>=2).slice(0,3).map(x=>[x.slice(0,12),[x.slice(0,4)]]);
+  const idea=(sp.N||'').replace(/\*\*/g,'').split(/[，。、;；]/).map(x=>x.trim()).filter(x=>x.length>=2).slice(0,2).map(x=>[x.slice(0,10),[x.slice(0,4)]]);
+  const ref=([sp.S,sp.P,sp.I,sp.N].filter(Boolean).map(x=>x.replace(/\*\*/g,'')).join(' ')||(c.title+'(请从来源话术补充参考回答)')).slice(0,200);
+  const emo=['理解','明白','正常'];
+  const id='D'+(S.drills.length+1+n);
+  S.drills.push({id,kp:k.id,name:'客户异议 · '+kpLabel(k),scene:'展厅',persona:'(草稿)客户提到「'+(say||kpLabel(k))+'」,有顾虑',src:c.id,turns:[{say:say||'(话术场景)',emo,must:must.length?must:[['核心卖点',[kpLabel(k).slice(0,4)]]],idea:idea.length?idea:[['先认同',['理解','明白']]],ref}],st:'草稿',owner:k.owner||UI.role.name,created:today,stat:{n:0,sum:0,pass:0},aiDraft:true});n++});
+  toast(n?'AI 一次生成了 '+n+' 个完整演练草稿(客户话 / 必说点 / 思路点 / 参考话术均由话术拆出);请核对改字后再定稿':'没有可生成的技能型知识点(都已有演练或没挂内容)',n?'ok':'err');render()};
 function pgDrForm(){
   if(!DF){UI.page='catalog';return pgCatalog()}
   const th=DF.turns.map((t,i)=>'<div class="card" style="margin-bottom:12px;background:#fafbfc"><h3 style="margin-bottom:10px">回合 '+(i+1)+' <a class="link err" data-act="drTurnDel" data-i="'+i+'" style="font-weight:400;font-size:12px;margin-left:8px">'+(DF.turns.length>1?'删除':'')+'</a></h3>'

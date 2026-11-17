@@ -67,10 +67,29 @@ A.qOpen=el=>{const q=qById(el.dataset.id);QF=JSON.parse(JSON.stringify(q));QF._n
 A.qNew=()=>{const f=qFx();QF={id:null,kp:f.kp||(S.kps[0]||{}).id,type:'单选',stem:'',opts:['','','',''],ans:[0],why:'',lv:1,src:'',st:'草稿',owner:UI.role.name,_new:true};UI.page='qform';render()};
 let QF=null;
 /* AI 从话术出题(演示:取话术 N 段里的数字/名词出填空式选择题的"草稿",走审核) */
+function qGenFactsOf(c){
+  const text=((c.body||{}).spin?SPIN_K.map(k=>(c.body.spin[k]||'')).join('。'):spl((c.body||{}).lines||'').join('。'))||'';
+  const sents=text.replace(/\*\*/g,'').split(/[。！？!?\n；;]/).map(s=>s.trim()).filter(Boolean);
+  return sents.map(s=>{const m=s.match(/(\d[\d.,]*\s?(?:kW|L|公里|兆帕|项|处|寸|年|万公里|迈|度|度电|%))/);return m?{num:m[1].replace(/\s/g,''),sent:s,raw:m[1]}:null}).filter(Boolean);
+}
+function qGenDistractors(num,pool){
+  const unit=(num.match(/[^\d.,]+$/)||[''])[0];const val=parseFloat(num);
+  const cands=[...new Set(pool.map(f=>f.num).filter(x=>x!==num&&x.endsWith(unit)))];
+  return cands.filter(x=>!isNaN(parseFloat(x))).slice(0,3);
+}
 A.qGen=()=>{const un=S.kps.filter(k=>k.st==='启用'&&qsOf(k.id,'已定稿').length<3&&kpMounted(k).length);let n=0;
-  un.slice(0,3).forEach(k=>{const c=kpMounted(k)[0];const N=((c.body||{}).spin||{}).N||'';const m=N.replace(/\*\*/g,'').match(/(\d[\d.,]*\s?(?:kW|L|公里|兆帕|项|处|寸|年|万公里|迈|度))/);if(!m)return;
-    const id='Q'+(S.qs.length+1+n);S.qs.push({id,kp:k.id,type:'单选',stem:'(AI 草稿,请核对)话术「'+c.title.split(' · ').pop()+'」里提到的关键数据是?',opts:[m[1],'(请编干扰项 1)','(请编干扰项 2)','(请编干扰项 3)'],ans:[0],why:'来源话术原文。AI 只抽取原文数字,干扰项需要人补。',lv:1,src:c.id,st:'草稿',owner:k.owner||UI.role.name,created:today,stat:{n:0,ok:0}});n++});
-  toast(n?'AI 生成了 '+n+' 道草稿题:干扰项需要人补充,补完再定稿':'没有可出题的知识点(已有 ≥3 道题或没挂内容)',n?'ok':'err');render()};
+  un.slice(0,6).forEach(k=>{
+    const pool=kpMounted(k).flatMap(c=>qGenFactsOf(c).map(f=>Object.assign(f,{src:c})));
+    if(!pool.length)return;
+    const corpus=S.contents.filter(c=>visC(c)&&usableC(c)).flatMap(c=>qGenFactsOf(c));
+    const f=pool.find(x=>[...new Set(corpus.map(y=>y.num).filter(y=>y!==x.num&&y.endsWith((x.num.match(/[^\d.,]+$/)||[''])[0])))].length>=3);if(!f)return;
+    const unit=(f.num.match(/[^\d.,]+$/)||[''])[0];
+    const dis=[...new Set(corpus.map(y=>y.num).filter(y=>y!==f.num&&y.endsWith(unit)&&!isNaN(parseFloat(y))))].slice(0,3);
+    const opts=[f.num].concat(dis);const order=opts.map((x,i)=>({x,i})).sort((a,b)=>hsh(k.id+a.x)-hsh(k.id+b.x));
+    const ansIdx=order.findIndex(o=>o.i===0);
+    const id='Q'+(S.qs.length+1+n);
+    S.qs.push({id,kp:k.id,type:'单选',stem:'话术「'+f.src.title.split(' · ').pop()+'」里提到的关键数据是?(草稿,定稿前请核对)',opts:order.map(o=>o.x),ans:[ansIdx],why:'来源话术原文:'+f.sent+'。',lv:1,src:f.src.id,st:'草稿',owner:k.owner||UI.role.name,created:today,stat:{n:0,ok:0},aiDraft:true});n++});
+  toast(n?'AI 一次生成了 '+n+' 道完整草稿题(选项与解析已由话术原文生成);请核对后再定稿':'没有可出题的知识点(已有 ≥3 道题、没挂内容或话术里没有数据)',n?'ok':'err');render()};
 function pgQForm(){
   if(!QF){UI.page='catalog';return pgCatalog()}
   const isJ=QF.type==='判断';const opts=isJ?['正确','错误']:QF.opts;
