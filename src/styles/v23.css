@@ -154,6 +154,10 @@ tr.off{opacity:.62}
 .ai-row:first-of-type{border-top:0}.ai-row-icon{font-size:18px;text-align:center;line-height:1.2}.ai-row-main{min-width:0}.ai-row b{font-size:13px}.ai-row .hint{margin-top:2px;line-height:1.55}
 .ai-row-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;white-space:nowrap;min-width:176px}
 .ai-row-actions .btn{flex:0 0 auto;white-space:nowrap}
+.ai-batch-tw{max-height:52vh;overflow-x:hidden;overflow-y:auto}
+.tw.ai-batch-tw table.t{width:100%;min-width:0;table-layout:fixed}
+.ai-batch-tw td,.ai-batch-tw th{white-space:normal;vertical-align:middle;word-break:break-all}
+.ai-batch-tw th:nth-child(1){width:88px}.ai-batch-tw th:nth-child(2){width:110px}.ai-batch-tw th:nth-child(6){width:64px}
 .dlg-note{margin-right:auto;max-width:600px;color:var(--mut);font-size:11.5px;line-height:1.55;text-align:left}
 @media(max-width:720px){.ai-row{grid-template-columns:30px minmax(0,1fr);gap:8px 10px}.ai-row-actions{grid-column:2;justify-content:flex-start;flex-wrap:wrap;min-width:0;white-space:normal}}
 @media(max-width:900px){.ai-wb{flex-direction:column}.ai-wb .btn{width:100%}}

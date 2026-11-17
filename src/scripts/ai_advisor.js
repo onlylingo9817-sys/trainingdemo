@@ -347,6 +347,7 @@ A.aiSnooze=el=>{const key=aiOverrideKey();const day=S.aiSnooze&&S.aiSnooze[key]|
 A.aiOpen=()=>{const c=aiGlobalCounts();const row=(icon,title,desc,btn)=>'<div class="ai-row"><span class="ai-row-icon">'+icon+'</span><div class="ai-row-main"><b>'+title+'</b><div class="hint">'+desc+'</div></div><div class="ai-row-actions">'+btn+'</div></div>';
   const sn=aiSnoozed();const cnt=(k,n)=>sn[k]?0:n;const total=cnt('imports',c.imports.length)+cnt('unlinked',c.unlinked.length)+cnt('kptag',c.kpNoTag.length)+cnt('contentTag',c.contentNoTag.length)+cnt('noMain',c.noMain.length)+cnt('tagdup',c.tagDup.length)+cnt('weak',c.weak.length)+cnt('carGap',c.carGap.length);
   openDlg('AI 检查建议','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">只在当前 Demo 数据上检查；'+total+' 项可处理，采纳前请核对</span></div>'
+   +'<div class="ai-batch-entry"><button class="btn sm pri" data-act="aiBatchOpen">批量预填待补项 →</button><span class="hint">一次算出 '+(c.unlinked.length+c.kpNoTag.length+c.contentNoTag.length)+' 项待补的推荐，逐条勾选后一键采纳；不勾选就不写入</span></div>'
    +row('📥','导入待确认 '+c.imports.length+' 批','解析后已给知识点/标签推荐，确认时逐条采纳',c.imports.length?'<button class="btn sm pri" data-act="aiGoImport">去确认</button> <button class="btn sm" data-act="aiSnooze" data-v="imports">今天忽略</button>':'')
    +row('🔗','未挂知识点的内容 '+c.unlinked.length+' 条','挂上后才能进入完备度和学员提升清单',c.unlinked.length?'<button class="btn sm" data-act="aiGoUnlinked">去挂载</button> <button class="btn sm" data-act="aiSnooze" data-v="unlinked">今天忽略</button>':'')
    +row('🎯','多知识点但没有主讲解 '+c.noMain.length+' 条','只有主讲解计入该点的可用讲解',c.noMain.length?'<button class="btn sm" data-act="aiGoNoMain">去处理</button>':'')
@@ -370,6 +371,34 @@ A.aiLog=()=>{openDlg('AI 建议留痕','<div class="ai-box"><div class="ai-box-h
 A.aiGoCoach=()=>{closeDlg();UI.page='coach';UI.tab.coach='辅导总览';render()};
 A.aiGoWeak=()=>{closeDlg();UI.page='catalog';UI.tab.catalog='总览';render()};
 A.aiGoCar=()=>{closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_BATCH;render();setTimeout(()=>{const e=document.getElementById('kp_car_info');if(e)e.scrollIntoView({block:'center'})},50)};
+/* ---------- AI 批量预填：一次算出全部待补项，人勾选后一键采纳 ---------- */
+function aiBatchBuild(){
+  const c=aiGlobalCounts();const items=[];
+  c.unlinked.forEach(x=>{const r=aiRecommendKps(aiBodyText(x),{car:x.car||'',limit:1})[0];if(r)items.push({type:'content',targetId:x.id,label:x.title,suggestId:r.kp.id,suggestName:r.kp.name,reason:r.reasons.join(' · ')||'文本相似',score:r.score,on:r.score>=AI_CONF.higher})});
+  c.kpNoTag.forEach(k=>{const r=aiRecommendTags([k.name].concat(k.syn||[]).join(' '),{limit:1})[0];if(r)items.push({type:'kp',targetId:k.id,label:k.name,suggestId:r.tag.id,suggestName:r.tag.name,reason:r.reason,score:r.score,on:r.score>=AI_CONF.higher})});
+  c.contentNoTag.forEach(x=>{const r=aiRecommendTags(aiBodyText(x),{limit:1})[0];if(r)items.push({type:'ctag',targetId:x.id,label:x.title,suggestId:r.tag.id,suggestName:r.tag.name,reason:r.reason,score:r.score,on:r.score>=AI_CONF.higher})});
+  return {items,at:today};
+}
+const AI_BATCH_TYPE={content:'内容 · 挂知识点',kp:'知识点 · 补标签',ctag:'内容 · 补标签'};
+function aiBatchRender(){
+  const p=UI.sel.aiBatch;if(!p)return;
+  const on=p.items.filter(x=>x.on).length;
+  const rows=p.items.map((x,i)=>'<tr><td><button class="btn sm '+(x.on?'pri':'quiet')+'" data-act="aiBatchToggle" data-i="'+i+'">'+(x.on?'✓ 采纳':'○ 不采纳')+'</button></td><td>'+AI_BATCH_TYPE[x.type]+'</td><td style="white-space:normal;max-width:240px">'+esc(x.label)+'</td><td><span class="tag ok">'+esc(x.suggestName)+'</span></td><td class="hint" style="white-space:normal;min-width:180px">'+esc(x.reason)+'</td><td>'+aiConfText(x.score)+'</td></tr>').join('');
+  const body='<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">一次性算出 '+p.items.length+' 项待补推荐；中高置信默认勾选，可逐条改。点采纳前不写入任何数据</span></div>'
+   +(p.items.length?'<div class="tw ai-batch-tw" style="margin-top:8px"><table class="t"><tr><th>操作</th><th>类型</th><th>对象</th><th>建议</th><th>依据</th><th>置信度</th></tr>'+rows+'</table></div>':'<div class="chk ok"><b>✓</b><span>当前没有可预填的待补项</span></div>')+'</div>';
+  openDlg('AI 批量预填',body,'<button class="btn" data-act="close">关闭</button><button class="btn pri" data-act="aiBatchApply"'+(on?'':' disabled')+'>采纳勾选的 '+on+' 项</button>',true);
+}
+A.aiBatchOpen=()=>{UI.sel.aiBatch=aiBatchBuild();aiBatchRender()};
+A.aiBatchToggle=el=>{const p=UI.sel.aiBatch;const x=p&&p.items[+el.dataset.i];if(!x)return;x.on=!x.on;aiBatchRender()};
+A.aiBatchApply=()=>{const p=UI.sel.aiBatch;if(!p)return;let n=0,skip=0;
+  p.items.filter(x=>x.on).forEach(x=>{
+    if(x.type==='content'){const c=content(x.targetId);const k=kp(x.suggestId);if(!c||!k||(c.kps||[]).length){skip++;return}c.kps=[k.id];c.kpRole={[k.id]:'主讲解'};c.mainKp=k.id;chist(c,'AI 批量预填挂知识点',k.name,meShort()+'（已采纳 AI 建议）');n++}
+    else if(x.type==='kp'){const k=kp(x.targetId);if(!k||(k.tags||[]).length){skip++;return}k.tags=[x.suggestId];kpApplyMeta(k,{cars:kpCars(k),tags:k.tags,abId:(k.dims&&k.dims.Dab||[])[0],owner:k.owner});kpHist(k,'AI 批量预填补标签',x.suggestName);n++}
+    else{const c=content(x.targetId);if(!c||(c.tags||[]).length){skip++;return}c.tags=[x.suggestId];chist(c,'AI 批量预填补内容标签',x.suggestName,meShort()+'（已采纳 AI 建议）');n++}
+  });
+  aiLog('批量预填采纳',p.at,[{name:n+' 项'}],n>0);UI.sel.aiBatch=null;closeDlg();
+  toast(n?'已采纳 '+n+' 项预填'+(skip?'，'+skip+' 项因已有数据跳过':''):'没有勾选可采纳的项',n?'ok':'warn');render();
+};
 function aiWorkbenchCard(){
   const c=aiGlobalCounts();const sn=aiSnoozed();const n=c.imports.length+c.unlinked.length+c.kpNoTag.length+c.contentNoTag.length+c.noMain.length+c.tagDup.length+c.weak.length+c.carGap.length;
   const chips=[];
