@@ -22,3 +22,10 @@ CK2('图例带项目名，不是笼统“受训”',/受训（/.test(t));
 const f=bossData().E.filter(p=>!smallNow(p)).sort((a,b)=>(b.eff.a||0)-(a.eff.a||0))[0];
 CK2('曲线量级与项目指标一致',!!f&&t.includes(String(Math.round(f.base))),'base='+(f&&f.base));
 }catch(e){L2('ERR '+e.message)}
+try{
+A.roleSwitch({value:'boss'});closeDlg();UI.sel.bossProj='';UI.page='overview';UI.tab.overview='老板视图';render();
+const sel=document.querySelector('[data-wc=bossProj]');
+CK2('趋势图有项目下拉可选(非写死)',!!sel&&document.querySelectorAll('[data-wc=bossProj] option').length>=3);
+const first=bossData().E[0];
+CK2('切换项目后标题随之变化',(()=>{A.bossProj({value:first.id});return document.querySelector('#main').innerText.includes('「'+first.name+'」')})(),first.name);
+}catch(e){L2('ERR '+e.message)}
