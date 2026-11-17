@@ -15,7 +15,7 @@ document.body.dataset.end='pc';UI.page='kp';UI.kid='K4';render();const t=documen
 CK('薄弱点详情给出怎么补',/怎么补/.test(t)&&/指派补练包/.test(t));
 const n0=S.packs.length;A.kpWeakPack({dataset:{id:'K4'}});const pk=S.packs[0];
 CK('指派补练包覆盖未过关学员',pk.mids.length>0&&pk.audience===pk.mids.length,'mids='+pk.mids.length+' audience='+pk.audience);
-document.body.dataset.end='rn';const found=pk.mids.find(m=>PEOPLE.some(p=>p.mid===m))||PEOPLE[0];ME=PEOPLE.find(p=>p.mid===found)||PEOPLE[0];R.page='adapt';renderRN();
+document.body.dataset.end='rn';const found=pk.mids.find(m=>PEOPLE.some(p=>p.mid===m)&&((personOf(m)||{}).group!=='对照批'))||PEOPLE[0];ME=PEOPLE.find(p=>p.mid===found)||PEOPLE[0];R.page='adapt';renderRN();
 CK('学员端能看到补练包',document.querySelector('#rscr').innerText.includes(pk.name));
 /* 4. 效果口径 */
 document.body.dataset.end='pc';UI.page='effect';UI.tab.effect='就绪度';render();

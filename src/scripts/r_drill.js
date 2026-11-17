@@ -147,7 +147,7 @@ A.dzHint=()=>{DZ.text=($('#dz_t')||{}).value||DZ.text;DZ.hint=true;renderRN();co
 document.addEventListener('input',e=>{if(e.target&&e.target.dataset&&e.target.dataset.dz&&DZ){DZ.text=e.target.value;const b=document.querySelector('#rscr .rbar .rb');if(b)b.classList.toggle('dis',!DZ.text.trim())}});
 A.dzSubmit=()=>{if(DZ.step!=='ans')return;const e=$('#dz_t');if(e)DZ.text=e.value;if(!DZ.text.trim())return toast('先写一下你会怎么回答','');const d=drById(DZ.id);const t=d.turns[DZ.i];const sc=drScore(t,DZ.text);DZ.sc=sc;DZ.step='fb';DZ.log.push({i:DZ.i,text:DZ.text,sc});renderRN()};
 A.dzNext=()=>{const d=drById(DZ.id);if(DZ.i+1>=d.turns.length){/* 结算 */
-    const tot=drTotal(DZ.log);const ok=tot>=DR_PASS;S.ansLog=S.ansLog||[];S.ansLog.push({mid:ME.mid,q:d.id,kp:d.kp,ok,pick:[],t:today,mode:'drill',score:tot});d.stat.n++;d.stat.sum+=tot;if(ok)d.stat.pass++;
+    const tot=drTotal(DZ.log);const ok=tot>=DR_PASS;S.ansLog=S.ansLog||[];S.ansLog.push({mid:ME.mid,q:d.id,kp:d.kp,ok,pick:[],t:today,mode:'drill',score:tot});d.stat.n++;d.stat.sum+=tot;if(ok)d.stat.pass++;if(DZ.packId&&typeof rxPackOnDrill==='function'){rxPackOnDrill(DZ.packId,tot)}
     if(typeof v23Sync==='function'&&S.ev)v23Sync(ME.mid,d.kp,'drill');
     const r=mRefresh(ME.mid,d.kp);DZ.chg={was:r?r.was:null};DZ.step='end';DZ.end=true;return renderRN()}
   DZ.i++;DZ.step='ans';DZ.text='';DZ.hint=false;DZ.sc=null;renderRN()};

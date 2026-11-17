@@ -349,6 +349,7 @@ function rAdapt(){
   if(!L.length){
     return b+'<div class="ad-hero"><b>先测一测,再逐项提升</b><p>每个知识点 2 题,答完马上告诉你对错和原因。测完列出你可以提升的点,逐项学、练、过关。</p><div class="ad-n">本次覆盖 <b>'+kpDiagSet(mid).map(id=>qById(id).kp).filter((v,i,a)=>a.indexOf(v)===i).length+'</b> 个知识点 · <b>'+kpDiagSet(mid).length+'</b> 题 · 约 5 分钟</div><button class="rb" style="padding:9px 24px;font-size:14px" data-act="adDiag">开始诊断测</button><div class="hint" style="margin-top:8px;color:#999;font-size:11px">题目来自一线话术原文,答案和解析都来自话术</div></div>'+'<div style="height:30px"></div>'}
   b+=rdyCard(mid);
+  try{const mo=misOf(mid).filter(m=>m.status!=='closed').length;if(mo)b+='<div class="rx-card" style="cursor:pointer" data-act="rxGoMis"><div class="rx-card-h"><b>错题本</b><span class="rst2 err">'+mo+' 个未巩固</span></div><div class="rx-meta">看看错在哪、金牌话术怎么说</div></div>'}catch(e){}
   b+='<div class="ad-sum"><div><b>'+avg+'</b><small>平均掌握度</small></div><div><b style="color:#e5484d">'+weak.length+'</b><small>待提升</small></div><div><b style="color:#12a36b">'+pass.length+'</b><small>已过关</small></div></div>';
   const row=x=>{const k=x.k,v=x.m.v;const lc=kpMounted(k).filter(c=>usableC(c)&&isPub(c)&&expState(c)!=='已过期');const can=qsOf(k.id,'已定稿').length>0;const hasD=!!drPick(ME.mid,k.id);
     return '<div class="ad-r"><div class="ad-h"><b>'+esc(k.name)+'</b><span class="pill '+(v>=KP_PASS?'g':v>=50?'y':'r')+'">'+(v>=KP_PASS?'已过关':v>=50?'接近':'待提升')+'</span></div><div class="ad-b"><i style="width:'+v+'%;background:'+(v>=KP_PASS?'#12a36b':v>=50?'#e8830c':'#e5484d')+'"></i><u style="left:'+KP_PASS+'%"></u></div><div class="ad-m"><span>掌握度 '+v+' / 过关线 '+KP_PASS+'</span><span>'+(x.m.tries?'练过 '+x.m.tries+' 次':'未练习')+(x.m.next&&v>=KP_PASS?' · '+x.m.next+' 复测':'')+'</span></div>'
@@ -423,7 +424,7 @@ A.kpToTopicAll=()=>{let n=0;kpWeakList().forEach(x=>{if(!kpTopicOf(x.k)){kpMkTop
 A.kpWeakPack=el=>{
   const k=kp(el.dataset.id);const tested=kpTested(k),weak=kpWeak(k);
   const tpl=(S.packTpl||[]).find(t=>t.id==='PT1')||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};
-  const mids=Object.keys(S.mastery||{}).filter(mid=>{const o=(S.mastery[mid]||{})[k.id];return o&&o.v<KP_PASS});const n=Math.max(1,mids.length||weak);
+  const mids=Object.keys(S.mastery||{}).filter(mid=>{const o=(S.mastery[mid]||{})[k.id];if(!(o&&o.v<KP_PASS))return false;try{const pp=personOf(mid);if(pp&&pp.group==='对照批')return false}catch(e){}return true});const n=Math.max(1,mids.length||weak);
   S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:'',mids,kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:n});
   kpHist(k,'指派补练包','覆盖 '+n+' 个未过关学员');toast('已指派补练包给 '+n+' 位薄弱学员：'+tpl.steps.map(s=>s[0]).join(' → ')+'，截止 '+addDays(today,tpl.dueDays),'ok');render()};
 A.kpWeakDrill=el=>{UI.kid=el.dataset.id;A.kpDrillDrawer()};

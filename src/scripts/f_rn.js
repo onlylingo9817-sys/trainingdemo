@@ -38,7 +38,7 @@ function renderRN(){
    +'<div class="card"><b>我的学习项目('+vis.length+')</b>'+(vis.length?vis.map(p=>'<div style="margin-top:6px">'+esc(p.name)+' <span class="pill '+myState(p.id).cls+'">'+myState(p.id).label+'</span>'+(p.off?' <span class="pill '+offStep(p.id).cls+'">班次:'+offStep(p.id).label+'</span>':'')+'</div>').join(''):'<div class="hint" style="margin-top:6px">暂无。学习项目由后台「学习任务 → 新增学习项目」提交且已生效、覆盖角色包含当前学员才会出现。</div>')+'<div class="hint" style="margin-top:8px">后台「报名审批」「分班」「培训结果」操作后,回到这里即可看到变化。</div></div>'
    +(S.notices.length?'<div class="card"><b>消息</b>'+S.notices.slice(0,3).map(n=>'<div style="margin-top:6px"><span class="hint">'+n.t+'</span> '+esc(n.m)+'</div>').join('')+'</div>':'');
   const sc=$('#rscr');const st=sc.scrollTop;
-  const f={school:rSchool,learn:rLearn,trainDetail:rDetail,offDetail:rOff,adapt:rAdapt,quiz:()=>QZ&&QZ.end?rQuizEnd():rQuiz(),drill:()=>DZ&&DZ.end?rDrillEnd():rDrill()}[R.page];
+  const f={school:rSchool,learn:rLearn,trainDetail:rDetail,offDetail:rOff,adapt:rAdapt,quiz:()=>QZ&&QZ.end?rQuizEnd():rQuiz(),drill:()=>DZ&&DZ.end?rDrillEnd():rDrill(),pack:()=>typeof rxPackHtml==='function'?rxPackHtml():rSchool(),mis:()=>typeof rxMisHtml==='function'?rxMisHtml():rSchool(),msg:()=>typeof rxMsgHtml==='function'?rxMsgHtml():rSchool()}[R.page]||rSchool;
   sc.innerHTML=f();sc.scrollTop=st;
   let sh=document.getElementById('rsh');if(!sh){sh=document.createElement('div');sh.id='rsh';sh.className='rsh';document.querySelector('.phone').appendChild(sh)}
   sh.innerHTML=R.sheet?rSheetHtml():'';sh.style.display=R.sheet?'flex':'none';
@@ -71,16 +71,20 @@ const rpill=(t,k)=>'<span class="rst2 '+k+'">'+t+'</span>';
 function rSchool(){
   const vis=visibleProjects();
   const todo=vis.filter(p=>p.status!=='已结项'&&progOf(p).pend>0).slice(0,4);
-  const jg=[['知识库','书'],['学习中心','课'],['直播','播'],['考试','考'],['晨读','晨'],['话术','话'],['排行榜','榜'],['学习任务','任'],['证书','证'],['更多','…']];
+  const jgLive=[['学习中心','课','rgo','learn'],['我的提升','升','rgo','adapt'],['错题本','错','rxGoMis',''],['学习任务','任','rgo','learn']];
+  const jgDemo=['知识库','直播','考试','晨读','话术','排行榜','证书'];
   const cats=['全部'].concat(CATS);const ci=R.cat==null?0:R.cat;
   const cl=S.contents.filter(c=>isPub(c)&&c.enabled!==0&&visCR(c)&&(c.chan||[]).includes('汽车销售')&&(ci===0||c.cat===cats[ci]));
   return '<div class="rtab"><span>AI助手</span><span class="on">学堂</span><span>社区</span><span>看板</span></div>'
    +'<div class="srch" data-act="rtoast" data-m="搜索课程(现有功能)">🔍 搜索你想学习的课程</div>'
+   +(function(){const T=typeof rxTodoList==='function'?rxTodoList():[];
+      return T.length?'<div class="tdy rx-todo"><div class="tdy-h"><b>我的待办</b><span class="hint">优先处理截止最近的</span></div>'+T.map(x=>'<div class="tdy-r"><div class="tdy-n"><span>'+esc(x.t)+'</span><small>'+esc(x.d)+'</small></div><button class="rb" data-act="'+x.act+'"'+(x.id?' data-id="'+x.id+'"':'')+'>'+x.btn+'</button></div>').join('')+'</div>':''})()
    +(todo.length?'<div class="tdy"><div class="tdy-h"><b>今日待学习</b><span data-act="rgo" data-p="learn">学习中心 ›</span></div>'+todo.map(p=>{const g=progOf(p);return '<div class="tdy-r"><div class="tdy-n"><span>'+esc(p.name)+'</span><em>进度:<b>'+g.done+'</b>/'+g.total+'</em></div><button class="tdy-b" data-act="rgo" data-p="trainDetail" data-pid="'+p.id+'">去完成</button></div>'}).join('')+'</div><div style="height:8px"></div>':'')
    +'<div class="ai"><div><b>AI 实战</b><div style="font-size:12px;color:#999">模拟客户对练,即时点评('+S.drills.filter(drUsable).length+' 个演练)</div></div><button class="rb" data-act="rgo" data-p="adapt">去练习</button></div>'
    +'<div class="ai" style="margin-top:8px"><div><b>我的提升清单'+'<span class="pill o" style="margin-left:6px">新</span></b><div style="font-size:12px;color:#999">'+(typeof lrnOf==='function'&&lrnOf(ME.mid)&&S.profiles.length?'就绪度 '+(v23Readiness(ME.mid,lrnOf(ME.mid).tier).val==null?'—':v23Readiness(ME.mid,lrnOf(ME.mid).tier).val)+' · ':'')+(adaptTested(ME.mid).length?'待提升 '+adaptList(ME.mid).filter(x=>x.m.v<KP_PASS).length+' 项 · 逐项学、练、过关':'先测一测,看看哪里可以提升')+'</div></div><button class="rb" data-act="rgo" data-p="adapt">'+(adaptTested(ME.mid).length?'去提升':'去诊断')+'</button></div>'
    +'<div class="ban">新品 YU7 认证上线<small>完成认证考试,赢取学习积分</small></div>'
-   +'<div class="jg">'+jg.map(j=>'<div '+((j[0]==='学习任务'||j[0]==='学习中心')?'data-act="rgo" data-p="learn"':'')+'><i>'+j[1]+'</i>'+j[0]+'</div>').join('')+'</div>'
+   +'<div class="jg">'+jgLive.map(j=>'<div data-act="'+j[2]+'"'+(j[3]?' data-p="'+j[3]+'"':'')+'><i>'+j[1]+'</i>'+j[0]+'</div>').join('')+'</div>'
+   +'<details class="rx-jgdemo"><summary>更多功能（演示未复刻）</summary><div class="jg rx-jgdemo-grid">'+jgDemo.map(n=>'<div class="rx-off"><i>·</i>'+n+'</div>').join('')+'</div></details>'
    +'<div class="sec"><h5>直播课<span>更多 ›</span></h5><div class="td"><div class="ic">播</div><div class="tx"><b>11 月新车销售话术直播</b><small>今天 19:30 · 讲师 王磊</small></div><button class="rb gh">预约</button></div></div>'
    +'<div class="zone"><div class="zone-h"><b>学习专区·销售顾问</b><span class="dd2">切换角色 ▾</span></div><div class="zone-t">'+cats.map((c,i)=>'<span class="'+(ci===i?'on':'')+'" data-act="rcat" data-i="'+i+'">'+c+'</span>').join('')+'</div>'
    +'<div style="padding:4px 14px 20px">'+(cl.length?cl.map(c=>'<div class="td" data-act="rZone" data-id="'+c.id+'" style="cursor:pointer"><div class="ic" style="background:#eef3ff;color:#2b6fe0">'+({图文:'文',视频:'视',PDF:'P'}[c.type]||'文')+'</div><div class="tx"><b>'+esc(c.title)+'</b><small>'+c.type+(c.script?' · 话术':'')+(c.car&&c.car!=='通用车型'?' · '+esc(c.car):'')+' · 👍 '+c.up+'</small></div></div>').join(''):'<div style="text-align:center;color:#999;padding:24px 0;font-size:13px">暂无内容</div>')+'</div></div>';

@@ -288,3 +288,25 @@ tr.off{opacity:.62}
 .mg-fold>summary{cursor:pointer;list-style:none}
 .mg-fold>summary::-webkit-details-marker{display:none}
 .mg-fold[open]>summary{color:var(--sub)}
+
+/* 零售通扩展 */
+.rx-wrap{padding:10px 12px 0}
+.rx-hero{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.rx-hero b{font-size:15px}
+.rx-meta{font-size:12px;color:#8a94a6;margin-top:4px}
+.rx-bar{height:6px;background:#f0f2f5;border-radius:4px;overflow:hidden;margin-top:8px}
+.rx-bar i{display:block;height:100%;background:#ff6700}
+.rx-note{font-size:12px;color:#8a94a6;line-height:1.7;background:#fff8ef;border:1px solid #f3dc9b;border-radius:10px;padding:8px 12px;margin-bottom:8px}
+.rx-step{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.rx-step.done{opacity:.72}
+.rx-step-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rx-step-b{font-size:12px;color:#8a94a6;line-height:1.7;margin-top:4px}
+.rx-card{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.rx-card.unread{border-left:3px solid #ff6700}
+.rx-card-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rx-q{font-size:12px;color:#5b6472;background:#fafbfc;border-radius:8px;padding:6px 8px;margin-top:6px;line-height:1.6}
+.rx-empty{text-align:center;color:#98a2b3;padding:60px 0;font-size:13px}
+.rx-jgdemo{margin:6px 12px 10px}
+.rx-jgdemo summary{font-size:12px;color:#98a2b3;cursor:pointer;list-style:none}
+.rx-jgdemo-grid{grid-template-columns:repeat(4,1fr)!important;margin-top:8px}
+.rx-jgdemo .rx-off{opacity:.55}

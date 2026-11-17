@@ -671,10 +671,11 @@ function cfgPack(){
 /* ---------- 零售通:就绪度卡 / 学习包入口(与后台同源) ---------- */
 function rdyCard(mid){
   const l=typeof lrnOf==='function'?lrnOf(mid):null;
-  if(!l||!S.profiles||!S.profiles.length)return '';
+  if(!l||!S.profiles||!S.profiles.length)return '<div class="r-rdy"><div class="r-rdy-h"><div><div style="font-size:12px;color:#999">我的就绪度</div><div style="font-size:14px;font-weight:600;margin-top:2px">完成一次诊断，生成你的就绪度</div></div></div><div style="font-size:12px;color:#8a94a6;line-height:1.6;margin-top:4px">系统会根据你的答题和演练结果，算出最该先补的能力项。</div><button class="rb" data-act="adDiag" style="margin-top:8px;width:100%">开始诊断测</button></div>';
   const r=v23Readiness(l.mid,l.tier);
   const mo=misOf(l.mid).filter(m=>m.status!=='closed').length;
-  const pk=packsOf(l.mid).filter(p=>p.status!=='已完成');
+  const isCtrl=(function(){try{return (typeof personOf==='function'&&(personOf(mid)||{}).group==='对照批')}catch(e){return false}})();
+  const pk=isCtrl?[]:packsOf(l.mid).filter(p=>p.status!=='已完成');
   const weak=r.items.filter(i=>i.mean!=null&&i.mean<i.item.target).sort((a,b)=>(b.item.weight*(1-a.mean/a.item.target))-(a.item.weight*(1-b.mean/b.item.target)));
   return '<div class="r-rdy"><div class="r-rdy-h"><div><div style="font-size:12px;color:#999">我的就绪度 · '+l.tier+'画像</div><div class="r-rdy-n" style="color:'+v23RdyColor(r.val)+'">'+(r.val==null?'—':r.val)+'<small style="font-size:12px;color:#999;font-weight:400"> / 100</small></div></div>'
     +'<div style="text-align:right;font-size:11px;color:#999">目标达成 <b style="color:#333;font-size:14px">'+(r.ach==null?'—':r.ach+'%')+'</b><br><span style="color:#bbb">模拟数据</span></div></div>'
@@ -683,10 +684,19 @@ function rdyCard(mid){
     +'<div style="display:flex;gap:14px;margin-top:8px;font-size:12px;color:#888"><span>未关闭错题 <b style="color:'+(mo?'#e5484d':'#12a36b')+'">'+mo+'</b></span><span>学习包 <b style="color:#333">'+pk.length+'</b> 个进行中</span></div></div>'
    +(pk.length?pk.slice(0,2).map(p=>'<div class="r-pk"><div class="c"><b>'+esc(p.name)+'</b><span class="r-pk-t">'+p.steps.map(s=>s.t+(s.done?'✓':'')).join(' → ')+' · 截止 '+p.due+'</span></div><button class="rb" data-act="rPack" data-id="'+p.id+'">去完成</button></div>').join(''):'');
 }
-A.rPack=el=>{const p=S.packs.find(x=>x.id===el.dataset.id);if(!p)return;
-  const nx=p.steps.find(s=>!s.done);if(!nx){toast('这个学习包已全部完成','ok');return}
-  nx.done=true;if(p.steps.every(s=>s.done))p.status='已完成';
-  toast('已完成「'+nx.t+'」'+(p.status==='已完成'?',学习包完成':''),'ok');renderRN()};
+/* 学习包不再"点一下就完成":进入详情，由系统证据推进每一步 */
+A.rPack=el=>{const p=S.packs.find(x=>x.id===el.dataset.id);if(!p)return;R.packId=p.id;R.page='pack';renderRN()};
+function packStepNeed(s){return s.need!=null?s.need:(s.t==='练题'?3:s.t==='演练'?60:1)}
+function packProgress(p){const done=(p.steps||[]).filter(s=>s.done).length;return {done,total:(p.steps||[]).length}}
+function packAdvance(p,type,evidence){
+  if(!p||p.status==='已完成')return false;
+  const st=(p.steps||[]).find(s=>!s.done&&(type==='题'?s.t==='练题':type==='演练'?s.t==='演练':type==='学'?s.t==='学':s.t==='复测'));
+  if(!st)return false;
+  if(evidence&&st.ts===evidence)return false;
+  st.done=true;st.ts=evidence||today;
+  if((p.steps||[]).every(s=>s.done)){p.status='已完成';p.doneTs=today;if(typeof notify==='function')notify('学习包「'+p.name+'」已完成')}
+  return true;
+}
 
 /* ---------- 知识点页:维度组合展示(替代"事实型 / 技能型"硬分类的说明) ---------- */
 function kpDimsHtml(k){

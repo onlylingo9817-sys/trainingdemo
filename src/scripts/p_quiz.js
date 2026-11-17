@@ -163,11 +163,14 @@ A.qzPick=el=>{if(QZ.shown)return;const i=+el.dataset.i;const q=qzQ();if(q.type==
 A.qzSubmit=()=>{if(QZ.shown)return;if(!QZ.picked.length)return toast('先选一个答案','');const q=qzQ();const ok=qAns({ans:QZ.picked.slice().sort()})===qAns(q);QZ.lastOk=ok;QZ.shown=true;
   S.ansLog=S.ansLog||[];S.ansLog.push({mid:ME.mid,q:q.id,kp:q.kp,ok,pick:QZ.picked.slice(),t:today,mode:QZ.mode});q.stat.n++;if(ok)q.stat.ok++;QZ.log.push({q:q.id,kp:q.kp,ok});
   if(typeof v23Sync==='function'&&S.ev)v23Sync(ME.mid,q.kp,'quiz');
-  const r=mRefresh(ME.mid,q.kp);if(r&&!(q.kp in QZ.chg))QZ.chg[q.kp]={was:r.was};renderRN()};
+  const r=mRefresh(ME.mid,q.kp);if(r&&!(q.kp in QZ.chg))QZ.chg[q.kp]={was:r.was};
+  if(QZ.ctx&&QZ.ctx.packId&&typeof rxPackOnQuiz==='function'){rxPackOnQuiz(QZ.ctx.packId,q.id,ok)}
+  renderRN()};
 A.qzNext=()=>{if(QZ.i+1>=QZ.ids.length){QZ.end=true;return renderRN()}QZ.i++;QZ.picked=[];QZ.shown=false;renderRN()};
 A.qzExit=()=>{QZ=null;R.page='adapt';renderRN()};
 A.qzSrc=el=>{R.sheet={zone:el.dataset.id};R.fb=null;renderRN()};
-const qzStart=(mode,kid,ids)=>{if(!ids.length)return toast('这个知识点还没有已定稿的题','err');QZ={mode,kid,ids,i:0,picked:[],shown:false,log:[],chg:{}};R.page='quiz';renderRN()};
+const qzStart=(mode,kid,ids)=>{if(!ids.length)return toast('这个知识点还没有已定稿的题','err');QZ={mode,kid,ids,i:0,picked:[],shown:false,log:[],chg:{},ctx:Object.assign({},R.quizCtx||{})};R.page='quiz';renderRN()};
+function qzStartPack(p){const need=(p.steps||[]).find(s=>!s.done);const n=need?packStepNeed(need):3;const all=qsOf(p.kp,'已定稿');const ids=all.slice(0,Math.max(1,Math.min(n,all.length))).map(q=>q.id);return qzStart(R.quizCtx&&R.quizCtx.learn?'pack':(need&&need.t==='复测'?'retest':'pack'),p.kp,ids)}
 
 A.qSort=el=>{UI.sel.qSort=el.value;if(UI.sel.quizPage)UI.sel.quizPage.page=1;render()};
 A.qBulkPass=()=>{const ids=lstPicked('quizPage');let ok=0,skip=0;ids.forEach(id=>{const q=qById(id);if(!q)return;const h=qCheckHard(q);if(h.length){skip++;return}q.st='已定稿';ok++});UI.sel.quizPage.pick={};toast('已定稿 '+ok+' 道'+(skip?'，'+skip+' 道未过硬检查被跳过':''),ok?'ok':'warn');render()};

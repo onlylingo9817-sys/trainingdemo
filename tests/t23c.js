@@ -49,7 +49,7 @@ if(pk){const n=pk.steps.filter(s=>s.done).length;A.rPack({dataset:{id:pk.id}});C
 document.body.dataset.end='pc';
 /* 不在 v23 名单的学员也不能挂(走旧逻辑) */
 document.body.dataset.end='rn';ME=PEOPLE.find(p=>!lrnOf(p.mid));
-if(ME){R.page='adapt';try{renderRN();CK('不在理想名单的学员:提升清单仍可渲染(无就绪度卡)',!/我的就绪度/.test(document.querySelector('#rscr').innerText))}catch(e){CK('不在理想名单的学员',false,e.message)}}
+if(ME){R.page='adapt';try{renderRN();CK('不在理想名单的学员:提升清单仍可渲染(给诊断引导而非空白)',/完成一次诊断|我的就绪度/.test(document.querySelector('#rscr').innerText))}catch(e){CK('不在理想名单的学员',false,e.message)}}
 document.body.dataset.end='pc';
 /* 空态:清空数据后新页面不崩、给出引导 */
 A.clear();A.roleSwitch({value:'hq'});
