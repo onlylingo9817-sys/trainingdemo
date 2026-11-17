@@ -203,12 +203,16 @@ A.coachClose=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));i
 /* ========== 效果追踪 ========== */
 const smallNow=p=>{const e=p.eff;return Math.min(e.a,e.noCtrl?e.a:e.b)<S.cfg.minN};
 function pgEffect(){
-  const tabs=UI.role.type==='boss'?['效果看板','效果报告','复制与回炉','就绪度','错题集']:['效果看板','就绪度','错题集','调优','效果报告','复制与回炉'];const t=curTab('effect',tabs);let b='';
+  const tabs=UI.role.type==='boss'?['效果看板','就绪度','错题集','人员','效果报告']:['效果看板','就绪度','错题集','人员','调优','效果报告','复制与回炉'];const t=curTab('effect',tabs);let b='';
   const withEff=visibleP().filter(p=>p.eff);
   if(t==='效果看板')b=withEff.length?efBoard(withEff):srcBar('效果数据不是手工录入的:项目提交 → 培训 → 观察期结束后,系统在「评估中」阶段从北斗 BI(业务结果)、汽车语料(行为/话术)、清河大学(掌握度)同步。')+cta('还没有项目产生效果数据',S.projects.length?'已有 '+S.projects.length+' 个项目,但都还没到「评估中」。到项目概览里推进阶段。':'先「新增学习项目」,走完培训,再回来看效果。',S.projects.length?'<button class="btn pri" data-act="go" data-p="projects">去培训项目</button>':'<button class="btn pri" data-act="formNew">新增学习项目</button>');
   if(t==='效果报告')b=rptTab(withEff);
   if(t==='就绪度')return tabsH('effect',tabs)+pgRdy();
   if(t==='错题集')return tabsH('effect',tabs)+pgMis();
+  if(t==='人员'){
+    if(UI.role.type==='boss')return tabsH('effect',tabs)+'<div class="src">老板视图只看群体结果；个人级明细请用区域/总部身份查看。</div>'+pgRdy();
+    return tabsH('effect',tabs)+pgPeople();
+  }
   if(t==='调优')return tabsH('effect',tabs)+pgTune();
   if(t==='复制与回炉'){
     const L=visibleP().filter(p=>p.status==='评估中'||p.status==='已结项');
@@ -245,7 +249,7 @@ A.drill=el=>{UI.drill=el.dataset.l?el.dataset.l.split(','):[];render()};
 
 /* ========== 配置中心 ========== */
 function pgConfig(){
-  const tabs=['指标库','培训类型默认值','阈值与口径','维度体系','岗位画像','评价口径','学习包模板','内容管理','知识点规则','数据源'];const t=curTab('config',tabs);let b='';
+  const tabs=['指标库','培训类型默认值','阈值与口径','维度体系','岗位画像','评价口径','学习包模板','内容管理','知识点规则','标签管理','数据源'];const t=curTab('config',tabs);let b='';
   const cellsOver=()=>{let n=0;[...new Set(PEOPLE.map(x=>x.store))].forEach(s=>WEEKS.forEach(w=>{if(loadAt(s,w)>S.cfg.limit)n++}));return n};
   const resN=Object.values(S.results).reduce((s,r)=>s+Object.values(r).filter(x=>x.offline!=null).length,0);
   if(t==='指标库'){
@@ -289,6 +293,7 @@ function pgConfig(){
   if(t==='数据源')b=srcBar('系统里所有「不是人手工录入」的数据都来自这里,只读。点「立即同步」模拟一次拉取。')
     +'<div class="tw"><table class="t"><tr><th>数据源</th><th>系统</th><th>提供什么</th><th>用在哪里</th><th>同步频率</th><th>状态</th></tr>'+DS.map(d=>'<tr><td><b>'+d[0]+'</b></td><td>'+d[1]+'</td><td>'+d[2]+'</td><td>'+d[3]+'</td><td>'+d[4]+'</td><td><span class="tag ok">已连接</span> <button class="link" data-act="dsSync" data-n="'+d[0]+'">立即同步</button></td></tr>').join('')+'</table></div>'
     +'<div class="card" style="margin-top:14px"><h3>人员主数据概况(人事系统)</h3><table class="t"><tr><th>区域</th><th>销售顾问</th><th>其中新人(入职 ≤ 90 天)</th><th>门店</th></tr>'+Object.keys(REG).map(r=>'<tr><td>'+r+'</td><td>'+REG[r].all+'</td><td>'+REG[r].nb+'</td><td>'+REG[r].stores.join('、')+'</td></tr>').join('')+'</table><div class="hint" style="margin-top:6px">「覆盖角色」的预估人数、新人判定都取自这张表;演示名单 '+PEOPLE.length+' 人是其中可在零售通扮演的学员。</div></div>';
+  if(t==='标签管理')b='<div class="src">标签树由业务自主维护：可以是车上部位、政策口径、卖点或场景。改名不影响已挂载的知识点与内容。</div>'+pgTagManage();
   return '<div class="ph"><h2>配置中心</h2></div>'+tabsH('config',tabs)+b;
 }
 A.tdmain=el=>{const d=S.cfg.typeDef[el.dataset.k];d.main=el.value;d.aux=d.aux.filter(x=>x!==el.value);toast('「'+el.dataset.k+'」默认主指标已改,新增项目时生效','ok');render()};

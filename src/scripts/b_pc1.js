@@ -43,6 +43,7 @@ A.bell=()=>openDlg('通知',S.notices.length?S.notices.map(n=>'<div style="paddi
 A.tab=el=>{UI.tab[el.dataset.k]=el.dataset.v;render()};
 A.go=el=>{closeDlg();UI.page=el.dataset.p;if(el.dataset.t)UI.tab[el.dataset.p]=el.dataset.t;if(el.dataset.id){UI.projId=el.dataset.id;UI.ptab=el.dataset.pt||'概览'}if(el.dataset.ef)UI.ef=el.dataset.ef;render();$('#main').scrollTop=0};
 function render(){
+  if(UI&&UI.page==='tagmanage'){UI.page='config';UI.tab=UI.tab||{};UI.tab.config='标签管理'}
   if(document.body.dataset.end==='rn')renderRN();else renderPC();
   if(!(window.__SKIP_SAVE_UNTIL&&Date.now()<window.__SKIP_SAVE_UNTIL)&&typeof saveNow==='function'&&UI)saveNow();
 }
@@ -65,9 +66,9 @@ function renderMenu(){
   $('#menu').innerHTML='<div class="who"><b>'+UI.role.n.split(' · ')[1]+'</b>'+UI.role.n.split(' · ')[0]+' · 数据范围:'+(UI.role.type==='region'?UI.role.region:'全国')+'</div>'
    +g('工作台',['workbench','overview'])+it(['workbench'],'工作台','workbench','ov','<span class="tg">新</span>')+it(['overview'],'培训总览','overview','ov','')
    +g('发现问题',['topics'])+it(['topics','topic'],'课题池','topics','tp','')
-   +g('准备内容',['catalog','content','publish','tagmanage'])+it(['catalog','kp','kpform'],'知识点','catalog','ca','')+it(['content','cedit','cdetail','qform','dform'],'内容中心','content','ct','')+it(['tagmanage'],'标签管理','tagmanage','ca','')+it(['publish'],'上架到零售通','publish','gr','')
+   +g('准备内容',['catalog','content','publish'])+it(['catalog','kp','kpform'],'知识点','catalog','ca','')+it(['content','cedit','cdetail','qform','dform'],'内容中心','content','ct','')+it(['publish'],'上架到零售通','publish','gr','')
    +g('组织培训',['projects','approvals','coach'])+it(['projects','detail','form'],'学习项目','projects','pj','')+it(['approvals'],'报名审批','approvals','ap',n?'<span class="dot">'+n+'</span>':'')+it(['coach'],'入店辅导','coach','co','')
-   +g('看效果',['effect','people','person'])+it(['people','person'],'人员','people','ef','')+it(['effect','student'],'效果追踪','effect','ef','')
+   +g('看效果',['effect','people','person','student'])+it(['effect','student'],'效果追踪','effect','ef','')
    +g('系统',['config'])+it(['config'],'配置中心','config','cf','')
    +(UI.role.type==='boss'?'':'<details class="mg-fold"><summary class="mg">现有功能(未复刻) ▾</summary>'+['专题管理','检核任务管理','晨读管理','学堂首页配置','日志管理'].map(x=>'<div class="mi gray">'+IC.gr+'<span>'+x+'</span></div>').join('')+'</details>');
 }

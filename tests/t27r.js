@@ -2,7 +2,7 @@ const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')
 try{
 A.roleSwitch({value:'hq'});closeDlg();
 const menu=document.querySelector('#menu').innerText;
-CK('标签管理移到「准备内容」分组',menu.indexOf('准备内容')<menu.indexOf('标签管理')&&menu.indexOf('标签管理')<menu.indexOf('组织培训'));
+CK('标签管理已并入配置中心（菜单不再单列）',!/标签管理/.test(menu));
 CK('系统分组不再有标签管理',!menu.slice(menu.indexOf('系统')).includes('标签管理'));
 CK('未复刻菜单折叠为 details',!!document.querySelector('#menu details.mg-fold'));
 UI.page='effect';UI.tab.effect='错题集';UI.sel.misPage={page:1,size:20};render();

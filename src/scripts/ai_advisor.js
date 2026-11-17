@@ -298,7 +298,7 @@ function aiTagAuditHtml(){
    +(dup.length?dup.slice(0,6).map(x=>'<div style="margin:4px 0;font-size:12.5px"><span class="tag warn">疑似重复</span> '+esc(x.a.path)+' 与 '+esc(x.b.path)+' <span class="hint">'+esc(x.reason)+'</span> <a class="link" data-act="tagAiMerge" data-a="'+x.a.id+'" data-b="'+x.b.id+'">查看合并建议</a></div>').join(''):'<div class="chk ok" style="margin-top:4px"><b>✓</b><span>未发现明显重复标签</span></div>')
    +'<div class="hint" style="margin-top:4px">合并会把历史引用改到保留标签上，并与「删除」不同，可追溯。</div></div>';
 }
-A.tagAiAudit=()=>{UI.page='tagmanage';render();setTimeout(()=>{const e=document.querySelector('.ai-box');if(e)e.scrollIntoView({block:'center'})},50)};
+A.tagAiAudit=()=>{UI.page='config';UI.tab.config='标签管理';render();setTimeout(()=>{const e=document.querySelector('.ai-box');if(e)e.scrollIntoView({block:'center'})},50)};
 A.aiQuizGap=()=>{UI.page='content';UI.tab.content='题';render()};
 A.aiDrillGap=()=>{UI.page='content';UI.tab.content='演练';render()};
 A.tagAiMerge=el=>{const a=ptagOf(el.dataset.a),b=ptagOf(el.dataset.b);if(!a||!b)return;openDlg('合并标签建议', '<div style="line-height:1.8">建议保留「<b>'+esc(a.path)+'</b>」，把「'+esc(b.path)+'」的历史引用合并过来。<br><span class="hint">合并后 b 标签停用；知识点 / 内容上的标签会改为 a。</span></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="tagAiMergeDo" data-a="'+a.id+'" data-b="'+b.id+'">确认合并</button>')};
@@ -381,7 +381,7 @@ A.aiGoUnlinked=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';U
 A.aiGoNoMain=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';UI.sel.caf={};UI.sel.cadv=true;render();toast('点开标题进详情，编辑页可设主讲解','')};
 A.aiGoKpNoTag=()=>{closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;UI.sel.kpf={tag:'__none'};render()};
 A.aiGoContent=()=>{closeDlg();UI.page='content';UI.tab.content='全部内容';UI.sel.caf={};UI.sel.cadv=true;render();toast('可到内容详情补内容标签','')};
-A.aiGoTag=()=>{closeDlg();UI.page='tagmanage';render()};
+A.aiGoTag=()=>{closeDlg();UI.page='config';UI.tab.config='标签管理';render()};
 A.aiGoCarGap=()=>{const c=aiGlobalCounts();const car=c.carGap[0];closeDlg();UI.page='catalog';UI.tab.catalog=KP_TAB_BATCH;render();if(car){UI.sel.kpCar=aiCheckNewCar(car);render()}setTimeout(()=>{const e=document.getElementById('kp_car_info');if(e)e.scrollIntoView({block:'center'})},50)};
 A.aiLog=()=>{openDlg('AI 建议留痕','<div class="ai-box"><div class="ai-box-h">'+AI_TAG+' <span class="hint">只记录采纳 / 忽略，不记录模型隐私或完整输入</span></div>'+((S.aiLog||[]).length?S.aiLog.slice(0,30).map(x=>'<div class="ai-log"><span class="tag '+(x.accepted?'ok':'')+'">'+(x.accepted?'已采纳':'已忽略')+'</span><span>'+esc(x.type)+'</span><span class="hint">'+esc(x.output||x.input)+'</span><span class="hint">'+esc(x.who)+' · '+esc(x.t)+'</span></div>').join(''):'<div class="hint">还没有采纳或忽略记录</div>')+'</div>','<button class="btn" data-act="close">关闭</button>')};
 A.aiGoCoach=()=>{closeDlg();UI.page='coach';UI.tab.coach='辅导总览';render()};
