@@ -215,9 +215,9 @@ function pgKpForm(){
   const dup=S.kps.find(k=>k.id!==KF.id&&k.name===KF.name.trim()&&k.cars.some(c=>KF.cars.includes(c)));
   const carBox='<div class="kp-checks">'+cars.map(c=>'<label class="kp-check"><input type="checkbox" data-wc="kfCar" value="'+esc(c)+'" '+(KF.cars.includes(c)?'checked':'')+'> '+esc(c)+'</label>').join('')+'</div>';
   const tagBox=tagPickerHtml('kfTag',KF.tags,{})+'<div class="tag-ai-slot">'+(typeof aiKpFormAdviceHtml==='function'?aiKpFormAdviceHtml():'')+'</div>';
-  const more=KF.more?'<div class="kp-more">'+FR('标签',tagBox,{h:'可以是车上部位，也可以是政策、卖点、场景等；一个点可挂多个标签'})
+  const more='<div class="kp-more">'+FR('标签',tagBox,{h:'可以是车上部位，也可以是政策、卖点、场景等；一个点可挂多个标签'})
    +FR('同义词','<input type="text" data-kf="syn" value="'+esc(KF.syn)+'" placeholder="用户会怎么说，如 后备箱、装得下" style="width:100%;max-width:460px">',{h:'用于搜索和内容挂载推荐'})
-   +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'没有负责人不能启用'})+'</div>':'<div class="hint" style="margin:8px 0"><a class="link" data-act="kfMore">展开：标签 / 同义词 / 负责人</a> · 当前负责人 '+esc(KF.owner||'暂无')+' · 标签 '+KF.tags.length+' 个</div>';
+   +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'没有负责人不能启用'})+'</div>';
   return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+(KF.id?'编辑 '+KF.id:'新增知识点'))+'<div class="ph"><h2>'+(KF.id?'编辑知识点':'新增知识点')+' <span class="hint" style="font-weight:400">必填：名称、适用车型、知识类型；其他可以后补</span></h2></div>'
    +'<div class="card frm">'+FR('名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="一个能单独讲一次、单独出一道题的点，如：6.6kW 外放电" style="width:100%;max-width:460px">',{req:1,h:'太粗就拆，太细就并'})
    +FR('适用车型',carBox,{req:1,h:'可以多选。同一个卖点同时适用多款车时，建一个点就够了，不用复制多条'})

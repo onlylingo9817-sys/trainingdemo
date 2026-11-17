@@ -120,14 +120,30 @@ A.kfAdvice=()=>{
 function aiFieldBox(title,body,id){
   return '<div class="ai-inline" id="'+(id||'')+'"><div class="ai-inline-h"><span class="ai-dot">AI</span><b>'+esc(title)+'</b><span class="hint">只建议，点采纳才写入</span><button class="link ai-inline-why" data-act="aiWhy">依据</button></div><div class="ai-inline-b">'+body+'</div></div>';
 }
+function aiKpFormAutoAdvice(){
+  if(!KF)return null;
+  const text=aiKpFormText();
+  const key=text+'|'+(KF.tags||[]).join(',')+'|'+(KF.__aiIgnoreTags||[]).join(',');
+  const prev=UI.sel.kfAdvice;
+  if(prev&&prev.key===key)return prev;
+  const tags=aiRecommendTags(text,{limit:5}).filter(x=>!(KF.tags||[]).includes(x.tag.id)&&!(KF.__aiIgnoreTags||[]).includes(x.tag.id));
+  const ab=(/价格|异议|竞品|政策|补贴/.test(text)?'顾虑解除':/探需|需求|场景|邀约/.test(text)?'探需':/带教|辅导|目标|例会/.test(text)?'带人辅导':'场景化讲车');
+  UI.sel.kfAdvice={key,text,tags,ab,at:Date.now()};
+  return UI.sel.kfAdvice;
+}
 function aiKpFormAdviceHtml(){
+  const a=aiKpFormAutoAdvice();
+  if(!a)return '';
+  return aiFieldBox('推荐标签',(a.tags.length?'<div>'+aiTagChips(a.tags,'kfAiTag','',null,'kfAiTagIgnore')+'<div class="ai-inline-actions"><button class="btn sm" data-act="kfAiTagAll">采纳全部</button></div></div>':'<span class="hint">没有匹配到合适标签；可补充同义词，输入后会自动重算。</span>'),'kfAdv');
+}
+function aiKpFormAdviceHtmlOld(){
   const a=UI.sel.kfAdvice;
-  if(!a)return '<div class="ai-inline ai-inline-empty"><div class="ai-inline-h"><span class="ai-dot">AI</span><b>需要标签建议？</b></div><button class="link" data-act="kfAdvice">根据名称 / 同义词生成推荐</button></div>';
+  if(!a)return '';
   const stale=!a.at;
   return aiFieldBox('推荐标签',(a.tags.length?'<div>'+aiTagChips(a.tags,'kfAiTag','',null,'kfAiTagIgnore')+'<div class="ai-inline-actions"><button class="btn sm" data-act="kfAiTagAll">采纳全部</button><button class="btn sm quiet" data-act="kfAdvice">重新匹配</button>'+(stale?'<span class="hint">建议基于上一轮输入，改过内容请重新匹配</span>':'')+'</div></div>':'<span class="hint">没有匹配到合适标签；可补充同义词后重试。</span>'),'kfAdv');
 }
 function aiKpAbilityAdviceHtml(){
-  const a=UI.sel.kfAdvice;
+  const a=aiKpFormAutoAdvice();
   if(!a)return '';
   const abRow=kpAbRows().find(x=>x.name===a.ab);
   return aiFieldBox('建议主要训练能力','<span class="tag pri">'+esc(a.ab)+'</span> '+(abRow&&KF.abId===abRow.id?'<span class="tag ok">已采纳</span>':'<a class="link" data-act="kfAiAb" data-v="'+esc(a.ab)+'">采纳</a>'),'kfAbAdv');
