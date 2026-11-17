@@ -221,4 +221,4 @@ rSheetHtml=function(){const s=R.sheet;if(s.scan){const p=proj(s.scan);const k=my
 
 /* ========== 启动 ========== */
 reset();seedDemo();renderBell();render();
-if(typeof welcome==='function'&&!window.__NOWELCOME)setTimeout(welcome,300);
+/* 欢迎说明不再自动弹出，改为顶部「演示数据 ▾ → 体验说明」随时打开，避免打断主流程 */

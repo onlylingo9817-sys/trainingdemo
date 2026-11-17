@@ -118,6 +118,11 @@ function kpLibrary(){
    +'</table>'+(rows.length?'':'<div class="empty">没有符合条件的知识点，换个标签或新建一个。</div>')+'</div></div>'+'</div></div>';
 }
 function kpStatForKp(k,car){if(!kpCarsHas(k,car))return '—';return kpReady(k)?'✓':'缺'}
+function kpImportResultHtml(){
+  const r=UI.sel.kpImportResult;if(!r)return '';
+  return '<div class="kp-import-result'+(r.total?' warn':' ok')+'"><b>上次导入：成功 '+r.ok+' 条'+(r.total?'，跳过 '+r.total+' 条':'')+'</b>'+(r.errs.length?'<ul>'+r.errs.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'')+(r.total>r.errs.length?'<div class="hint">…还有 '+(r.total-r.errs.length)+' 条</div>':'')+'<a class="link" data-act="kpClearImportResult">收起</a></div>';
+}
+A.kpClearImportResult=()=>{UI.sel.kpImportResult=null;render()};
 function kpBatchPage(){
   const kpc=UI.sel.kpc||{};
   const cars=kpCarsHost();
@@ -128,6 +133,7 @@ function kpBatchPage(){
    +'<div class="hint" style="margin:10px 0">列：名称 / 适用车型（多个用顿号）/ 标签（如 能源_外放电）/ 主要训练能力 / 负责人 / 同义词 / 状态。车型或标签不存在的行会被跳过并报告。</div>'
    +'<textarea id="kp_csv" style="width:100%;min-height:170px;font:12px/1.6 Menlo,monospace" placeholder="先点「载入示例 CSV」看格式；也可以直接把 Excel 里的列复制过来。\n\n名称,适用车型,标签,主要训练能力,负责人,同义词,状态"></textarea>'
    +'<div style="margin-top:10px"><button class="btn" data-act="kpAiAudit">AI 预检</button> <button class="btn pri" data-act="kpImportRun">校验并导入</button> <span class="hint">没有负责人会自动停用；不会覆盖已有同名同车型知识点。</span></div>'
+   +kpImportResultHtml()
    +(typeof aiKpCsvAuditHtml==='function'?aiKpCsvAuditHtml():'')
    +'<div class="kp-excel"><b>从 Excel 过来？</b><span>按上面 7 列复制粘贴即可，车型多个用顿号隔开；标签写法如「车型卖点_内饰_座椅」或「政策口径_国补地补」。</span></div></div>'
    +(typeof aiNewCarPanel==='function'?aiNewCarPanel():'')
@@ -189,7 +195,7 @@ A.kpImportRun=()=>{const rows=kpCsvRows(($('#kp_csv')||{}).value||'');if(rows.le
   const abname=col(r,'主要训练能力');const ab=kpAbRows().find(x=>x.name===abname||x.root===abname||(abname==='卖点转译'&&x.name==='场景化讲车'));if(abname&&!ab){errs.push('第 '+(i+2)+' 行：找不到主要训练能力「'+abname+'」，可用：'+kpAbRows().map(x=>x.name).join(' / '));return}
   const owner=col(r,'负责人')||null;const syn=col(r,'同义词').split(/[、,，]+/).filter(Boolean);const id='K'+(Math.max(0,...S.kps.map(x=>+x.id.slice(1)))+1);
   cars.forEach(kpEnsureCar);const k={id,name,type:(tag?'事实型':'技能型'),tags:tag?[tag.id]:[],car:cars[0],cars,syn,owner,st:col(r,'状态')==='启用'&&owner?'启用':'停用',ext:[],created:today,hist:[]};kpApplyMeta(k,{cars,tags:k.tags,abId:ab?ab.id:null,owner});S.kps.push(k);kpHist(k,'批量导入',owner?'':'没有负责人，先停用');ok++});
-  render();openDlg('导入结果','<div style="line-height:1.9"><b>成功 '+ok+' 条</b>'+(errs.length?'<br><span style="color:#c8323a">跳过 '+errs.length+' 条：</span><br>'+errs.slice(0,8).map(x=>'<div class="hint">'+esc(x)+'</div>').join('')+(errs.length>8?'<div class="hint">…还有 '+(errs.length-8)+' 条</div>':''):'')+'</div>','<button class="btn" data-act="close">关闭</button>');
+  render();UI.sel.kpImportResult={ok,errs:errs.slice(0,8),total:errs.length};toast('导入完成：成功 '+ok+' 条'+(errs.length?'，跳过 '+errs.length+' 条（查看下方明细）':''),errs.length?'warn':'ok');
 };
 A.kpClSet=()=>{};
 A.kpClonePreview=()=>{const from=$('#kp_clone_from').value,to=($('#kp_clone_to').value||'').trim();if(!to)return toast('请填写新车型名称','err');if(kpCarsHost().includes(to))return toast('这个车型已经有知识点了，直接看知识点库','err');const count=S.kps.filter(k=>k.st==='启用'&&kpCars(k).includes(from)).length;UI.sel.kpc={from,to,count};render()};
