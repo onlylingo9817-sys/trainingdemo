@@ -128,7 +128,7 @@ function coachPanel(x,tab){
   if(tab==='计划'){
     return '<div class="coach-two"><div class="card"><h3>学：到店教什么 <span class="hint">只选门店真正需要的</span></h3>'+COACH_LEARN.map((r,i)=>{const on=(x.learn||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachLearn" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[2])+'</span></div></label>'}).join('')+'</div>'
      +'<div class="card"><h3>练：让门店伙伴练什么 <span class="hint">按短板选，不贪多</span></h3>'+COACH_PRACTICE.map(r=>{const on=(x.practice||[]).some(y=>y.name===r[0]&&y.on);return '<label class="coach-check"><input type="checkbox" data-wc="coachPractice" data-id="'+x.id+'" value="'+esc(r[0])+'" '+(on?'checked':'')+'><div><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div></label>'}).join('')+'</div></div>'
-     +'<div class="card"><h3>辅导目标 <span class="hint">先锁定一个主指标，后面复测才有对照</span></h3><div class="coach-target"><div><label>主指标</label><b>'+esc(m.name)+'</b></div><div><label>辅导前</label><b>'+esc(x.pre==null?'—':x.pre+'%')+'</b></div><div><label>目标</label><input id="coach_goal" data-id="'+x.id+'" value="'+esc(x.goalTarget||m.target||'')+'" placeholder="如 +5pt 或 70%"></div></div><div class="coach-assist"><span>不知道目标怎么定？</span><span class="hint">可参考同城优秀店或项目目标；Demo 中建议 +3~5pt 作为可验证的起步目标。</span><button class="btn sm" data-act="coachGoalSuggest" data-id="'+x.id+'">用 +5pt 起步目标</button></div><div class="hint" style="margin-top:6px">'+esc(m.formula)+'；复测时只对比这个指标，不拿多个数混在一起下结论。</div></div>'
+     +coachPrescribeHtml(x)+'<div class="card"><h3>辅导目标 <span class="hint">先锁定一个主指标，后面复测才有对照</span></h3><div class="coach-target"><div><label>主指标</label><b>'+esc(m.name)+'</b></div><div><label>辅导前</label><b>'+esc(x.pre==null?'—':x.pre+'%')+'</b></div><div><label>目标</label><input id="coach_goal" data-id="'+x.id+'" value="'+esc(x.goalTarget||m.target||'')+'" placeholder="如 +5pt 或 70%"></div></div><div class="coach-assist"><span>不知道目标怎么定？</span><span class="hint">可参考同城优秀店或项目目标；Demo 中建议 +3~5pt 作为可验证的起步目标。</span><button class="btn sm" data-act="coachGoalSuggest" data-id="'+x.id+'">用 +5pt 起步目标</button></div><div class="hint" style="margin-top:6px">'+esc(m.formula)+'；复测时只对比这个指标，不拿多个数混在一起下结论。</div></div>'
      +'<div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="tPlanSave" data-id="'+x.id+'">保存计划，开始到店</button></div>';
   }
   if(tab==='检核'){
@@ -153,7 +153,7 @@ function coachPanel(x,tab){
      +'<div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="coachPostSave" data-id="'+x.id+'">保存复测</button></div>';
   }
   if(tab==='结案'){
-    return '<div class="card"><h3>结案结论 <span class="hint">把这次辅导变成下一次可复用的东西</span></h3><div class="coach-summary"><div><span>辅导目标</span><b>'+esc(x.goal)+'</b></div><div><span>复测</span><b>'+(x.post?esc(x.post.value+'% / '+x.post.result):'未复测')+'</b></div><div><span>完成度</span><b>'+coachProgress(x)+'%</b></div></div><div class="fld"><label>结论</label><select id="coach_close_res">'+['有效，复制到其他门店','部分有效，继续巩固','无效，调整方案','暂不结案'].map(o=>'<option '+(x.closeRes===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div><div class="fld"><label>复盘一句话</label><textarea id="coach_close_why" placeholder="哪件事最有用？哪件事下次不做了？">'+esc(x.closeWhy||'')+'</textarea></div><div class="fld"><label>可沉淀动作</label><div class="coach-tags">'+['话术','检核表','陪跑节奏','门店管理动作','培训内容'].map(t=>'<span class="tag" data-act="coachAsset" data-id="'+x.id+'" data-v="'+t+'">+ '+t+'</span>').join('')+'</div><div class="hint">点击添加；Demo 只留标记，正式版应回写内容中心 / 知识点。</div></div></div><div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="coachClose" data-id="'+x.id+'">结案</button></div>';
+    return '<div class="card"><h3>结案结论 <span class="hint">把这次辅导变成下一次可复用的东西</span></h3><div class="coach-summary"><div><span>辅导目标</span><b>'+esc(x.goal)+'</b></div><div><span>复测</span><b>'+(x.post?esc(x.post.value+'% / '+x.post.result):'未复测')+'</b></div><div><span>完成度</span><b>'+coachProgress(x)+'%</b></div></div><div class="fld"><label>结论</label><select id="coach_close_res">'+['有效，复制到其他门店','部分有效，继续巩固','无效，调整方案','暂不结案'].map(o=>'<option '+(x.closeRes===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div><div class="fld"><label>复盘一句话</label><textarea id="coach_close_why" placeholder="哪件事最有用？哪件事下次不做了？">'+esc(x.closeWhy||'')+'</textarea></div><div class="fld"><label><input type="checkbox" id="coach_sink" '+(x.topicId?'checked disabled':'')+'> 把这次经验沉淀到课题池'+(x.topicId?'（已沉淀到 '+esc(x.topicId)+'）':'')+'</label><div class="hint">沉淀后出现在「课题池」，可继续生成内容或建学习项目；不自动改学员和门店数据。</div></div><div class="fld"><label>可沉淀动作</label><div class="coach-tags">'+['话术','检核表','陪跑节奏','门店管理动作','培训内容'].map(t=>'<span class="tag" data-act="coachAsset" data-id="'+x.id+'" data-v="'+t+'">+ '+t+'</span>').join('')+'</div><div class="hint">点击添加；Demo 只留标记，正式版应回写内容中心 / 知识点。</div></div></div><div class="coach-actions"><button class="btn" data-act="ticket" data-id="'+x.id+'">取消</button><button class="btn pri" data-act="coachClose" data-id="'+x.id+'">结案</button></div>';
   }
   return '';
 }
@@ -184,7 +184,7 @@ A.coachFocusFb=el=>{const s=document.querySelector('#coach_fb_kind');if(s){s.val
 A.coachFb=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const kind=$('#coach_fb_kind')?$('#coach_fb_kind').value:'日';const title=($('#coach_fb_title')||{}).value||'';const text=($('#coach_fb_text')||{}).value||'';if(!title.trim()&&!text.trim())return toast('先写一句反馈','err');x.feedback.push({t:today,who:meShort(),kind,title:title.trim()||text.trim().slice(0,20),text:text.trim()});coachSave(x,'陪跑','添加'+kind+'反馈',title||text);toast('反馈已记录','ok');A.ticket({dataset:{id:x.id}})};
 A.coachPostSave=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const v=parseFloat(($('#coach_post')||{}).value);if(isNaN(v))return toast('请填写复测值','err');const result=($('#coach_result')||{}).value||'有改善，但还不稳定';const next=($('#coach_next')||{}).value||'';x.post={value:v,result,next,pre:x.pre,t:today};x.st='复测';coachSave(x,'复测','记录复测结果',result+'；'+(v-x.pre).toFixed(1)+'pt；'+next);toast('复测已保存，可以结案','ok');UI.sel.coachTab='结案';A.ticket({dataset:{id:x.id}})};
 A.coachAsset=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));x.assets=x.assets||[];if(!x.assets.includes(el.dataset.v))x.assets.push(el.dataset.v);toast('已标记可沉淀：'+el.dataset.v,'ok');A.ticket({dataset:{id:x.id}})};
-A.coachClose=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const res=($('#coach_close_res')||{}).value||'';const why=($('#coach_close_why')||{}).value||'';if(!why.trim())return toast('请写一句复盘结论','err');x.st='结案';x.closeRes=res;x.closeWhy=why;coachSave(x,'结案','结案：'+res,why);toast('辅导已结案','ok');A.ticket({dataset:{id:x.id}})};
+A.coachClose=el=>{const sinkBox=$('#coach_sink');if(sinkBox&&sinkBox.checked&&!sinkBox.disabled)A.coachCloseSink(el);const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const res=($('#coach_close_res')||{}).value||'';const why=($('#coach_close_why')||{}).value||'';if(!why.trim())return toast('请写一句复盘结论','err');x.st='结案';x.closeRes=res;x.closeWhy=why;coachSave(x,'结案','结案：'+res,why);toast('辅导已结案','ok');A.ticket({dataset:{id:x.id}})};
 
 
 /* ========== 效果追踪 ========== */
@@ -329,3 +329,31 @@ A.indSave=el=>{const n=$('#in_n').value.trim(),a=$('#in_a').value.trim(),b=$('#i
   if(!i){const h=hsh(n);i={id:'I'+(Math.max(...S.indicators.map(x=>+x.id.slice(1)||0))+1),note:'',custom:1,rng:[18+h%14,36+h%20]};S.indicators.push(i)}
   Object.assign(i,{name:n,src:$('#in_s').value,cat:$('#in_c').value,tpl:$('#in_t').value,dir:$('#in_d').value,num:a,den:b,bwin:+$('#in_w').value||30,on:$('#in_on').checked,params:rows.map(r=>[r[0],r[1],r[2]])});
   closeDlg();toast(isNew?'指标「'+n+'」已创建'+(i.on?',现在可在「新增学习项目 → 培训目标」选用':'(未启用)'):'指标已保存;新增项目时生效,已提交项目保留原口径快照','ok');render()};
+function coachPrescribe(x){
+  coachPlanOf(x);const m=coachMetricOf(x);const miss=(x.checks.pre||[]).concat(x.checks.during||[]).filter(r=>!r.done).map(r=>r.name);
+  const learn=(COACH_LEARN.find(r=>miss.some(n=>r[2].includes(n.slice(0,2))))||COACH_LEARN[2]);
+  const practice=COACH_PRACTICE.find(r=>(x.trig||'').includes('开口')||/话术|异议/.test(x.trig||'')||miss.some(n=>/邀约|商谈|试乘/.test(n)))||COACH_PRACTICE[2];
+  const check=miss.slice(0,2);
+  const fbWeak=(x.feedback||[]).length<2;
+  return {goal:m.name+' '+(x.pre==null?'—':x.pre+'%')+' → '+(m.target||'待定'),
+    learn:[learn[0],learn[1]],practice:[practice[0],practice[1]],check,
+    feedback:fbWeak?'日反馈先盯'+m.name+'的日变化,周反馈对比同城店':'已有反馈,复测前补一条月度结论',
+    basis:'触发证据「'+(x.trig||'目标未达成')+'」;未完成检核 '+miss.length+' 项'+(x.post?';已有复测值 '+x.post.value+'%':'')};
+}
+A.coachPrescribeFill=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;const rx=coachPrescribe(x);
+  x.learn=COACH_LEARN.filter(r=>rx.learn.includes(r[0])).map(r=>({name:r[0],detail:r[1],on:true}));
+  x.practice=COACH_PRACTICE.filter(r=>rx.practice.includes(r[0])).map(r=>({name:r[0],detail:r[1],on:true}));
+  if(rx.goal&&!x.goalTarget)x.goalTarget='+5pt';
+  aiLog('门店处方填入计划',x.store,[{name:rx.learn.concat(rx.practice).join('、')}],true);
+  toast('已按处方填入学 / 练项与目标,请核对后保存计划','ok');A.ticket({dataset:{id:x.id}})};
+function coachPrescribeHtml(x){
+  const rx=coachPrescribe(x);
+  return '<div class="ai-box coach-rx"><div class="ai-box-h">'+AI_TAG+' <span class="hint">门店处方（草稿）：根据触发证据和未完成的检核生成，只填表不保存</span></div>'
+   +'<div class="coach-rx-grid"><div><span>学</span><b>'+rx.learn.map(esc).join('、')+'</b></div><div><span>练</span><b>'+rx.practice.map(esc).join('、')+'</b></div><div><span>检</span><b>'+(rx.check.length?rx.check.map(esc).join('、'):'无未完成项')+'</b></div><div><span>目标</span><b>'+esc(rx.goal)+'</b></div><div><span>馈</span><b>'+esc(rx.feedback)+'</b></div></div>'
+   +'<div class="hint" style="margin-top:6px">依据：'+esc(rx.basis)+'</div>'
+   +'<div style="margin-top:8px"><button class="btn sm pri" data-act="coachPrescribeFill" data-id="'+x.id+'">采纳，填入计划</button></div></div>';
+}
+A.coachCloseSink=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;const on=($('#coach_sink')||{}).checked;const why=(($('#coach_close_why')||{}).value||'').trim();if(!on)return toast('未勾选沉淀,不写入课题池','warn');if(!why)return toast('请先写复盘一句话,再沉淀','err');
+  const rx=coachPrescribe(x);const cs=x.topicId&&topic(x.topicId);if(cs)return toast('已沉淀到课题 '+cs.id,'warn');
+  const t=mkTopic({title:'门店辅导经验:'+x.store+' · '+(coachMetricOf(x).name),desc:why,scene:'展厅',obj:coachMetricOf(x).name,sess:x.feedback.length*40,stores:1,prov:1,trend:x.post?Math.round(x.post.value-(x.pre||0)):0,sug:{type:'辅导复盘',sub:'',ind:'I5',kw:(rx.learn.concat(rx.practice)).join(', '),trig:x.trig||'',base:x.pre||0,regions:ALLR}},'辅导结案回流','系统(入店辅导)','sys',{result:{closeRes:x.closeRes||'',closeWhy:why,post:x.post?x.post.value:null},fromTicket:x.id});
+  x.topicId=t.id;coachSave(x,null,'结案经验沉淀到课题',t.id+' · '+why.slice(0,30));toast('已沉淀到课题池 '+t.id+',可在「课题池」继续处理','ok');A.ticket({dataset:{id:x.id}})};
