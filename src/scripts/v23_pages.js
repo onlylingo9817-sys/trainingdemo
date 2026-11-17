@@ -52,7 +52,8 @@ function pgRdy(){
   const f=UI.sel.rdy||(UI.sel.rdy={scope:'全国',store:'',tier:''});
   const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {l,rdy:r.val,ach:r.ach,items:r.items,pass:r.ach!=null&&r.ach>=S.cfg.pass}});
   const scopeRows=all.filter(x=>f.scope==='全国'||x.l.region===f.scope);
-  const rows=scopeRows.filter(x=>(!f.store||x.l.store===f.store)&&(!f.tier||x.l.tier===f.tier));
+  const kw=(f.q||'').trim().toLowerCase();
+  const rows=scopeRows.filter(x=>(!f.store||x.l.store===f.store)&&(!f.tier||x.l.tier===f.tier)&&(!kw||x.l.name.toLowerCase().includes(kw)||String(x.l.mid).includes(kw))&&(!f.verdict||(f.verdict==='已达标'?x.pass:f.verdict==='未达标'?(!x.pass&&x.rdy!=null):x.rdy==null)));
   const q=v23Quadrant();
   const tested=rows.filter(x=>x.rdy!=null);
   const avg=tested.length?Math.round(tested.reduce((a,x)=>a+x.rdy,0)/tested.length):null;
@@ -67,6 +68,7 @@ function pgRdy(){
   const itemAvg=p0.items.map(it=>{const vs=scopeRows.map(x=>{const m=x.items.find(y=>y.item.id===it.id);return m&&m.mean!=null?m.mean:null}).filter(v=>v!=null);return {it,mean:vs.length?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length):null,n:vs.length}});
   const sel=(k,label,opts,cur)=>'<div class="fi2"><label>'+label+'</label><select data-wc="rdySet" data-k="'+k+'"><option value="">全部</option>'+opts.map(o=>'<option '+(cur===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
   const zero=!tested.length;
+  const rdySorted=tested.slice().sort((a,b)=>(b.rdy||0)-(a.rdy||0));const rdyPg=lstPage('rdyPage',rdySorted,20);const testPaged=rdyPg.rows;
   return '<div class="ph"><h2>就绪度 <span class="hint" style="font-weight:400">按岗位画像加权算出的"这个人现在能不能上阵";证据来自测评 + 演练 + 实战行为 + 人工评价</span></h2><div>'+V23_SIM+'</div></div>'
    +srcBar('就绪度 = Σ(画像项权重 × min(该项下知识点掌握度均值, 目标等级)) ÷ Σ权重。掌握度 = 各来源证据按<b>权重</b>合成,权重在「配置中心 → 评价口径」可调。画像四档:新人 / 进阶 / 销冠 / 店长。')
    +V23_CORR
@@ -91,8 +93,9 @@ function pgRdy(){
      +itemAvg.map(x=>'<div class="rd-item"><div class="nm" title="'+esc(x.it.label)+'">'+esc(x.it.label)+'</div><div class="bw"><i style="width:'+(x.mean||0)+'%;background:'+v23RdyColor(x.mean)+'"></i><u style="left:'+x.it.target+'%"></u></div><div class="vv">'+(x.mean==null?'—':x.mean)+' / 目标 '+x.it.target+'</div><div class="wt">'+x.it.weight+'%</div></div>').join('')
      +'</div></div>'
    +'<div class="card"><h3>学员 × 就绪度 <span class="hint">点姓名进详情;这里与「学员详情 / 零售通 / 工作台」同一套数</span></h3>'
+   +'<div class="filg" style="margin-bottom:10px"><div class="fi2"><label>姓名 / MID</label><input data-wc="rdySet" data-k="q" value="'+esc(f.q||'')+'" placeholder="搜索姓名或 MID"></div><div class="fi2"><label>判定</label><select data-wc="rdySet" data-k="verdict"><option value="">全部</option>'+['已达标','未达标','无证据'].map(v=>'<option '+(f.verdict===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div><div class="fi2"><label>每页</label><select data-wc="rdySize">'+[20,50,100].map(n=>'<option '+(rdyPg.size===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div><div class="fi2" style="align-self:end">'+lstCsvBtn(['学员','MID','门店','岗位','批次','就绪度','目标达成','判定'],[['学员','MID','门店','岗位','批次','就绪度','目标达成','判定']].concat(testPaged.map(x=>[x.l.name,x.l.mid,x.l.store,x.l.tier,x.l.group,x.rdy,x.ach,x.pass?'已达标':'未达标'])),'就绪度')+'</div></div>'
    +'<div class="tw"><table class="t nw stk"><tr><th>学员</th><th>门店</th><th>岗位</th><th>批次</th><th>就绪度</th><th>目标达成</th><th>薄弱项</th><th>错题</th><th>近 4 周锁单</th><th>判定</th><th>操作</th></tr>'
-   +tested.slice().sort((a,b)=>(b.rdy||0)-(a.rdy||0)).map(x=>{
+   +testPaged.map(x=>{
      const weak=x.items.filter(i=>i.mean!=null&&i.mean<i.item.target).map(i=>i.item.label).slice(0,2);
      const mo=misOf(x.l.mid).filter(m=>m.status!=='closed').length;
      const lk=outSum(x.l.mid,V23_NWK-4,V23_NWK-1).锁单;
@@ -100,7 +103,7 @@ function pgRdy(){
       +'<td><b style="color:'+v23RdyColor(x.rdy)+'">'+(x.rdy==null?'—':x.rdy)+'</b></td><td>'+(x.ach==null?'—':x.ach+'%')+'</td>'
       +'<td style="white-space:normal;min-width:170px">'+(weak.length?weak.map(w=>'<span class="tag warn" style="margin:0 4px 4px 0">'+esc(w)+'</span>').join(''):'<span class="tag ok">无</span>')+'</td>'
       +'<td>'+(mo?'<b style="color:#c8323a">'+mo+'</b>':'<span class="hint">0</span>')+'</td><td>'+lk+' 台</td><td>'+v23RdyPill(x.rdy)+'</td>'
-      +'<td><a class="link" data-act="v23Stu" data-mid="'+x.l.mid+'">详情</a></td></tr>'}).join('')+'</table></div></div>')
+      +'<td><a class="link" data-act="v23Stu" data-mid="'+x.l.mid+'">详情</a></td></tr>'}).join('')+'</table></div>'+lstPager('rdyPage',rdyPg)+'</div>')
    :'')
 }
 A.rdySet=el=>{const f=UI.sel.rdy||(UI.sel.rdy={});if(el.value)f[el.dataset.k]=el.value;else delete f[el.dataset.k];if(el.dataset.k==='scope')delete f.store;render()};
@@ -723,3 +726,5 @@ function v23DataNote(){
    +'· 演练评分仍是关键词规则代替 AI;题的干扰项是编的,需业务核对。外部系统(语料、北斗 BI、人事)均未核对真实接口。</div></div>'
 }
 A.v23DataNote=()=>{};
+
+A.rdySize=el=>{const st=UI.sel.rdy||(UI.sel.rdy={});UI.sel.rdyPage=UI.sel.rdyPage||{page:1,size:20};UI.sel.rdyPage.size=+el.value;UI.sel.rdyPage.page=1;render()};

@@ -47,7 +47,7 @@ CK('就绪度封顶:某项超过目标等级不会多算',r.items.every(x=>x.cap
 /* ---- 6. 同源同数:就绪度页 / 学员详情 / 零售通 / 工作台 ---- */
 v23RefreshAll();
 const lx=S.lrn.find(l=>l.tier==='新人顾问');const rd=v23Readiness(lx.mid,lx.tier);
-UI.page='effect';UI.tab.effect='就绪度';UI.sel.rdy={scope:'全国',store:'',tier:''};render();
+UI.page='effect';UI.tab.effect='就绪度';UI.sel.rdy={scope:'全国',store:'',tier:'',q:lx.name};UI.sel.rdyPage={page:1,size:20};render();
 const rowTxt=[...document.querySelectorAll('#main table.t.nw tr')].find(tr=>tr.innerText.includes(lx.name));
 CK('就绪度页该学员的数 = 引擎',!!rowTxt&&rowTxt.innerText.includes(String(rd.val)),rowTxt?rowTxt.innerText.replace(/\s+/g,' ').slice(0,80):'没找到行');
 UI.page='student';UI.stuMid=lx.mid;render();

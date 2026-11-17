@@ -25,8 +25,8 @@ src/
   index.html          页面骨架，按顺序加载脚本
   styles/app.css      v23 既有样式
   styles/v23.css      v23 新增页面样式
-  scripts/            26 个脚本，按 index.html 顺序执行
-tests/                原有 16 组交互探针
+  scripts/            29 个脚本，按 index.html 顺序执行
+tests/                交互回归探针（按 tools/run-tests.js 的清单执行）
 tools/dev-server.js   零依赖开发服务器
 tools/build-single-file.js  可选单文件导出
 tools/run-tests.js    批量回归测试
@@ -43,7 +43,7 @@ npm run check
 npm test
 ```
 
-`npm test` 会依次运行 `tests/t23a.js` 及其余 15 组探针，输出保存到 `test-results/`。需要本机 Chrome；若 Chrome 不在默认路径：
+`npm test` 会按 `tools/run-tests.js` 里的清单依次运行全部探针，输出保存到 `test-results/`。需要本机 Chrome；若 Chrome 不在默认路径：
 
 ```bash
 CHROME=/path/to/chrome npm test
