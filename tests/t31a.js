@@ -10,3 +10,15 @@ CK('效果差值与项目数口径一致',(()=>{const d=bossData();return d.done
 CK('页面说明区分实测与示意',/实测/.test(tx)&&/示意/.test(tx));
 CK('老板视图不含个人级明细入口',!/个人详情|查看个人/.test(tx));
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}
+
+const L2=m=>out.push(String(m));const CK2=(name,ok,detail)=>L2((ok?'PASS ':'FAIL ')+name+(detail?' — '+detail:''));
+try{
+A.roleSwitch({value:'boss'});closeDlg();UI.page='overview';UI.tab.overview='老板视图';render();
+const t=document.querySelector('#main').innerText;
+CK2('趋势图绑定具体培训项目名称',/培训项目：「/.test(t));
+CK2('写明受训组与对照组人群',/受训组：/.test(t)&&/对照组：/.test(t));
+CK2('写明指标与统计方式',/指标：/.test(t)&&/按周统计/.test(t));
+CK2('图例带项目名，不是笼统“受训”',/受训（/.test(t));
+const f=bossData().E.filter(p=>!smallNow(p)).sort((a,b)=>(b.eff.a||0)-(a.eff.a||0))[0];
+CK2('曲线量级与项目指标一致',!!f&&t.includes(String(Math.round(f.base))),'base='+(f&&f.base));
+}catch(e){L2('ERR '+e.message)}

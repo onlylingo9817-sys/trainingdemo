@@ -35,10 +35,24 @@ function bossView(){
    +kpi('双周课题按时产出',d.topicOnTime+'%',S.batches.length+' 个批次已跑')
    +kpi('报告按时产出',d.reportOk+'%',(S.reports||[]).length+' 份已产出(周报 / 月报)')+'</div>';
   /* 2 趋势 + 目标达成榜 */
-  const wk=[0,1,2,3,4,5,6,7];const nbTrend=wk.map(i=>+(72+i*0.7+(hsh('nb'+i)%10)/10).toFixed(1)),lockT=wk.map(i=>+(21.4+i*0.35+(hsh('lt'+i)%6)/10).toFixed(1)),lockC=wk.map(i=>+(21.2+i*0.06+(hsh('lc'+i)%4)/10).toFixed(1));
+  const wk=[0,1,2,3,4,5,6,7];const nbTrend=wk.map(i=>+(72+i*0.7+(hsh('nb'+i)%10)/10).toFixed(1));
+  const focusP=d.E.filter(p=>!smallNow(p)).sort((a,b)=>(b.eff.a||0)-(a.eff.a||0))[0]||d.E[0]||null;
+  /* 曲线绑定所选项目的主指标量级：起点=基线，终点=当前值，对照从对照基线小幅波动 */
+  const tBase=focusP&&focusP.base!=null?focusP.base:21.4, tCur=focusP&&focusP.cur!=null?focusP.cur:tBase+2.5;
+  const cBase=focusP&&focusP.eff&&focusP.eff.did?focusP.eff.did[2]:tBase+0.8, cCur=focusP&&focusP.eff&&focusP.eff.did?focusP.eff.did[3]:cBase+0.4;
+  const lockT=wk.map(i=>+(tBase+(tCur-tBase)*(i/7)+(hsh('lt'+i)%6-3)/10).toFixed(1));
+  const lockC=wk.map(i=>+(cBase+(cCur-cBase)*(i/7)+(hsh('lc'+i)%4-2)/10).toFixed(1));
   const ps=d.E.map(p=>({p,v:pct(p)})).sort((a,b)=>b.v-a.v);
-  const row2='<div class="grid g2" style="grid-template-columns:3fr 2fr"><div class="card"><h3>受训 vs 未受训 · 试驾→锁单率(近 8 周)'+dsDemo('北斗 BI')+'</h3>'+demoNote('曲线为演示占位，不是真实读数')+lineSvg([{n:'受训',c:'#ff6700',d:lockT},{n:'未受训 / 对照',c:'#4e8cff',d:lockC,dash:1}],{w:520,h:190})+'<div class="hint">展示相关性,不作因果结论;效果数据不直接用于绩效考核或 PIP 判定。</div></div>'
-   +'<div class="card"><h3>新人首月开单率趋势'+dsDemo('北斗 BI')+'</h3>'+demoNote('趋势为演示占位')+lineSvg([{n:'开单率',c:'#12a36b',d:nbTrend}],{w:360,h:190})+'<div class="hint">口径:过训后 30 天内有锁单的新人 ÷ 已过训新人</div></div></div>';
+  const focus=focusP;
+  const focusTitle=focus?('「'+focus.name+'」受训 vs 对照 · '+(focus.metric||'主指标')):'受训 vs 对照 · 试驾→锁单率';
+  const realA=focus?Object.values(S.results[focus.id]||{}).filter(x=>x.st==='已结业').length:0;
+  const focusScope=focus?('培训项目：「'+focus.name+'」（'+(focus.type||'')+'，'+(focus.start||'')+' ~ '+(focus.end||'')+'）'
+    +'<br>受训组：覆盖范围内预估 '+(focus.eff.a||0)+' 人'+(realA?'，已结业 '+realA+' 人':'')
+    +'<br>对照组：同岗位同期未参训'+'（'+(focus.eff.noCtrl?'本项目未设对照':('预估 '+(focus.eff.b||0)+' 人'))+'）'):'暂无可用项目';
+  const row2='<div class="grid g2" style="grid-template-columns:3fr 2fr"><div class="card"><h3>'+esc(focusTitle)+'（近 8 周）'+dsDemo('北斗 BI')+'</h3>'+demoNote('曲线为演示占位，不是真实读数')
+   +'<div class="hint" style="margin:2px 0 6px;line-height:1.7;white-space:normal">'+focusScope+(focus?'<br>指标：'+(focus.metric||'主指标')+'，按周统计；仅展示相关性，不作因果结论。':'')+'</div>'
+   +lineSvg([{n:focus?'受训（'+esc(focus.name)+'）':'受训',c:'#ff6700',d:lockT},{n:'对照（同岗位未参训）',c:'#4e8cff',d:lockC,dash:1}],{w:520,h:170})+'<div class="hint">效果数据不直接用于绩效考核或 PIP 判定。</div></div>'
+   +'<div class="card"><h3>新人首月开单率趋势'+dsDemo('北斗 BI')+'</h3>'+demoNote('趋势为演示占位')+'<div class="hint" style="margin:2px 0 6px;line-height:1.7">人群：入职 ≤ 90 天且已完成新人训的顾问<br>口径：过训后 30 天内有锁单的人数 ÷ 已过训新人</div>'+lineSvg([{n:'开单率',c:'#12a36b',d:nbTrend}],{w:360,h:170})+'</div></div>';
   const row3='<div class="grid g2"><div class="card"><h3>项目目标达成榜</h3>'+(ps.length?hbars(ps.map(x=>[x.p.name,x.v,smallNow(x.p)?'#d0d5dd':x.v>=100?'var(--ok)':'var(--pri)']),120,'%')+'<div class="hint">灰色 = 样本不足(无法判断)。达成率 =(当前 − 基线)÷(目标 − 基线)。</div>':'<div class="empty">暂无项目进入评估</div>')+'</div>'
    +'<div class="card"><h3>需要你决策的项目</h3>'+(()=>{const L=d.P.filter(p=>p.status==='评估中');return L.length?'<table class="t"><tr><th>项目</th><th>现状</th><th>建议</th><th></th></tr>'+L.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+goalTxt(p)+'<div class="hint">当前 '+p.cur+p.unit+'</div></td><td>'+(smallNow(p)?'<span class="tag warn">样本不足</span> 延长观察期或并入下一批':metV(p,p.cur)?'<span class="tag ok">已达成</span> 复制到其他区域':'<span class="tag err">未达成</span> 回炉 / 转入店辅导')+'</td><td><button class="link" data-act="go" data-p="effect" data-t="复制与回炉">去处理</button></td></tr>').join('')+'</table>':'<div class="empty">没有待决策的项目</div>'})()+'</div></div>';
   /* 3 竞品攻防 */
