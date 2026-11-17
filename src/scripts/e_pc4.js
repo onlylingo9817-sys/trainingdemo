@@ -184,7 +184,7 @@ A.coachFocusFb=el=>{const s=document.querySelector('#coach_fb_kind');if(s){s.val
 A.coachFb=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const kind=$('#coach_fb_kind')?$('#coach_fb_kind').value:'日';const title=($('#coach_fb_title')||{}).value||'';const text=($('#coach_fb_text')||{}).value||'';if(!title.trim()&&!text.trim())return toast('先写一句反馈','err');x.feedback.push({t:today,who:meShort(),kind,title:title.trim()||text.trim().slice(0,20),text:text.trim()});coachSave(x,'陪跑','添加'+kind+'反馈',title||text);toast('反馈已记录','ok');A.ticket({dataset:{id:x.id}})};
 A.coachPostSave=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const v=parseFloat(($('#coach_post')||{}).value);if(isNaN(v))return toast('请填写复测值','err');const result=($('#coach_result')||{}).value||'有改善，但还不稳定';const next=($('#coach_next')||{}).value||'';x.post={value:v,result,next,pre:x.pre,t:today};x.st='复测';coachSave(x,'复测','记录复测结果',result+'；'+(v-x.pre).toFixed(1)+'pt；'+next);toast('复测已保存，可以结案','ok');UI.sel.coachTab='结案';A.ticket({dataset:{id:x.id}})};
 A.coachAsset=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));x.assets=x.assets||[];if(!x.assets.includes(el.dataset.v))x.assets.push(el.dataset.v);toast('已标记可沉淀：'+el.dataset.v,'ok');A.ticket({dataset:{id:x.id}})};
-A.coachClose=el=>{const sinkBox=$('#coach_sink');if(sinkBox&&sinkBox.checked&&!sinkBox.disabled)A.coachCloseSink(el);const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));const res=($('#coach_close_res')||{}).value||'';const why=($('#coach_close_why')||{}).value||'';if(!why.trim())return toast('请写一句复盘结论','err');x.st='结案';x.closeRes=res;x.closeWhy=why;coachSave(x,'结案','结案：'+res,why);toast('辅导已结案','ok');A.ticket({dataset:{id:x.id}})};
+A.coachClose=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;const res=($('#coach_close_res')||{}).value||'';const why=(($('#coach_close_why')||{}).value||'').trim();if(!why)return toast('请写一句复盘结论','err');const sinkBox=$('#coach_sink');const sink=!!(sinkBox&&sinkBox.checked&&!sinkBox.disabled);x.st='结案';x.closeRes=res;x.closeWhy=why;coachSave(x,'结案','结案：'+res,why);if(sink){const t=coachSinkTopic(x,why);toast('辅导已结案,经验已沉淀到课题池 '+t.id,'ok')}else toast('辅导已结案','ok');A.ticket({dataset:{id:x.id}})};
 
 
 /* ========== 效果追踪 ========== */
@@ -331,12 +331,15 @@ A.indSave=el=>{const n=$('#in_n').value.trim(),a=$('#in_a').value.trim(),b=$('#i
   closeDlg();toast(isNew?'指标「'+n+'」已创建'+(i.on?',现在可在「新增学习项目 → 培训目标」选用':'(未启用)'):'指标已保存;新增项目时生效,已提交项目保留原口径快照','ok');render()};
 function coachPrescribe(x){
   coachPlanOf(x);const m=coachMetricOf(x);const miss=(x.checks.pre||[]).concat(x.checks.during||[]).filter(r=>!r.done).map(r=>r.name);
-  const learn=(COACH_LEARN.find(r=>miss.some(n=>r[2].includes(n.slice(0,2))))||COACH_LEARN[2]);
-  const practice=COACH_PRACTICE.find(r=>(x.trig||'').includes('开口')||/话术|异议/.test(x.trig||'')||miss.some(n=>/邀约|商谈|试乘/.test(n)))||COACH_PRACTICE[2];
+  const LEARN_BY_CHECK={'留资回访效率':'销售流程','邀约话术':'销售流程','企微沟通':'关键岗位','新媒体合规':'关键岗位','现场接待全流程':'销售流程','运营维度':'关键岗位','展厅接待能力':'销售流程','试乘试驾能力':'产品知识','购车商谈能力':'产品知识','客户跟进能力':'销售流程','员工心声':'关键岗位'};
+  const PRACTICE_BY_CHECK={'留资回访效率':'动作固化','邀约话术':'话术工具','企微沟通':'政策权益','新媒体合规':'政策权益','现场接待全流程':'动作固化','运营维度':'政策权益','展厅接待能力':'动作固化','试乘试驾能力':'产品强化','购车商谈能力':'话术工具','客户跟进能力':'动作固化','员工心声':'动作固化'};
+  const pickLearn=COACH_LEARN.find(r=>r[0]===(LEARN_BY_CHECK[miss[0]]||'销售流程'))||COACH_LEARN[2];
+  const pickPractice=COACH_PRACTICE.find(r=>r[0]===(PRACTICE_BY_CHECK[miss[0]]||'话术工具'))||COACH_PRACTICE[2];
+  const learn=[pickLearn];const practice=[pickPractice];
   const check=miss.slice(0,2);
   const fbWeak=(x.feedback||[]).length<2;
   return {goal:m.name+' '+(x.pre==null?'—':x.pre+'%')+' → '+(m.target||'待定'),
-    learn:[learn[0],learn[1]],practice:[practice[0],practice[1]],check,
+    learn:learn.map(r=>r[0]),practice:practice.map(r=>r[0]),check,
     feedback:fbWeak?'日反馈先盯'+m.name+'的日变化,周反馈对比同城店':'已有反馈,复测前补一条月度结论',
     basis:'触发证据「'+(x.trig||'目标未达成')+'」;未完成检核 '+miss.length+' 项'+(x.post?';已有复测值 '+x.post.value+'%':'')};
 }
@@ -353,7 +356,7 @@ function coachPrescribeHtml(x){
    +'<div class="hint" style="margin-top:6px">依据：'+esc(rx.basis)+'</div>'
    +'<div style="margin-top:8px"><button class="btn sm pri" data-act="coachPrescribeFill" data-id="'+x.id+'">采纳，填入计划</button></div></div>';
 }
-A.coachCloseSink=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;const on=($('#coach_sink')||{}).checked;const why=(($('#coach_close_why')||{}).value||'').trim();if(!on)return toast('未勾选沉淀,不写入课题池','warn');if(!why)return toast('请先写复盘一句话,再沉淀','err');
+function coachSinkTopic(x,why){
   const rx=coachPrescribe(x);const cs=x.topicId&&topic(x.topicId);if(cs)return toast('已沉淀到课题 '+cs.id,'warn');
-  const t=mkTopic({title:'门店辅导经验:'+x.store+' · '+(coachMetricOf(x).name),desc:why,scene:'展厅',obj:coachMetricOf(x).name,sess:x.feedback.length*40,stores:1,prov:1,trend:x.post?Math.round(x.post.value-(x.pre||0)):0,sug:{type:'辅导复盘',sub:'',ind:'I5',kw:(rx.learn.concat(rx.practice)).join(', '),trig:x.trig||'',base:x.pre||0,regions:ALLR}},'辅导结案回流','系统(入店辅导)','sys',{result:{closeRes:x.closeRes||'',closeWhy:why,post:x.post?x.post.value:null},fromTicket:x.id});
-  x.topicId=t.id;coachSave(x,null,'结案经验沉淀到课题',t.id+' · '+why.slice(0,30));toast('已沉淀到课题池 '+t.id+',可在「课题池」继续处理','ok');A.ticket({dataset:{id:x.id}})};
+  const t=mkTopic({title:'门店辅导经验:'+x.store+' · '+(coachMetricOf(x).name),desc:why,scene:'展厅',obj:coachMetricOf(x).name,sess:0,stores:0,prov:0,trend:x.post?Math.round(x.post.value-(x.pre||0)):0,sug:{type:'辅导复盘',sub:'',ind:'I5',kw:(rx.learn.concat(rx.practice)).join(', '),trig:x.trig||'',base:x.pre||0,regions:ALLR}},'辅导结案回流','系统(入店辅导)','sys',{result:{closeRes:x.closeRes||'',closeWhy:why,post:x.post?x.post.value:null},fromTicket:x.id});
+  x.topicId=t.id;coachSave(x,null,'结案经验沉淀到课题',t.id+' · '+why.slice(0,30));return t}
