@@ -12,7 +12,25 @@ const lk=(label,p,extra)=>'<a data-act="go" data-p="'+p+'" '+(extra||'')+'>'+lab
 const ds=n=>'<span class="srcs">'+n+'</span>';
 const cta=(t,d,btn)=>'<div class="cta"><b style="font-size:15px;color:#1f2329">'+t+'</b><p>'+d+'</p>'+btn+'</div>';
 function pct(p){if(p.cur==null)return null;return Math.max(0,Math.min(120,Math.round((p.cur-p.base)/(p.target-p.base)*100)))}
-function progBar(p){const v=pct(p);if(v==null)return '<span class="hint">无数据</span>';return '<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:90px"><i class="'+(v>=100?'ok':'')+'" style="width:'+Math.min(v,100)+'%"></i></div><span>'+v+'%</span></div>'}
+function progLayers(p){
+  if(!p)return null;
+  let learn=null;try{const mids=(p.mids&&p.mids.length?p.mids:PEOPLE.filter(x=>eligible(p,x)).map(x=>x.mid));const ts=tasksOf(p);if(mids.length&&ts.length){let don=0,tot=0;mids.forEach(m=>{const d=((S.learn[p.id]||{})[m]||[]);tot+=ts.length;don+=d.filter(id=>ts.some(n=>n.id===id)).length});learn=tot?Math.round(don/tot*100):null}}catch(e){}
+  let beh=null,biz=null;
+  if(p.eff&&p.eff.L){p.eff.L.forEach(L=>{const lab=(L.n||'')+(L.asr?'':'');
+    if(/行为|话术/.test(L.n||'')){const r=(L.rows||[]).find(x=>/受训/.test(x[0]));beh=r?r[1]:null}
+    if(/业务/.test(L.n||'')){const r=(L.rows||[]).find(x=>/受训/.test(x[0]));biz=r?r[1]:null}})}
+  return {learn,beh,biz};
+}
+function progBar(p){const v=pct(p);const L=progLayers(p);
+  const small=(()=>{try{return typeof smallNow==='function'?smallNow(p):false}catch(e){return false}})();
+  const tag=(txt,color)=>'<span class="tag" style="'+(color?color:'')+';margin-right:3px">'+txt+'</span>';
+  const layers='<div class="hint" style="margin-top:2px;white-space:nowrap">'
+    +(L&&L.learn!=null?tag('学 '+L.learn+'%','background:#eef4ff'):tag('学 —'))
+    +(L&&L.beh!=null?tag('行为 '+L.beh,''+(small?'color:#98a2b3':'')):tag('行为 —'))
+    +(L&&L.biz!=null?tag('业务 '+L.biz+'（相关）',small?'color:#98a2b3':''):tag('业务 —'))
+    +'</div>';
+  if(v==null)return '<span class="hint">无数据</span>'+layers;
+  return '<div style="display:flex;align-items:center;gap:8px"><div class="bar" style="width:90px"><i class="'+(v>=100?'ok':'')+'" style="width:'+Math.min(v,100)+'%"></i></div><span>'+v+'%</span></div>'+layers+(small?'<div class="hint">样本不足，不下结论</div>':'')}
 const goalTxt=p=>p.metric+' '+p.base+p.unit+' → '+p.target+p.unit;
 const typeTxt=p=>p.type+(p.sub?' · '+p.sub:'');
 
@@ -21,7 +39,10 @@ A.close=()=>closeDlg();
 A.bell=()=>openDlg('通知',S.notices.length?S.notices.map(n=>'<div style="padding:8px 0;border-bottom:1px solid #f0f1f3"><span class="hint">'+n.t+'</span>　'+esc(n.m)+'</div>').join(''):'<div class="empty">暂无通知</div>','<button class="btn" data-act="close">关闭</button>');
 A.tab=el=>{UI.tab[el.dataset.k]=el.dataset.v;render()};
 A.go=el=>{closeDlg();UI.page=el.dataset.p;if(el.dataset.t)UI.tab[el.dataset.p]=el.dataset.t;if(el.dataset.id){UI.projId=el.dataset.id;UI.ptab=el.dataset.pt||'概览'}if(el.dataset.ef)UI.ef=el.dataset.ef;render();$('#main').scrollTop=0};
-function render(){if(document.body.dataset.end==='rn')renderRN();else renderPC()}
+function render(){
+  if(document.body.dataset.end==='rn')renderRN();else renderPC();
+  if(!(window.__SKIP_SAVE_UNTIL&&Date.now()<window.__SKIP_SAVE_UNTIL)&&typeof saveNow==='function'&&UI)saveNow();
+}
 
 const IC={ov:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
  tp:'<svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>',
@@ -153,3 +174,7 @@ function pgRules(){
     ['关键词类指标:ASR 准确率低于底线显示「数据暂缺」','底线 '+c.asr+'%(当前 '+c.asrNow+'%)','阈值与口径'],
     ['效果数据只作选样和验收,不直接用于绩效考核或 PIP 判定','—','—']])+'</div>'+rulesTopic()+rulesContent()+rulesAudit();
 }
+
+/* E2 演示日期切换（默认保持 2026-11-09，改后刷新派生数据） */
+A.demoDate=()=>{openDlg('演示日期','<div class="hint" style="margin-bottom:8px">所有「今天 / 到期 / 入职天数」都基于这个日期。默认 2026-11-09，改大会让到期和逾期变多。</div><div class="f"><label>日期</label><div class="in"><input type="date" id="dd_val" value="'+esc(today)+'"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="demoDateOk">应用</button>')};
+A.demoDateOk=()=>{const v=(($('#dd_val')||{}).value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return toast('日期格式不对','err');try{window.__DEMO_TODAY=v}catch(e){};closeDlg();toast('演示日期已设为 '+v+'，刷新页面后生效','ok')};

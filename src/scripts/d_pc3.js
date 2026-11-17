@@ -198,11 +198,28 @@ const tasksOf=p=>p.nodes.filter(n=>!n.offline);
 const learnDone=(p,mid)=>{const t=tasksOf(p);const d=((S.learn[p.id]||{})[mid]||[]);return t.length>0&&t.every(x=>d.includes(x.id))};
 function offState(p,mid){const a=appsOf(p.id).find(x=>x.mid===mid);if(!a)return '未报名';if(a.status!=='已通过')return a.status;const r=(S.results[p.id]||{})[mid];if(r&&r.st==='已结业')return '已结业';if(r&&r.signed)return '已签到';if(classOfIn(p.id,mid))return '已分班';return '已通过'}
 function tabIssue(p){
-  const el=PEOPLE.filter(x=>eligible(p,x));const ts=tasksOf(p);
+  const f=UI.sel.issueF||(UI.sel.issueF={});
+  const all=PEOPLE.filter(x=>eligible(p,x));const ts=tasksOf(p);
+  const dueOf=x=>{const d=((S.learn[p.id]||{})[x.mid]||[]);const done=ts.filter(n=>d.includes(n.id)).length;const over=done<ts.length;
+    const dl=p.finishType===1?addDays(p.start||today,+(p.finishDays||0)):(p.finishTime||p.end||today);
+    const days=Math.round((new Date(today+'T00:00:00')-new Date(dl+'T00:00:00'))/864e5);
+    return {done,total:ts.length,over:over&&days>0,days:over?days:0,due:dl}};
+  const el=all.filter(x=>{const s=dueOf(x);
+    if(f.store&&x.store!==f.store)return false;
+    if(f.region&&x.region!==f.region)return false;
+    if(f.q&&!(x.name.includes(f.q)||String(x.mid).includes(f.q)))return false;
+    if(f.st){if(f.st==='已完成'&&s.done<s.total)return false;if(f.st==='未开始'&&s.done!==0)return false;if(f.st==='进行中'&&!(s.done>0&&s.done<s.total))return false;if(f.st==='逾期'&&!s.over)return false;}
+    return true});
+  const pg=lstPage('issuePage',el);
+  const stores=[...new Set(all.map(x=>x.store))];const regions=[...new Set(all.map(x=>x.region))];
   if(p.status==='未生效')return cta('项目未生效','到达项目下发周期开始时间后才会下发任务。','');
   return (p.gray&&p.gray.stage==='灰度中'?'<div class="tag blue" style="display:block;margin-bottom:10px;line-height:1.8;padding:6px 12px">分批灰度中:任务只下发给第一批 '+grayParts(p).A.length+' 人,其余 '+grayParts(p).B.length+' 人(对照批)暂不下发。观察期结束后在「灰度对比」里决定是否扩大到全量。</div>':'')+srcBar('任务按覆盖角色下发给学员(任务实例由现有「中央大脑」创建);学员完成情况来自零售通学员操作,这里列演示名单。线下班次培训列显示报名 / 分班 / 签到 / 结业状态。')
-   +'<div class="tw"><table class="t"><tr><th>学员</th><th>MID</th><th>门店</th>'+ts.map(n=>'<th>'+esc(n.t)+'</th>').join('')+(p.off?'<th>线下班次培训</th>':'')+'<th>完成进度</th></tr>'+el.map(x=>{const d=((S.learn[p.id]||{})[x.mid]||[]);const done=ts.filter(n=>d.includes(n.id)).length;return '<tr><td>'+x.name+'</td><td>'+x.mid+'</td><td>'+x.store+'</td>'+ts.map(n=>'<td>'+(d.includes(n.id)?'<span class="tag ok">已完成</span>':'<span class="tag">未完成</span>')+'</td>').join('')+(p.off?'<td>'+chip2s(offState(p,x.mid))+'</td>':'')+'<td>'+done+' / '+ts.length+(p.off?' + 班次':'')+'</td></tr>'}).join('')+'</table></div>';
+   +'<div class="fil"><select data-wc="issueF" data-k="region"><option value="">全部区域</option>'+regions.map(r=>'<option '+(f.region===r?'selected':'')+'>'+r+'</option>').join('')+'</select><select data-wc="issueF" data-k="store"><option value="">全部门店</option>'+stores.map(x=>'<option '+(f.store===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select><select data-wc="issueF" data-k="st"><option value="">全部状态</option>'+['未开始','进行中','已完成','逾期'].map(v=>'<option '+(f.st===v?'selected':'')+'>'+v+'</option>').join('')+'</select><input data-wc="issueF" data-k="q" value="'+esc(f.q||'')+'" placeholder="搜姓名 / MID">'+lstCsvBtn(['姓名','MID','门店','区域','已完成','应完成','逾期天数'],[['姓名','MID','门店','区域','已完成','应完成','逾期天数']].concat(el.filter(x=>dueOf(x).done<ts.length).map(x=>{const s=dueOf(x);return [x.name,x.mid,x.store,x.region,s.done,s.total,s.days]})),'未完成名单')+'</div>'
+   +'<div class="hint" style="margin:0 0 8px">逾期口径：按项目完成方式（下发后 N 天 / 指定日期），早于今天且还有未完成任务。当前筛选 '+el.length+' 人，未完成 '+el.filter(x=>dueOf(x).done<ts.length).length+' 人。</div>'
+   +'<div class="tw"><table class="t"><tr><th>学员</th><th>MID</th><th>门店</th>'+ts.map(n=>'<th>'+esc(n.t)+'</th>').join('')+(p.off?'<th>线下班次培训</th>':'')+'<th>完成进度</th></tr>'+pg.rows.map(x=>{const d=((S.learn[p.id]||{})[x.mid]||[]);const done=ts.filter(n=>d.includes(n.id)).length;const dl=dueOf(x);return '<tr><td><a class="link" data-act="pplOpen" data-mid="'+x.mid+'">'+esc(x.name)+'</a></td><td>'+x.mid+'</td><td>'+x.store+'</td>'+ts.map(n=>'<td>'+(d.includes(n.id)?'<span class="tag ok">已完成</span>':'<span class="tag">未完成</span>')+'</td>').join('')+(p.off?'<td>'+chip2s(offState(p,x.mid))+'</td>':'')+'<td>'+done+' / '+ts.length+(dl.over?' <span class="tag err">逾期 '+dl.days+' 天</span>':'')+'</td></tr>'}).join('')+'</table></div>'+lstPager('issuePage',pg);
 }
 const chip2s=s=>'<span class="tag '+({'已结业':'ok','已签到':'ok','已分班':'blue','已通过':'ok','待审批':'warn','候补':'blue','已驳回':'err'}[s]||'')+'">'+s+'</span>';
 
 A.aq=el=>{UI.sel.aq=el.value;render()};
+
+A.issueF=el=>{const f=UI.sel.issueF||(UI.sel.issueF={});const k=el.dataset.k;const v=el.value;if(v)f[k]=v;else delete f[k];if(UI.sel.issuePage)UI.sel.issuePage.page=1;render()};

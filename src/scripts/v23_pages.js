@@ -761,7 +761,8 @@ function personReady(p){
 }
 function personMisOpen(p){try{return misOf(p.mid).filter(m=>m.status!=='closed').length}catch(e){return 0}}
 function personPacks(p){try{return packsOf(p.mid).filter(x=>x.status!=='已完成').length}catch(e){return 0}}
-function personNeedCare(p){const v=personReady(p);const rec=personMisOpen(p)>0&&misOf(p.mid).some(m=>m.status==='recurred');return (v!=null&&v<S.cfg.pass*0.7)||rec||personPacks(p)>2}
+function pplCareCfg(){S.cfg.care=S.cfg.care||{ratio:0.7,maxPacks:2,misRecur:true};return S.cfg.care}
+function personNeedCare(p){const c=pplCareCfg();const v=personReady(p);const rec=c.misRecur&&personMisOpen(p)>0&&misOf(p.mid).some(m=>m.status==='recurred');return (v!=null&&v<S.cfg.pass*c.ratio)||rec||personPacks(p)>c.maxPacks}
 
 /* ---------- 人员列表 ---------- */
 function pplFilter(){
@@ -800,7 +801,7 @@ function pgPeople(){
   const pg=lstPage('pplPage',rows,20);
   const sel=(k,label,opts)=>'<div class="fi2"><label>'+label+'</label><select data-wc="pplSet" data-k="'+k+'"><option value="">全部</option>'+opts.map(o=>'<option '+(f[k]===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
   const stores=[...new Set(all.filter(p=>!f.region||p.region===f.region).map(p=>p.store))].filter(Boolean);
-  const head='<div class="ph"><h2>人员 <span class="hint" style="font-weight:400">按人看：这个人学到哪、哪里薄弱、在哪个项目、有没有辅导；点姓名进详情</span></h2><div><button class="btn sm" data-act="pplView" data-v="'+(f.view==='store'?'people':'store')+'">'+(f.view==='store'?'按人看':'按门店看')+'</button></div></div>'
+  const head='<div class="ph"><h2>人员 <span class="hint" style="font-weight:400">按人看：这个人学到哪、哪里薄弱、在哪个项目、有没有辅导；点姓名进详情</span></h2><div><button class="btn sm" data-act="pplCareDlg">需关注口径</button> <button class="btn sm" data-act="pplView" data-v="'+(f.view==='store'?'people':'store')+'">'+(f.view==='store'?'按人看':'按门店看')+'</button></div></div>'
     +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅为相关性，不作因果结论。</span></div>';
   const sum='<div class="grid g4" style="margin-bottom:14px">'
     +'<div class="stat kp-click" data-act="pplQuick" data-v=""><div class="l">全部人员</div><div class="n">'+all.length+'</div><div class="hint">人事 ∪ 理想态，按 MID 去重</div></div>'
@@ -815,16 +816,18 @@ function pgPeople(){
     +'<div class="fi2" style="align-self:end"><button class="btn" data-act="pplClear">清除筛选</button></div>'
     +'<div class="fi2" style="align-self:end;margin-left:auto">'+lstCsvBtn(['姓名','MID','门店','区域','岗位档','批次','入职天数','就绪度','未关闭错题'],[['姓名','MID','门店','区域','岗位档','批次','入职天数','就绪度','未关闭错题']].concat(rows.map(p=>[p.name,p.mid,p.store,p.region,p.tier||'未分档',p.group||'',p.hire,personReady(p)==null?'':personReady(p),personMisOpen(p)])),'人员清单')+'</div></div></div>';
   if(f.view==='store')return head+sum+fil+pplStoreTable();
-  const list='<div class="tw"><table class="t nw stk"><tr><th>姓名 / MID</th><th>门店 · 区域</th><th>岗位档 · 入职</th><th>就绪度</th><th>最弱能力</th><th>学习进度</th><th>待办</th><th>操作</th></tr>'
+  const pplPicked=lstPicked('pplPage');
+  const pplBatch=pplPicked.length?'<div class="lst-batch"><b>已选 '+pplPicked.length+' 人</b><button class="btn sm" data-act="pplBulkPack">批量指派学习包</button><button class="btn sm" data-act="pplBulkProj">批量加入学习项目</button><button class="btn sm" data-act="pplBulkCoach">批量发起辅导</button><button class="btn sm" data-act="lstSelClear" data-k="pplPage">清空</button></div>':'';
+  const list='<div class="tw"><table class="t nw stk"><tr><th style="width:30px"><input type="checkbox" data-act="lstSelAll" data-k="pplPage" data-ids="'+esc(JSON.stringify(pg.rows.map(p=>p.mid)))+'" '+(pg.rows.length&&pg.rows.every(p=>pplPicked.includes(p.mid))?'checked':'')+'></th><th>姓名 / MID</th><th>门店 · 区域</th><th>岗位档 · 入职</th><th>就绪度</th><th>最弱能力</th><th>学习进度</th><th>待办</th><th>操作</th></tr>'
     +(pg.rows.length?pg.rows.map(p=>{const v=personReady(p);const w=pplWeakItems(p);const mo=personMisOpen(p),pk=personPacks(p);
-      return '<tr><td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">'+esc(p.name)+'</a>'+(p.group==='对照批'?' <span class="tag">对照</span>':'')+'<div class="hint">'+p.mid+'</div></td>'
+      return '<tr><td><input type="checkbox" data-act="lstSel" data-k="pplPage" data-id="'+p.mid+'" '+(pplPicked.includes(p.mid)?'checked':'')+'></td><td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">'+esc(p.name)+'</a>'+(p.group==='对照批'?' <span class="tag">对照</span>':'')+'<div class="hint">'+p.mid+'</div></td>'
       +'<td>'+esc(p.store||'—')+'<div class="hint">'+esc(p.region||'—')+'</div></td>'
       +'<td>'+(p.tier||'<span class="hint">未分档</span>')+'<div class="hint">'+(p.hire==null?'—':'入职 '+p.hire+' 天')+'</div></td>'
       +'<td>'+(v==null?'<span class="hint" title="'+(p.hasEvidence?'缺岗位档':'无证据')+'">—<div class="hint">'+(p.hasEvidence?'未分档':'无证据')+'</div></span>':'<b style="color:'+v23RdyColor(v)+'">'+v+'</b>')+'</td>'
       +'<td style="white-space:normal;min-width:140px">'+(w.length?w.map(x=>'<span class="tag warn" style="margin:0 4px 4px 0;white-space:nowrap">'+esc(x)+'</span>').join(' '):'<span class="hint">—</span>')+'</td>'
       +'<td>'+pplLearnProgress(p)+'</td>'
       +'<td style="white-space:nowrap">'+(mo?'<span class="tag err">错题 '+mo+'</span> ':'')+(pk?'<span class="tag warn">学习包 '+pk+'</span> ':'')+(!mo&&!pk?'<span class="hint">—</span>':'')+'</td>'
-      +'<td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">查看</a>'+(p.group==='对照批'?'':' · <a class="link" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</a>')+'</td></tr>'}).join(''):'<tr><td colspan="8" class="empty">没有符合条件的人员。换个筛选，或清除筛选。</td></tr>')+'</table></div>'+lstPager('pplPage',pg);
+      +'<td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">查看</a>'+(p.group==='对照批'?'':' · <a class="link" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</a>')+'</td></tr>'}).join(''):'<tr><td colspan="9" class="empty">没有符合条件的人员。换个筛选，或清除筛选。</td></tr>')+'</table></div>'+lstPager('pplPage',pg)+pplBatch;
   return head+sum+fil+list;
 }
 function pplWeakItems(p){try{const r=v23Readiness(p.mid,p.tier);return r.items.filter(i=>i.mean!=null&&i.mean<i.item.target).map(i=>i.item.label).slice(0,2)}catch(e){return []}}
@@ -870,7 +873,7 @@ function pgPerson(){
   const projs=pplProjectsOf(p);
   const head=crumb('<a data-act="go" data-p="people">人员</a> / '+esc(p.name))
    +'<div class="ph"><h2>'+esc(p.name)+' '+V23_SIM+' <span class="hint" style="font-weight:400">'+esc(p.store||'—')+' · '+esc(p.region||'—')+' · '+(p.tier||'未分档')+' · '+(p.hire==null?'入职未知':'入职 '+p.hire+' 天')+'</span></h2>'
-   +'<div>'+(p.group==='对照批'?'<span class="tag">对照批 · 不建议单独干预</span> ':'')+'<button class="btn sm" data-act="pplBack">返回列表</button></div></div>'
+   +'<div>'+(p.group==='对照批'?'<span class="tag">对照批 · 不建议单独干预</span> <button class="btn sm" disabled title="对照批人员不参与干预，避免破坏效果评估">指派学习包</button> <button class="btn sm" disabled title="同上">加入项目</button> ':'<button class="btn sm" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</button> ')+'<button class="btn sm" data-act="pplBack">返回列表</button></div></div>'
    +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅为相关性，不作因果结论。</span></div>';
   const hero='<div class="grid g4" style="margin-bottom:14px">'
    +'<div class="stat"><div class="l">就绪度</div><div class="n" style="color:'+(v==null?'':v23RdyColor(v))+'">'+(v==null?'—':v)+'</div><div class="hint">'+(p.hasEvidence?'过关线 '+S.cfg.pass:'无证据，不兜底造数')+'</div></div>'
@@ -896,3 +899,32 @@ function pgPerson(){
 }
 A.pplStudent=el=>{UI.page='student';UI.stuMid=el.dataset.mid;render()};
 A.pplBack=()=>{UI.page='people';render()};
+
+/* ---------- 人员批量动作 ---------- */
+function pplBulkTargets(){
+  const ids=lstPicked('pplPage');const list=ids.map(personOf).filter(Boolean);
+  const skip=list.filter(p=>p.group==='对照批');const ok=list.filter(p=>p.group!=='对照批');
+  return {list,ok,skip};
+}
+A.pplBulkPack=()=>{const t=pplBulkTargets();if(!t.list.length)return toast('先勾选人员','err');
+  const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return toast('没有可指派的知识点','err');
+  openDlg('批量指派学习包','<div>将为 <b>'+t.ok.length+'</b> 人指派补练包（知识点：'+esc(k.name)+'）。'+(t.skip.length?'<div class="hint" style="color:#b54708;margin-top:6px">跳过 '+t.skip.length+' 位对照批人员：'+t.skip.map(p=>esc(p.name)).join('、')+'（避免破坏效果对照）</div>':'')+'</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkPackOk">确认指派</button>')};
+A.pplBulkPackOk=()=>{const t=pplBulkTargets();const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return;const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};let n=0;
+  t.ok.forEach(p=>{S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});n++});
+  lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已指派 '+n+' 人'+(t.skip.length?'，跳过 '+t.skip.length+' 位对照批':''),'ok');render()};
+A.pplBulkProj=()=>{const t=pplBulkTargets();if(!t.ok.length)return toast(t.skip.length?'勾选的都是对照批人员，已跳过':'先勾选人员','err');
+  const ps=visibleP().filter(p=>p.status!=='已结项'&&p.status!=='已下线');
+  openDlg('批量加入学习项目','<div class="f"><label>选择项目</label><div class="in"><select id="bp_pid" style="width:100%">'+ps.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'（'+p.status+'）</option>').join('')+'</select></div></div><div class="hint">将把 '+t.ok.length+' 人加入项目覆盖名单（指定 MID），不影响其他人。</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkProjOk">确认加入</button>')};
+A.pplBulkProjOk=()=>{const t=pplBulkTargets();const pid=(($('#bp_pid')||{}).value);const p=proj(pid);if(!p)return toast('请选择项目','err');p.mids=[...new Set((p.mids||[]).concat(t.ok.map(x=>x.mid)))];logp(p,'批量加入覆盖名单 '+t.ok.length+' 人（操作人 '+meShort()+'）');lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已把 '+t.ok.length+' 人加入「'+p.name+'」','ok');render()};
+A.pplBulkCoach=()=>{const t=pplBulkTargets();if(!t.ok.length)return toast(t.skip.length?'勾选的都是对照批人员，已跳过':'先勾选人员','err');
+  const stores=[...new Set(t.ok.map(p=>p.store))];
+  openDlg('批量发起入店辅导','<div>将按门店去重，为 <b>'+stores.length+'</b> 家门店各建一个辅导项目：<div class="hint" style="margin-top:4px">'+stores.map(esc).join('、')+'</div></div>'+(t.skip.length?'<div class="hint" style="color:#b54708;margin-top:6px">跳过 '+t.skip.length+' 位对照批人员</div>':'')+'<div class="f" style="margin-top:8px"><label>触发原因</label><div class="in"><input type="text" id="bc_trig" value="人员批量发起" style="width:100%"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkCoachOk">确认发起</button>')};
+A.pplBulkCoachOk=()=>{const t=pplBulkTargets();const trig=(($('#bc_trig')||{}).value||'').trim()||'人员批量发起';const stores=[...new Set(t.ok.map(p=>p.store))];let n=0;
+  stores.forEach(s=>{if((S.tickets||[]).some(x=>x.store===s&&x.st!=='结案'))return;
+    const who=t.ok.filter(p=>p.store===s)[0];const x=coachPlanOf(Object.assign({id:'W'+(S.tickets.length+1),st:'触发',owner:UI.role.name,trig,src:'人员批量发起',log:[]},{store:s,goal:'（待定）',pre:null}));
+    x.log.unshift({t:today,who:meShort(),act:'创建辅导项目',note:'来源：人员批量发起（'+who.name+' 等 '+t.ok.filter(p=>p.store===s).length+' 人）'});S.tickets.push(x);n++});
+  lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已发起 '+n+' 家门店辅导'+(stores.length-n?'，'+ (stores.length-n)+' 家已有在途跳过':''),'ok');render()};
+
+/* ---------- 需关注口径配置 ---------- */
+A.pplCareSave=()=>{const c=pplCareCfg();const r=+($('#care_ratio')||{}).value;const m=+($('#care_packs')||{}).value;if(!(r>0&&r<=1))return toast('比例需在 0~1 之间','err');if(!(m>=0))return toast('学习包阈值需 ≥0','err');c.ratio=r;c.maxPacks=m;c.misRecur=!!($('#care_rec')||{}).checked;closeDlg();toast('已保存需关注口径','ok');render()};
+A.pplCareDlg=()=>{const c=pplCareCfg();openDlg('需关注口径','<div class="hint" style="margin-bottom:10px">满足任一条即算“需关注”。改动只影响页面统计与筛选，不改任何业务数据。</div><div class="f"><label>就绪度低于过关线的比例</label><div class="in"><input id="care_ratio" type="number" step="0.05" min="0.1" max="1" value="'+c.ratio+'" style="width:120px"> × 过关线 '+S.cfg.pass+'</div></div><div class="f"><label>进行中学习包超过</label><div class="in"><input id="care_packs" type="number" min="0" value="'+c.maxPacks+'" style="width:120px"> 个</div></div><div class="f"><label><input type="checkbox" id="care_rec" '+(c.misRecur?'checked':'')+'> 关闭后复发的错题算需关注</label></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplCareSave">保存</button>')};

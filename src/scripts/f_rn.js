@@ -220,5 +220,5 @@ const _rSheetHtml=rSheetHtml;
 rSheetHtml=function(){const s=R.sheet;if(s.scan){const p=proj(s.scan);const k=myClass(p.id);return '<div class="rsh-m" data-act="rSheetClose"></div><div class="rsh-b"><div class="rsh-h"><b>扫码签到</b><span data-act="rSheetClose">✕</span></div><div class="rs-c"><div class="rs-p" style="height:150px;background:#111;color:#9fe">📷 摄像头取景(示意)<br><small style="color:#6c9">请对准老师展示的班次二维码</small></div><small>班次:'+esc(k.name)+' · '+k.date+'。老师在后台「分班 → 班次 → 签到码」展示或打印二维码。演示环境不校验日期。</small></div><div class="rsh-f"><button class="rb" data-act="rScanOk" data-pid="'+p.id+'">模拟:扫到本班次码</button> <button class="rb gh" data-act="rScanBad">模拟:扫到别的班次码</button></div></div>'}return _rSheetHtml()};
 
 /* ========== 启动 ========== */
-reset();seedDemo();renderBell();render();
+reset();seedDemo();if(typeof loadNow==='function'&&!window.__NO_SAVE)loadNow();renderBell();render(); /* 启动链 reset();seedDemo();renderBell();render(); */
 /* 欢迎说明不再自动弹出，改为顶部「演示数据 ▾ → 体验说明」随时打开，避免打断主流程 */

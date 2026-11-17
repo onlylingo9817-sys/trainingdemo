@@ -114,6 +114,8 @@ const SEED={
 const ROLES=[{k:'hq',n:'总部培训部 · 刘翔',name:'刘翔',type:'hq',region:'全国'},{k:'r1',n:'区域老师 · 周丽(华北)',name:'周丽',type:'region',region:'华北'},{k:'r2',n:'区域老师 · 陈磊(华东)',name:'陈磊',type:'region',region:'华东'},{k:'boss',n:'管理层 · 老板',name:'老板',type:'boss',region:'全国'}];
 const PAGES_OK={hq:['tagmanage','workbench','overview','topics','topic','content','cedit','cdetail','catalog','kp','kpform','qform','dform','publish','projects','form','detail','approvals','coach','effect','student','people','person','config'],region:['workbench','overview','topics','topic','content','cedit','cdetail','catalog','kp','kpform','qform','dform','publish','projects','form','detail','approvals','coach','effect','student','people','person'],boss:['overview','effect','student']};
 function reset(){
+  if(typeof clearSave==='function')clearSave();
+  window.__SKIP_SAVE_UNTIL=Date.now()+800;
   tmr.forEach(clearTimeout);tmr=[];
   const _fbk=(typeof S!=='undefined'&&S&&S.fbk)?S.fbk:[];const _gd=(typeof UI!=='undefined'&&UI)?UI.gdOpen:undefined;
   S=JSON.parse(JSON.stringify(SEED));S.fbk=_fbk;
@@ -177,3 +179,25 @@ function overLimit(aud,start,end){ // 新建项目叠加后是否超限
   aud.regions.forEach(r=>REG[r].stores.forEach(st=>WEEKS.forEach(w=>{if(start<=addDays(w,6)&&end>=w){const v=loadAt(st,w)+1;if(v>max){max=v;who=st;wk=w}}})));
   return {max,who,wk};
 }
+
+/* ---------- 持久化（E1）：只存用户可变子集，不存可从种子重算的理想态 ---------- */
+const LS_KEY='trainingdemo.save.v1';
+const LS_SCHEMA=1;
+const LS_FIELDS=['kps','contents','qs','drills','topics','projects','apps','classes','results','learn','tickets','packs','fbk','aiLog','PTAGS','cfg','cfgV','kpCand','cimps','feedback','aiSnooze'];
+function saveNow(){
+  try{
+    const data={schema:LS_SCHEMA,today:today,at:new Date().toISOString()};
+    LS_FIELDS.forEach(k=>{if(typeof S!=='undefined'&&S&&S[k]!==undefined)data[k]=S[k]});
+    localStorage.setItem(LS_KEY,JSON.stringify(data));return true;
+  }catch(e){return false}
+}
+function loadNow(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);if(!raw)return false;
+    const data=JSON.parse(raw);
+    if(!data||data.schema!==LS_SCHEMA){localStorage.removeItem(LS_KEY);return false}
+    LS_FIELDS.forEach(k=>{if(data[k]!==undefined)S[k]=data[k]});
+    return true;
+  }catch(e){return false}
+}
+function clearSave(){try{localStorage.removeItem(LS_KEY)}catch(e){}}

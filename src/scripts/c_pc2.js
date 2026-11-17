@@ -3,12 +3,31 @@ const FLOW=['未生效','已生效','观察期','评估中','已结项'];
 function pgProjects(){
   const tabs=['学习项目配置','培训日历'];const t=curTab('projects',tabs);let b='';const n=pendingFor().length;
   if(t==='学习项目配置'){
-    const fn=UI.sel.pn||'',fst=UI.sel.pst||'';
-    const rows=visibleP().filter(p=>(!fn||p.name.includes(fn))&&(!fst||p.status===fst));
+    const fn=UI.sel.pn||'',fst=UI.sel.pst||'';const pf=UI.sel.projF||(UI.sel.projF={});
+    const rows=visibleP().filter(p=>(!fn||p.name.includes(fn))&&(!fst||p.status===fst)
+      &&(!pf.type||typeTxt(p)===pf.type)
+      &&(!pf.owner||(p.owner||'').includes(pf.owner))
+      &&(!pf.region||(p.cover&&p.cover.regions||[]).includes(pf.region))
+      &&(!pf.from||(p.end||'')>=pf.from)&&(!pf.to||(p.start||'')<=pf.to)
+      &&(!pf.pct||(pf.pct==='无数据'?pct(p)==null:(pf.pct==='<50%'?(pct(p)!=null&&pct(p)<50):pf.pct==='50-100%'?(pct(p)!=null&&pct(p)>=50&&pct(p)<100):(pct(p)!=null&&pct(p)>=100)))));
+    const sortKey=pf.sort||'created';const dir=pf.dir||'desc';
+    const valOf=x=>sortKey==='end'?(x.end||''):sortKey==='pct'?(pct(x)==null?-1:pct(x)):sortKey==='tasks'?tasksOf(x).length:(x.created||'');
+    const sorted=rows.slice().sort((a,b)=>{const va=valOf(a),vb=valOf(b);return (va>vb?1:va<vb?-1:0)*(dir==='asc'?1:-1)});
+    const pg=lstPage('projPage',sorted);
+    const owners=[...new Set(visibleP().map(x=>x.owner).filter(Boolean))];
+    const regions=[...new Set([].concat(...visibleP().map(x=>(x.cover&&x.cover.regions)||[])))].filter(Boolean);
     b=srcBar('沿用现有「学习任务 → 学习项目配置」。本次新增列:培训类型、培训目标、达成进度;「任务状态」在现有「未生效 / 已生效 / 已下线」基础上增加「观察期 / 评估中 / 已结项」。线下培训不是新对象,是项目里的一种任务节点(「报名任务 → 线下班次培训」)。'+(UI.role.type==='region'?'<br>当前身份是区域老师:只显示覆盖本区或自己审批的项目。':''))
-    +'<div class="fil"><span>项目名称</span><input data-wc="pnf" value="'+esc(fn)+'" placeholder="项目名称"><span>任务状态</span><select data-wc="pstf"><option value="">全部</option>'+FLOW.concat(['已下线']).map(s=>'<option '+(fst===s?'selected':'')+'>'+s+'</option>').join('')+'</select></div>'
+    +'<div class="fil"><span>项目名称</span><input data-wc="pnf" value="'+esc(fn)+'" placeholder="项目名称"><span>任务状态</span><select data-wc="pstf"><option value="">全部</option>'+FLOW.concat(['已下线']).map(s=>'<option '+(fst===s?'selected':'')+'>'+s+'</option>').join('')+'</select>'
+     +'<select data-wc="projF" data-k="type"><option value="">全部类型</option>'+Object.keys(S.cfg.typeDef).map(t=>'<option '+(pf.type===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
+     +'<select data-wc="projF" data-k="owner"><option value="">全部创建人</option>'+owners.map(o=>'<option '+(pf.owner===o?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'
+     +(UI.role.type==='region'?'':'<select data-wc="projF" data-k="region"><option value="">全部区域</option>'+regions.map(r=>'<option '+(pf.region===r?'selected':'')+'>'+r+'</option>').join('')+'</select>')
+     +'<select data-wc="projF" data-k="pct"><option value="">全部进度</option>'+['<50%','50-100%','≥100%','无数据'].map(v=>'<option '+(pf.pct===v?'selected':'')+'>'+v+'</option>').join('')+'</select>'
+     +'<input type="date" data-wc="projF" data-k="from" value="'+esc(pf.from||'')+'" title="下发周期起"> ~ <input type="date" data-wc="projF" data-k="to" value="'+esc(pf.to||'')+'" title="下发周期止">'
+     +'<select data-wc="projF" data-k="sort"><option value="created" '+(pf.sort==='created'||!pf.sort?'selected':'')+'>创建时间</option><option value="end" '+(pf.sort==='end'?'selected':'')+'>下发结束</option><option value="pct" '+(pf.sort==='pct'?'selected':'')+'>达成进度</option><option value="tasks" '+(pf.sort==='tasks'?'selected':'')+'>任务数</option></select>'
+     +lstCsvBtn(['ID','项目名称','培训类型','报名类型','培训目标','基线','目标','当前','达成进度','下发周期','任务数','状态','创建人','创建时间'],[['ID','项目名称','培训类型','报名类型','培训目标','基线','目标','当前','达成进度','下发周期','任务数','状态','创建人','创建时间']].concat(sorted.map(x=>[x.id,x.name,typeTxt(x),x.signup||'',x.metric||'',x.base==null?'':x.base,x.target==null?'':x.target,x.cur==null?'':x.cur,pct(x)==null?'':pct(x),(x.start||'')+'~'+(x.end||''),tasksOf(x).length,x.status,x.owner||'',x.created||''])),'学习项目')+'</div>'
+     +'<div class="hint" style="margin:-4px 0 8px">共 '+rows.length+' 个项目'+(rows.length!==sorted.length?'':'')+'</div>'
     +(rows.length?'<div class="tw"><table class="t stk"><tr><th>ID</th><th>项目名称</th><th>培训类型 <span class="tag pri">新增</span></th><th>报名类型 <span class="tag pri">新增</span></th><th>培训目标 <span class="tag pri">新增</span></th><th>达成进度 <span class="tag pri">新增</span></th><th>任务下发周期</th><th>当前任务数</th><th>任务状态</th><th>创建人 / 时间</th><th>操作</th></tr>'
-     +rows.map(p=>'<tr><td>'+p.id+'</td><td><a class="link" data-act="go" data-p="detail" data-id="'+p.id+'">'+esc(p.name)+'</a></td><td>'+typeTxt(p)+'</td><td>'+(p.off?'<span class="tag '+(p.signup==='报名制'?'blue':'pri')+'">'+p.signup+'</span>'+(p.signup==='报名制'?'<div class="hint">名额 '+p.quota+'</div>':'<div class="hint">'+(p.roster==='导入名单(MID)'?'导入名单':'按覆盖角色')+'</div>'):'<span class="hint">线上,无需报名</span>')+'</td><td>'+goalTxt(p)+'</td><td>'+progBar(p)+'</td><td>'+p.start+' ~ '+p.end+'</td><td>'+p.nodes.length+'</td><td>'+chip(p.status)+(p.gray&&p.gray.stage==='灰度中'?' <span class="tag blue">灰度中</span>':'')+(appsOf(p.id).some(a=>a.status==='待审批')?' <span class="tag warn">待审批 '+appsOf(p.id).filter(a=>a.status==='待审批').length+'</span>':'')+'</td><td>'+p.owner+'<div class="hint">'+p.created+'</div></td><td><button class="link" data-act="go" data-p="detail" data-id="'+p.id+'">查看详情</button>'+(p.status!=='已下线'&&p.status!=='已结项'?'<button class="link err" data-act="offline" data-id="'+p.id+'">下线任务</button>':'')+'<button class="link" data-act="copyProj" data-id="'+p.id+'">复制该项目</button>'+(p.status!=='未生效'?'<button class="link" data-act="go" data-p="detail" data-id="'+p.id+'" data-pt="下发明细">查看下发明细</button>':'')+'</td></tr>').join('')+'</table></div>'
+     +pg.rows.map(p=>'<tr><td>'+p.id+'</td><td><a class="link" data-act="go" data-p="detail" data-id="'+p.id+'">'+esc(p.name)+'</a></td><td>'+typeTxt(p)+'</td><td>'+(p.off?'<span class="tag '+(p.signup==='报名制'?'blue':'pri')+'">'+p.signup+'</span>'+(p.signup==='报名制'?'<div class="hint">名额 '+p.quota+'</div>':'<div class="hint">'+(p.roster==='导入名单(MID)'?'导入名单':'按覆盖角色')+'</div>'):'<span class="hint">线上,无需报名</span>')+'</td><td>'+goalTxt(p)+'</td><td>'+progBar(p)+'</td><td>'+p.start+' ~ '+p.end+'</td><td>'+p.nodes.length+'</td><td>'+chip(p.status)+(p.gray&&p.gray.stage==='灰度中'?' <span class="tag blue">灰度中</span>':'')+(appsOf(p.id).some(a=>a.status==='待审批')?' <span class="tag warn">待审批 '+appsOf(p.id).filter(a=>a.status==='待审批').length+'</span>':'')+'</td><td>'+p.owner+'<div class="hint">'+p.created+'</div></td><td><button class="link" data-act="go" data-p="detail" data-id="'+p.id+'">查看详情</button>'+(p.status!=='已下线'&&p.status!=='已结项'?'<button class="link err" data-act="offline" data-id="'+p.id+'">下线任务</button>':'')+'<button class="link" data-act="copyProj" data-id="'+p.id+'">复制该项目</button>'+(p.status!=='未生效'?'<button class="link" data-act="go" data-p="detail" data-id="'+p.id+'" data-pt="下发明细">查看下发明细</button>':'')+'</td></tr>').join('')+'</table></div>'+lstPager('projPage',pg)
      :cta('还没有学习项目','点「新增学习项目」。培训项目就是带「培训目标」的学习项目;也可以到「内容管理」把入库的内容一键做成学习任务。','<button class="btn pri" data-act="formNew">新增学习项目</button>'));
   }else{
     const stores=[...new Set(PEOPLE.map(x=>x.store))].slice(0,12);
@@ -23,3 +42,5 @@ A.offline=el=>{const p=proj(el.dataset.id);p.status='已下线';toast('已下线
 A.copyProj=el=>{formInit(null,proj(el.dataset.id))};
 
 /* ========== 新增学习项目(沿用现有表单:基础信息 / 引导语 / 学习模块,新增「培训目标」) ========== */
+
+A.projF=el=>{const f=UI.sel.projF||(UI.sel.projF={});const k=el.dataset.k;const v=el.value;if(v)f[k]=v;else delete f[k];if(UI.sel.projPage)UI.sel.projPage.page=1;render()};

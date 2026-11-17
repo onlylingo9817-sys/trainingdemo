@@ -58,15 +58,36 @@ function tpList(){
     h+='<div class="card"><h3>这里有什么?</h3><div style="line-height:1.9">系统和 AI 帮你找出「哪里值得培训」,你看一眼、觉得有用就一键「生成内容」(话术 / 课程),再把定稿的内容做成学习任务或上架零售通;不需要也可以忽略,直接去「内容管理」或「学习任务」。<ul style="margin-left:18px"><li><b>系统出题</b>:每双周从汽车语料里自动找出顾问反复做不好的地方(如客户提到竞品时不会讲)。</li><li><b>对外洞察</b>:竞品、政策的最新变化,由 agent 整理。</li><li><b>你自己提</b>:发现了问题,写一两句,AI 帮你分析有多普遍。</li></ul></div></div>'
      +'<div class="grid g3"><div class="card"><h3>1. 看系统出题</h3><div class="hint" style="min-height:40px">从语料里自动聚类,达到阈值(会话 ≥ '+S.cfg.topicSess+'、门店 ≥ '+S.cfg.topicStores+')才出题。</div><button class="btn pri" data-act="runBatch">运行本期出题</button></div><div class="card"><h3>2. 看对外洞察</h3><div class="hint" style="min-height:40px">竞品、政策变化,由 agent 提供。</div><button class="btn" data-act="tab" data-k="topics" data-v="对外洞察">去同步洞察</button></div><div class="card"><h3>3. 提一个问题</h3><div class="hint" style="min-height:40px">写标题和一句描述即可,AI 自动分析。</div><button class="btn" data-act="newTopic">提出问题</button></div></div>';
     return h}
-  const rows=V.filter(t=>(!fl||t.flow===fl)&&(!kw||t.title.includes(kw)||t.id===kw)&&(!q.src||t.src===q.src)).sort((x,y)=>prio(y).s-prio(x).s);
+  const tp=UI.sel.tqP||(UI.sel.tqP={});
+  const rows=V.filter(t=>(!fl||t.flow===fl)&&(!kw||t.title.includes(kw)||t.id===kw)&&(!q.src||t.src===q.src)
+    &&(!tp.pri||prio(t).k===tp.pri)&&(!tp.by||(t.by||'').includes(tp.by))&&(!tp.from||(t.time||'')>=tp.from)&&(!tp.to||(t.time||'')<=tp.to)).sort((x,y)=>prio(y).s-prio(x).s);
+  const tview=UI.sel.tqView||'card';
+  const tPg=lstPage('topicPage',rows,tview==='list'?20:10);
   h+='<div class="fil"><div style="display:flex;gap:6px">'+['新发现','已采纳','暂不做','已闭环',''].map(f=>'<span class="tag '+(fl===f?'pri':'')+'" style="cursor:pointer;padding:3px 12px;font-size:13px" data-act="tflow" data-f="'+f+'">'+(f||'全部')+' '+(f?cnt(f):V.length)+'</span>').join('')+'</div><input data-wc="tkw" value="'+esc(kw)+'" placeholder="搜索标题 / 编号" style="min-width:180px"><select data-wc="tsel" data-k="src"><option value="">全部来源</option>'+['系统出题','对外洞察','自主提出'].map(o=>'<option '+(q.src===o?'selected':'')+'>'+o+'</option>').join('')+'</select><span class="hint">按优先级排序;P0/P1/P2 由会话数、门店数、近 4 周趋势算出</span></div>';
-  h+=rows.length?rows.map(t=>tCard(t)).join(''):cta('这个筛选下没有问题','换个状态看看,或者去「系统出题 / 对外洞察」产生新的。','');
+  const bys=[...new Set(V.map(t=>t.by).filter(Boolean))];
+  h+='<div class="fil" style="margin-top:8px"><select data-wc="tqP" data-k="pri"><option value="">全部优先级</option>'+['P0','P1','P2'].map(v=>'<option '+(tp.pri===v?'selected':'')+'>'+v+'</option>').join('')+'</select>'
+   +'<select data-wc="tqP" data-k="by"><option value="">全部提出人</option>'+bys.map(v=>'<option '+(tp.by===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</select>'
+   +'<input type="date" data-wc="tqP" data-k="from" value="'+esc(tp.from||'')+'"> ~ <input type="date" data-wc="tqP" data-k="to" value="'+esc(tp.to||'')+'">'
+   +'<div style="flex:1"></div><button class="btn sm" data-act="tqView" data-v="'+(tview==='list'?'card':'list')+'">'+(tview==='list'?'卡片视图':'列表视图')+'</button>'
+   +lstCsvBtn(['编号','标题','优先级','分值','来源','状态','内容数','已上架','提出人','时间'],[['编号','标题','优先级','分值','来源','状态','内容数','已上架','提出人','时间']].concat(rows.map(t=>{const cs=(t.cids||[]).map(content).filter(Boolean);return [t.id,t.title,prio(t).k,prio(t).s,t.src,t.flow,cs.length,cs.filter(isPub).length,t.by||'',t.time||'']})),'课题池')+'</div>';
+  if(tview==='list'){
+    h+='<div class="tw"><table class="t nw"><tr><th>编号</th><th>标题</th><th>优先级</th><th>来源</th><th>状态</th><th>内容/上架</th><th>提出人</th><th>时间</th></tr>'
+      +tPg.rows.map(t=>{const cs=(t.cids||[]).map(content).filter(Boolean);return '<tr><td>'+t.id+'</td><td style="white-space:normal;min-width:220px"><a class="link" data-act="topicOpen" data-id="'+t.id+'">'+esc(t.title)+'</a></td><td><span class="tag '+(prio(t).k==='P0'?'err':prio(t).k==='P1'?'warn':'')+'">'+prio(t).k+'</span></td><td>'+esc(t.src)+'</td><td>'+esc(t.flow)+'</td><td>'+cs.length+' / '+cs.filter(isPub).length+'</td><td>'+esc(t.by||'')+'</td><td>'+esc(t.time||'')+'</td></tr>'}).join('')+'</table></div>';
+  }else{
+    h+=rows.length?tPg.rows.map(t=>tCard(t)).join(''):cta('这个筛选下没有问题','换个状态看看,或者去「系统出题 / 对外洞察」产生新的。','');
+  }
+  h+=rows.length?lstPager('topicPage',tPg):'';
   return h}
 function tCard(t){
   const g=t.sug,s=t.stats,i=ind(g.ind);
   /* 闭环不是流程状态:必须能看到内容、上架、学习项目、复测四段证据 */
   const cs=(t.cids||[]).map(content).filter(Boolean);const hasContent=cs.length>0;const hasPub=cs.some(isPub);const hasProj=!!t.proj;const hasResult=!!t.result;
-  const closeGap=t.flow==='已闭环'&&(!hasContent||!hasPub||!hasProj||!hasResult);
+  const hasBehavior=(()=>{try{
+    if(t.proj){const pr=proj(t.proj);if(pr&&pr.eff&&pr.eff.L&&pr.eff.L.some(L=>/行为|话术/.test(L.n||'')&&(L.rows||[]).length))return true}
+    const kids=(t.cids||[]).flatMap(id=>{const c=content(id);return c?(c.kps||[]):[]});
+    return kids.some(k=>{const kk=kp(k);return kk&&Object.keys(S.mastery||{}).some(m=>(((S.mastery[m]||{})[k])||{}).v!=null)});
+  }catch(e){return false}})();
+  const closeGap=t.flow==='已闭环'&&(!hasContent||!hasPub||!hasProj||!hasResult||!hasBehavior);
   const gapLabel=closeGap?'<span class="tag err">已闭环 · 证据不全</span>':'';
   const acts=[];
   if(t.flow==='新发现'||t.flow==='暂不做'){if(canUseT(t)){acts.push('<button class="btn pri sm" data-act="tGenContent" data-id="'+t.id+'">生成内容</button>');acts.push('<button class="btn sm" data-act="tToProject" data-id="'+t.id+'">直接建学习项目</button>')}}
@@ -75,10 +96,13 @@ function tCard(t){
   if(t.flow==='已采纳'&&canUseT(t))acts.push('<button class="btn sm" data-act="tGenContent" data-id="'+t.id+'">再生成内容</button>');
   if((t.flow==='已采纳'||t.flow==='已闭环')&&t.proj)acts.push('<button class="btn sm" data-act="go" data-p="detail" data-id="'+t.proj+'">查看项目</button>');
   return '<div class="card" style="padding:14px 18px"><div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0"><div>'+pchip(t)+' <a class="link" style="font-weight:600;font-size:15px;margin-right:6px" data-act="topicOpen" data-id="'+t.id+'">'+esc(t.title)+'</a> '+gapLabel+tipChip(t.flow)+(closeGap?' <span class="tag err">闭环证据不全</span>':'')+(t.reopen?' <span class="tag warn">回炉 ×'+t.reopen+'</span>':'')+'</div>'
-   +(t.flow==='已闭环'?'<div class="hint" style="margin:4px 0;line-height:1.7">闭环证据:'+(hasContent?'<span class="tag ok">内容 '+cs.length+'</span>':'<span class="tag err">无内容</span>')+(hasPub?'<span class="tag ok">已上架</span>':'<span class="tag err">未上架</span>')+(hasProj?'<span class="tag ok">学习项目 '+t.proj+'</span>':'<span class="tag err">无项目</span>')+(hasResult?'<span class="tag ok">已复测/结项</span>':'<span class="tag err">无复测</span>')+'</div>':'')
+   +(t.flow==='已闭环'?'<div class="hint" style="margin:4px 0;line-height:1.7">闭环证据:'+(hasContent?'<span class="tag ok">内容 '+cs.length+'</span>':'<span class="tag err">无内容</span>')+(hasPub?'<span class="tag ok">已上架</span>':'<span class="tag err">未上架</span>')+(hasBehavior?'<span class="tag ok">行为/复测</span>':'<span class="tag err">无行为/复测</span>')+(hasProj?'<span class="tag ok">学习项目 '+t.proj+'</span>':'<span class="tag err">无项目</span>')+(hasResult?'<span class="tag ok">已复测/结项</span>':'<span class="tag err">无复测</span>')+'</div>':'')
    +'<div class="hint" style="margin:6px 0">'+esc(t.desc||'')+'</div>'
    +'<div style="font-size:13px;line-height:1.9">'+(t.st==='分析中'?'<span class="tag blue">AI 分析中…</span>':t.st==='分析失败'?'<span class="tag err">AI 分析失败</span> <a class="link" data-act="tRetry" data-id="'+t.id+'">重试</a>':'<b>'+s.sess+'</b> 条会话 · <b>'+s.stores+'</b> 家门店 · 近 4 周 <b style="color:'+(s.trend>0?'var(--err)':'var(--ok)')+'">'+(s.trend>0?'↑':'↓')+Math.abs(s.trend)+'%</b> '+(t.ev==='不足'?'<span class="tag warn">证据偏少</span>':'<span class="tag ok">证据充分</span>')+'<br><span class="hint">AI 建议:</span>'+g.type+(g.sub?' · '+g.sub:'')+',看「'+(i?i.name:'-')+'」'+(g.kw?',关键词 '+esc(g.kw):'')+(g.regions?',区域 '+rgTxt(g.regions):''))+'</div>'
    +'<div class="hint" style="margin-top:4px"><span class="tag '+({'系统出题':'pri','自主提出':'blue','对外洞察':'warn'}[t.src])+'">'+t.src+'</span> '+esc(t.by)+' · '+t.time+(t.proj?' · 关联项目 <a class="link" data-act="go" data-p="detail" data-id="'+t.proj+'">'+t.proj+'</a>':'')+((t.cids||[]).length?' · 已生成内容 '+t.cids.map(id=>'<a class="link" data-act="cView" data-id="'+id+'">'+id+'</a>').join('、'):'')+'</div></div><div style="display:flex;flex-direction:column;gap:6px;flex:none">'+acts.join('')+'<button class="btn sm" data-act="topicOpen" data-id="'+t.id+'">看分析</button></div></div></div>';}
 A.tflow=el=>{(UI.sel.tq||(UI.sel.tq={})).flow=el.dataset.f;render()};
 A.tsel=el=>{const q=UI.sel.tq||(UI.sel.tq={});if(el.value)q[el.dataset.k]=el.value;else delete q[el.dataset.k];render()};
 A.tkw=el=>{UI.sel.tqs=el.value;const p=el.selectionStart;render();const e=document.querySelector('[data-wc=tkw]');if(e){e.focus();e.setSelectionRange(p,p)}};
+
+A.tqP=el=>{const f=UI.sel.tqP||(UI.sel.tqP={});const k=el.dataset.k;const v=el.value;if(v)f[k]=v;else delete f[k];if(UI.sel.topicPage)UI.sel.topicPage.page=1;render()};
+A.tqView=el=>{UI.sel.tqView=el.dataset.v;if(UI.sel.topicPage)UI.sel.topicPage.page=1;render()};
