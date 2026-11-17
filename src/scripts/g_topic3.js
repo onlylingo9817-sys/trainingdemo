@@ -4,6 +4,11 @@ function pgTopicDetail(){
   const t=topic(UI.tid);if(!t){UI.page='topics';return pgTopics()}
   const s=t.stats,g=t.sug;
   let left='<div class="card"><h3>基本信息</h3><dl class="kv"><dt>来源</dt><dd><span class="tag '+({'系统出题':'pri','自主提出':'blue','对外洞察':'warn'}[t.src])+'">'+t.src+'</span> '+(t.batch?'批次 '+t.batch+' · ':'')+esc(t.by)+' · '+t.time+'</dd><dt>问题描述</dt><dd>'+esc(t.desc||'-')+'</dd><dt>场景 / 对象</dt><dd>'+t.scene+' / '+esc(t.obj)+'</dd><dt>涉及区域</dt><dd>'+rgTxt(g.regions)+'</dd><dt>优先级</dt><dd>'+pchip(t)+' 分 '+prio(t).s+'(会话数 ÷ 30 + 门店数 ÷ 6 + 近 4 周增幅 × 1.5)</dd>'+(t.merged&&t.merged.length?'<dt>已补充</dt><dd>'+t.merged.length+' 条洞察并入证据</dd>':'')+'</dl></div>';
+  const relKp=t.kpId&&kp(t.kpId);
+  left+='<div style="margin-top:10px;border-top:1px dashed var(--bd);padding-top:10px"><label class="hint" style="display:block;margin-bottom:4px">关联知识点（这道题在讲哪个能力点）</label>'
+   +'<select data-wc="topicKp" data-id="'+t.id+'"><option value="">未关联</option>'+S.kps.filter(k=>k.st==='启用').map(k=>'<option value="'+k.id+'" '+(t.kpId===k.id?'selected':'')+'>'+esc(kpLabel(k))+'</option>').join('')+'</select>'
+   +(relKp?'<div class="hint" style="margin-top:4px">关联后：课程/内容生成会自动挂这个点；<a class="link" data-act="kpOpen" data-id="'+relKp.id+'">去看知识点</a></div>':'<div class="hint" style="margin-top:4px">不关联也能建项目，但治理页会把它算作「没有课题来源」的缺口。</div>')+'</div>';
+  left+='</div>';
   let ai='<div class="card"><h3>AI 分析 '+chip(t.st)+' '+(t.ev?chip(t.ev):'')+'<span class="hint">来源:汽车语料 + agent</span></h3>';
   if(t.st==='分析中')ai+='<div class="hint">agent 正在用语料验证问题是否成立、对比销冠与一般做法……可离开页面,完成后通知你。</div>';
   else if(t.st==='分析失败')ai+='<div style="color:var(--err)">AI 分析失败(agent 超时),可重试。不影响你直接用它建学习项目。</div>';
@@ -63,3 +68,35 @@ function topicWriteback(p){const t=p.from&&topic(p.from);if(!t)return;
   else{const cs=(t.cids||[]).map(content).filter(Boolean);const gap=[];if(!cs.length)gap.push('无内容');else if(!cs.some(isPub))gap.push('未上架');if(!p.id)gap.push('无项目');t.flow='已闭环';t.evidenceGap=gap;thist(t,'系统','项目结项回写','项目 '+p.id+' 效果「'+st+'」,结论「'+p.closeRes+'」:'+p.closeWhy+(gap.length?';证据不全:'+gap.join(' / '):''))}}
 function rulesTopic(){return '<div class="card"><h3>6. 课题池(辅助工具)</h3><div class="tw"><table class="t"><tr><th>状态</th><th>怎么进入</th><th>谁做</th><th>下一步</th></tr>'
  +[['新发现','系统出题 / 对外洞察转入 / 有人提出问题;AI 自动分析','系统 / agent / 任何有后台权限的人','看分析 → 「用它建学习项目」,或「暂不做」'],['已采纳','用它生成了内容,或用它建了学习项目(自动关联)','总部培训部 / 区域老师','内容走「审核 → 定稿 → 做成学习任务 / 上架零售通」;项目走完状态机'],['暂不做','手动收起,可填原因','任何能处理的人','可恢复'],['已闭环','关联项目结项(复制 / 转入店辅导 / 终止)','系统','效果结论写回,方便复盘;选「回炉」则回到「新发现」']].map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</table></div><div class="hint" style="margin-top:6px">课题池不是必经入口:没有课题也可以直接去「内容管理」生成内容或新增学习项目;有课题时,「生成内容」会把问题、证据带给 agent,内容入库后再做成学习任务。没有校对、定题、审批。出题阈值:会话 ≥ '+S.cfg.topicSess+'、门店 ≥ '+S.cfg.topicStores+'(配置中心可改)。</div></div>'}
+
+A.topicKp=el=>{const t=topic(el.dataset.id);if(!t)return;t.kpId=el.value||'';thist(t,meName(),'关联知识点',el.value?((kp(el.value)||{}).name||''):'取消关联');toast(t.kpId?'已关联「'+((kp(t.kpId)||{}).name||'')+'」':'已取消关联','ok');render()};
+/* 老课题按已生成的内容反推知识点 */
+function topicKpBackfill(){
+  let n=0;(S.topics||[]).forEach(t=>{
+    if(t.kpId)return;
+    /* 1) 先用已生成内容反推 */
+    const cs=(t.cids||[]).map(content).filter(Boolean);
+    let kid=cs.flatMap(c=>c.kps||[])[0];
+    /* 2) 没有内容时，用课题标题/对象/触发词与知识点名称做词面匹配 */
+    if(!kid){
+      const text=aiNorm([t.title,t.obj,t.sug&&t.sug.trig,t.desc].filter(Boolean).join(' '));
+      const act=S.kps.filter(k=>k.st==='启用');
+      const score=k=>{
+        const names=[k.name].concat(k.syn||[]);
+        let sc=0;
+        names.forEach(nm=>{
+          const x=aiNorm(nm);if(x.length<2)return;
+          if(text.includes(x))sc+=3;
+          /* 名称里的每个词（去掉「与」「和」等）也参与匹配 */
+          x.split(/与|和|\/|、/).filter(w=>w.length>=2).forEach(w=>{if(text.includes(w))sc+=1});
+        });
+        /* 标题分词命中 */
+        aiNorm(t.title||'').split('').forEach((ch,i,a)=>{});
+        return sc;
+      };
+      const ranked=act.map(k=>[k,score(k)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+      kid=ranked.length?ranked[0][0].id:'';
+    }
+    if(kid&&kp(kid)){t.kpId=kid;n++}
+  });return n;
+}

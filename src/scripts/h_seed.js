@@ -165,6 +165,20 @@ A.clear=()=>{reset();render();toast('已清空,从零开始走闭环','ok')};
    目的：让本地启动后可以直接看到「课程链接 → 课程骨架 + 候选知识点 → 回挂 → 上架」结果，无需依赖飞书登录态。 */
 /* 真实课程样例二：场景化讲车 SPIN（assets/spin_course.md）
    与 CEMN 一样走「课程 → 候选知识点 → 回挂 → 上架」，并额外生成一条演练脚本。 */
+/* 补齐评审点出的缺口：展厅接待首句问候（来自课题 T9） */
+function kpGapSeed(){
+  if(S.kps.some(k=>k.id==='K_RECV1'))return;
+  const tag=ptagByPath('销售场景_展厅接待');
+  const ab=(typeof kpAbRows==='function'?kpAbRows().find(x=>x.name==='探需'):null)||{};
+  const nk={id:'K_RECV1',name:'展厅接待首句问候',type:'技能型',tags:tag?[tag.id]:[],dim:'探需',dims:{},
+    car:'通用车型',cars:['通用车型'],syn:['首句问候','接待开场','迎宾话术'],owner:'王磊',st:'启用',ext:[],
+    pre:['K20'],rel:['K21'],created:today,
+    hist:[{t:today,who:'总部培训部 刘翔',act:'由课题补齐',note:'课题 T9：展厅接待首句问候不统一'}]};
+  if(ab.id)nk.dims.Dab=[ab.id];
+  if(tag)nk.dims.Dprod=[tag.id];
+  nk.dims.Dcar=(typeof kpCarIds==='function'?kpCarIds(nk.cars):[]);
+  S.kps.push(nk);
+}
 /* 标签补齐：按知识点语义补上标签，避免治理页一打开全是缺口 */
 function kpTagSeed(){
   const T=(path)=>ptagByPath(path);
