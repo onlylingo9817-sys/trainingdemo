@@ -17,7 +17,7 @@ UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={};render();
 CK('知识点库有左侧标签树',document.querySelectorAll('.tag-row').length>=4,'nodes='+document.querySelectorAll('.tag-row').length);
 const n0=document.querySelectorAll('#main table.t tr').length-1;const pol=PTAGS.find(t=>t.name==='政策口径');A.tagSelect({dataset:{id:pol.id}});const n1=document.querySelectorAll('#main table.t tr').length-1;CK('知识点库点标签后列表收敛',n0>0&&n1<n0,'all='+n0+' filtered='+n1);
 UI.page='content';UI.tab.content='全部内容';UI.sel.caf={};UI.sel.cq={};UI.sel.cadv=true;render();
-const allN=document.querySelectorAll('#main table.t tr').length-1;const interior=PTAGS.find(x=>x.name==='内饰');A.tagSelect({dataset:{id:interior.id}});const filteredN=document.querySelectorAll('#main table.t tr').length-1;
+const totalOf=()=>{const m=document.querySelector('#main .hint')&&document.querySelector('#main').innerText.match(/共 (\d+) 条/);return m?+m[1]:document.querySelectorAll('#main table.t tr').length-1};const allN=totalOf();const interior=PTAGS.find(x=>x.name==='内饰');A.tagSelect({dataset:{id:interior.id}});const filteredN=totalOf();
 CK('内容中心有左侧标签树',document.querySelectorAll('.tag-row').length>=4);
 CK('内容中心点标签后列表收敛',filteredN>0&&filteredN<allN,allN+' → '+filteredN);
 UI.page='kp';UI.kid='K3';render();CK('知识点详情用“标签”而不是部位',/标签/.test(tx())&&!/车上的部位/.test(tx()));
