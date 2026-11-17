@@ -43,14 +43,14 @@ function renderMenu(){
    +g('发现问题',['topics'])+it(['topics','topic'],'课题池','topics','tp','')
    +g('准备内容',['catalog','content','publish','tagmanage'])+it(['catalog','kp','kpform'],'知识点','catalog','ca','')+it(['content','cedit','cdetail','qform','dform'],'内容中心','content','ct','')+it(['tagmanage'],'标签管理','tagmanage','ca','')+it(['publish'],'上架到零售通','publish','gr','')
    +g('组织培训',['projects','approvals','coach'])+it(['projects','detail','form'],'学习项目','projects','pj','')+it(['approvals'],'报名审批','approvals','ap',n?'<span class="dot">'+n+'</span>':'')+it(['coach'],'入店辅导','coach','co','')
-   +g('看效果',['effect'])+it(['effect','student'],'效果追踪','effect','ef','')
+   +g('看效果',['effect','people','person'])+it(['people','person'],'人员','people','ef','')+it(['effect','student'],'效果追踪','effect','ef','')
    +g('系统',['config'])+it(['config'],'配置中心','config','cf','')
    +(UI.role.type==='boss'?'':'<details class="mg-fold"><summary class="mg">现有功能(未复刻) ▾</summary>'+['专题管理','检核任务管理','晨读管理','学堂首页配置','日志管理'].map(x=>'<div class="mi gray">'+IC.gr+'<span>'+x+'</span></div>').join('')+'</details>');
 }
 A.roleSwitch=el=>{UI.role=ROLES.find(r=>r.k===el.value);UI.tab={};UI.sel={};F=null;if(!PAGES_OK[UI.role.type].includes(UI.page))UI.page=(PAGES_OK[UI.role.type].includes('workbench')?'workbench':'overview');render();toast('已切换身份:'+UI.role.n+'(可见页面和数据范围随之变化)','ok')};
 function renderPC(){
   renderMenu();if(!PAGES_OK[UI.role.type].includes(UI.page))UI.page=(PAGES_OK[UI.role.type].includes('workbench')?'workbench':'overview');
-  const fn={workbench:pgWorkbench,overview:pgOverview,topics:pgTopics,topic:pgTopicDetail,content:pgContent,cedit:pgContentEdit,cdetail:pgContentDetail,catalog:pgCatalog,kp:pgKp,kpform:pgKpForm,qform:pgQForm,dform:pgDrForm,publish:pgPublish,projects:pgProjects,form:pgForm,detail:pgDetail,approvals:pgApprovals,coach:pgCoach,effect:pgEffect,student:pgStudent,config:pgConfig,tagmanage:pgTagManage}[UI.page];
+  const fn={workbench:pgWorkbench,overview:pgOverview,topics:pgTopics,topic:pgTopicDetail,content:pgContent,cedit:pgContentEdit,cdetail:pgContentDetail,catalog:pgCatalog,kp:pgKp,kpform:pgKpForm,qform:pgQForm,dform:pgDrForm,publish:pgPublish,projects:pgProjects,form:pgForm,detail:pgDetail,approvals:pgApprovals,coach:pgCoach,effect:pgEffect,student:pgStudent,people:(typeof pgPeople==='function'?pgPeople:pgStudent),person:(typeof pgPerson==='function'?pgPerson:pgStudent),config:pgConfig,tagmanage:pgTagManage}[UI.page];
   const m=$('#main');const st=m.scrollTop;m.innerHTML=(typeof aiPageGuideHtml==='function'?aiPageGuideHtml():'')+fn();m.scrollTop=st;
   if(typeof gdTrack==='function')gdTrack();
 }

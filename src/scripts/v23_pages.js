@@ -46,7 +46,7 @@ const v23RdyColor=v=>v==null?'#c9ced6':v>=80?'#12a36b':v>=60?'#e8830c':'#e5484d'
 function v23RdyPill(v){const t=v==null?['—','']:v>=80?['就绪','ok']:v>=60?['接近','warn']:['有缺口','err'];return '<span class="tag '+t[1]+'">'+t[0]+'</span>'}
 
 /* ---------- 效果 · 就绪度 ---------- */
-A.v23Stu=el=>{closeDlg();UI.page='student';UI.stuMid=el.dataset.mid;render();$('#main').scrollTop=0};
+A.v23Stu=el=>{closeDlg();const p=personOf(el.dataset.mid);if(p&&(UI.role.type!=='region'||p.region===UI.role.region)){UI.page='person';UI.stuMid=el.dataset.mid}else{UI.page='people';if(p&&p.region!==UI.role.region)toast('只能查看本区域人员','err');else UI.page='student',UI.stuMid=el.dataset.mid}render();$('#main').scrollTop=0};
 function pgRdy(){
   if(v23Empty())return '<div class="ph"><h2>就绪度</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('就绪度数据');
   const f=UI.sel.rdy||(UI.sel.rdy={scope:'全国',store:'',tier:''});
@@ -733,3 +733,156 @@ A.rdySize=el=>{const st=UI.sel.rdy||(UI.sel.rdy={});UI.sel.rdyPage=UI.sel.rdyPag
 
 A.misSort=el=>{UI.sel.misSort=el.value;render()};
 A.misSize=el=>{const st=UI.sel.misPage||(UI.sel.misPage={page:1,size:20});st.size=+el.value;st.page=1;render()};
+
+/* ================= 人员视角：以 MID 为键，PEOPLE ∪ S.lrn 只读适配 =================
+   不合并存储：PEOPLE 是人事主数据，S.lrn 是理想态学员（多 tier/group/train）。
+   缺字段给 null，由页面显示「暂无」，不兜底造数。 */
+function personOf(mid){
+  const p=PEOPLE.find(x=>x.mid===mid)||null;
+  const l=(S.lrn||[]).find(x=>x.mid===mid)||null;
+  if(!p&&!l)return null;
+  const base=p||l;
+  const ev=(S.ev&&S.ev.q&&S.ev.q[mid])||(S.ev&&S.ev.dr&&S.ev.dr[mid])||(S.ev&&S.ev.co&&S.ev.co[mid])||(S.beh&&S.beh[mid]);
+  return {mid, name:base.name, store:base.store, region:base.region, hire:base.hire,
+    tier:l?l.tier:null, group:l?l.group:null, train:l?!!l.train:null,
+    hasEvidence:!!ev, src:[p?'人事':null,l?'理想态':null].filter(Boolean)};
+}
+function personAll(){
+  const ids=[...new Set([].concat(PEOPLE.map(p=>p.mid),(S.lrn||[]).map(l=>l.mid)))];
+  return ids.map(personOf).filter(Boolean);
+}
+function personScope(){
+  const all=personAll();
+  return UI.role.type==='region'?all.filter(p=>p.region===UI.role.region):all;
+}
+function personReady(p){
+  if(!p.hasEvidence||!p.tier)return null;
+  try{const r=v23Readiness(p.mid,p.tier);return r&&r.val!=null?r.val:null}catch(e){return null}
+}
+function personMisOpen(p){try{return misOf(p.mid).filter(m=>m.status!=='closed').length}catch(e){return 0}}
+function personPacks(p){try{return packsOf(p.mid).filter(x=>x.status!=='已完成').length}catch(e){return 0}}
+function personNeedCare(p){const v=personReady(p);const rec=personMisOpen(p)>0&&misOf(p.mid).some(m=>m.status==='recurred');return (v!=null&&v<S.cfg.pass*0.7)||rec||personPacks(p)>2}
+
+/* ---------- 人员列表 ---------- */
+function pplFilter(){
+  const f=UI.sel.ppl||(UI.sel.ppl={});
+  if(UI.role.type==='region')f.region=UI.role.region;
+  if(f.region&&f.region!==''&&UI.role.type!=='region'){/* 总部可选区域 */}
+  return f;
+}
+function pplRows(){
+  const f=pplFilter();const kw=(f.q||'').trim().toLowerCase();
+  const mids=kw?kw.split(/[\s,，;；]+/).filter(Boolean):[];
+  return personScope().filter(p=>{
+    if(f.region&&p.region!==f.region)return false;
+    if(f.store&&p.store!==f.store)return false;
+    if(f.tier&&p.tier!==f.tier)return false;
+    if(f.group&&p.group!==f.group)return false;
+    if(f.hire==='≤30'&&!(p.hire!=null&&p.hire<=30))return false;
+    if(f.hire==='≤90'&&!(p.hire!=null&&p.hire<=90))return false;
+    if(f.hire==='>90'&&!(p.hire!=null&&p.hire>90))return false;
+    if(f.ready){const v=personReady(p);if(f.ready==='无证据'&&v!=null)return false;if(f.ready==='<50'&&!(v!=null&&v<50))return false;if(f.ready==='50-70'&&!(v!=null&&v>=50&&v<70))return false;if(f.ready==='≥70'&&!(v!=null&&v>=70))return false;}
+    if(f.care==='需关注'&&!personNeedCare(p))return false;
+    if(f.care==='有未关闭错题'&&personMisOpen(p)===0)return false;
+    if(f.care==='有进行中学习包'&&personPacks(p)===0)return false;
+    if(mids.length&&!mids.some(m=>p.mid.includes(m)||String(p.name).toLowerCase().includes(m)))return false;
+    return true;
+  });
+}
+function pplSort(rows){
+  const f=pplFilter();const key=f.sort||'care';
+  const val=p=>{if(key==='name')return p.name;if(key==='hire')return p.hire==null?1e9:p.hire;if(key==='ready'){const v=personReady(p);return v==null?1e9:v}if(key==='mis')return personMisOpen(p);return personNeedCare(p)?0:1};
+  return rows.slice().sort((a,b)=>{const va=val(a),vb=val(b);if(va===vb)return 0;if(key==='ready'||key==='hire')return (f.dir==='desc'?-1:1)*(vb>va?1:vb<va?-1:0);return (va>vb?1:-1)});
+}
+function pgPeople(){
+  const f=pplFilter();const all=personScope();const rows=pplSort(pplRows());
+  const care=all.filter(personNeedCare).length;const training=all.filter(p=>p.train).length;const newbies=all.filter(p=>p.hire!=null&&p.hire<=30).length;
+  const pg=lstPage('pplPage',rows,20);
+  const sel=(k,label,opts)=>'<div class="fi2"><label>'+label+'</label><select data-wc="pplSet" data-k="'+k+'"><option value="">全部</option>'+opts.map(o=>'<option '+(f[k]===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+  const stores=[...new Set(all.filter(p=>!f.region||p.region===f.region).map(p=>p.store))].filter(Boolean);
+  const head='<div class="ph"><h2>人员 <span class="hint" style="font-weight:400">按人看：这个人学到哪、哪里薄弱、在哪个项目、有没有辅导；点姓名进详情</span></h2><div><button class="btn sm" data-act="pplView" data-v="'+(f.view==='store'?'people':'store')+'">'+(f.view==='store'?'按人看':'按门店看')+'</button></div></div>'
+    +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅为相关性，不作因果结论。</span></div>';
+  const sum='<div class="grid g4" style="margin-bottom:14px">'
+    +'<div class="stat kp-click" data-act="pplQuick" data-v=""><div class="l">全部人员</div><div class="n">'+all.length+'</div><div class="hint">人事 ∪ 理想态，按 MID 去重</div></div>'
+    +'<div class="stat kp-click" data-act="pplQuick" data-v="care"><div class="l">需关注</div><div class="n" style="color:#c8323a">'+care+'</div><div class="hint">就绪度 &lt; 过关线×0.7 / 错题复发 / 学习包积压</div></div>'
+    +'<div class="stat"><div class="l">在训中</div><div class="n">'+training+'</div><div class="hint">在试点/对照批内的理想态学员</div></div>'
+    +'<div class="stat"><div class="l">本月新人</div><div class="n">'+newbies+'</div><div class="hint">入职 ≤ 30 天</div></div></div>';
+  const fil='<div class="card" style="padding:14px 18px"><div class="filg"><div class="fi2"><label>姓名 / MID</label><input data-wc="pplSet" data-k="q" value="'+esc(f.q||'')+'" placeholder="可粘贴多个 MID,用空格或逗号分隔"></div>'
+    +(UI.role.type==='region'?'':'<div class="fi2"><label>区域</label><select data-wc="pplSet" data-k="region"><option value="">全国</option>'+ALLR.map(r=>'<option '+(f.region===r?'selected':'')+'>'+r+'</option>').join('')+'</select></div>')
+    +'<div class="fi2"><label>门店</label><select data-wc="pplSet" data-k="store"><option value="">全部门店</option>'+stores.map(s=>'<option '+(f.store===s?'selected':'')+'>'+esc(s)+'</option>').join('')+'</select></div>'
+    +sel('tier','岗位档',V23_TIER)+sel('group','批次',['试点批','对照批'])+sel('hire','入职天数',['≤30','≤90','>90'])+sel('ready','就绪度',['<50','50-70','≥70','无证据'])+sel('care','状态',['需关注','有未关闭错题','有进行中学习包'])
+    +'<div class="fi2"><label>排序</label><select data-wc="pplSet" data-k="sort"><option value="care" '+(f.sort==='care'||!f.sort?'selected':'')+'>需关注优先</option><option value="ready" '+(f.sort==='ready'?'selected':'')+'>就绪度</option><option value="hire" '+(f.sort==='hire'?'selected':'')+'>入职天数</option><option value="name" '+(f.sort==='name'?'selected':'')+'>姓名</option><option value="mis" '+(f.sort==='mis'?'selected':'')+'>错题数</option></select></div>'
+    +'<div class="fi2" style="align-self:end"><button class="btn" data-act="pplClear">清除筛选</button></div>'
+    +'<div class="fi2" style="align-self:end;margin-left:auto">'+lstCsvBtn(['姓名','MID','门店','区域','岗位档','批次','入职天数','就绪度','未关闭错题'],[['姓名','MID','门店','区域','岗位档','批次','入职天数','就绪度','未关闭错题']].concat(rows.map(p=>[p.name,p.mid,p.store,p.region,p.tier||'未分档',p.group||'',p.hire,personReady(p)==null?'':personReady(p),personMisOpen(p)])),'人员清单')+'</div></div></div>';
+  if(f.view==='store')return head+sum+fil+pplStoreTable();
+  const list='<div class="tw"><table class="t nw stk"><tr><th>姓名 / MID</th><th>门店 · 区域</th><th>岗位档 · 入职</th><th>就绪度</th><th>最弱能力</th><th>学习进度</th><th>待办</th><th>操作</th></tr>'
+    +(pg.rows.length?pg.rows.map(p=>{const v=personReady(p);const w=pplWeakItems(p);const mo=personMisOpen(p),pk=personPacks(p);
+      return '<tr><td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">'+esc(p.name)+'</a>'+(p.group==='对照批'?' <span class="tag">对照</span>':'')+'<div class="hint">'+p.mid+'</div></td>'
+      +'<td>'+esc(p.store||'—')+'<div class="hint">'+esc(p.region||'—')+'</div></td>'
+      +'<td>'+(p.tier||'<span class="hint">未分档</span>')+'<div class="hint">'+(p.hire==null?'—':'入职 '+p.hire+' 天')+'</div></td>'
+      +'<td>'+(v==null?'<span class="hint" title="'+(p.hasEvidence?'缺岗位档':'无证据')+'">—<div class="hint">'+(p.hasEvidence?'未分档':'无证据')+'</div></span>':'<b style="color:'+v23RdyColor(v)+'">'+v+'</b>')+'</td>'
+      +'<td style="white-space:normal;min-width:140px">'+(w.length?w.map(x=>'<span class="tag warn" style="margin:0 4px 4px 0;white-space:nowrap">'+esc(x)+'</span>').join(' '):'<span class="hint">—</span>')+'</td>'
+      +'<td>'+pplLearnProgress(p)+'</td>'
+      +'<td style="white-space:nowrap">'+(mo?'<span class="tag err">错题 '+mo+'</span> ':'')+(pk?'<span class="tag warn">学习包 '+pk+'</span> ':'')+(!mo&&!pk?'<span class="hint">—</span>':'')+'</td>'
+      +'<td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">查看</a>'+(p.group==='对照批'?'':' · <a class="link" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</a>')+'</td></tr>'}).join(''):'<tr><td colspan="8" class="empty">没有符合条件的人员。换个筛选，或清除筛选。</td></tr>')+'</table></div>'+lstPager('pplPage',pg);
+  return head+sum+fil+list;
+}
+function pplWeakItems(p){try{const r=v23Readiness(p.mid,p.tier);return r.items.filter(i=>i.mean!=null&&i.mean<i.item.target).map(i=>i.item.label).slice(0,2)}catch(e){return []}}
+function pplLearnProgress(p){try{const ps=visibleP().filter(x=>eligible(x,p));if(!ps.length)return '<span class="hint">未参与项目</span>';let tot=0,don=0;ps.forEach(x=>{const t=tasksOf(x);tot+=t.length;const d=((S.learn[x.id]||{})[p.mid])||[];don+=d.filter(id=>t.some(n=>n.id===id)).length});return ps.length+' 个项目<div class="hint">任务 '+don+'/'+tot+'</div>'}catch(e){return '<span class="hint">—</span>'}}
+function pplStoreTable(){
+  const f=pplFilter();const stores=[...new Set(personScope().filter(p=>!f.region||p.region===f.region).map(p=>p.store))].filter(Boolean);
+  const rows=stores.map(s=>{const ps=personScope().filter(p=>p.store===s);const withR=ps.map(personReady).filter(v=>v!=null);const avg=withR.length?Math.round(withR.reduce((a,b)=>a+b,0)/withR.length):null;return {s,ps,avg,care:ps.filter(personNeedCare).length,train:ps.filter(p=>p.train).length,mo:ps.reduce((a,p)=>a+personMisOpen(p),0)}});
+  return '<div class="tw"><table class="t"><tr><th>门店</th><th>人数(新人/总)</th><th>平均就绪度</th><th>需关注</th><th>在训</th><th>未关闭错题</th></tr>'+rows.map(x=>'<tr><td><b>'+esc(x.s)+'</b></td><td>'+x.ps.filter(p=>p.hire!=null&&p.hire<=90).length+' / '+x.ps.length+'</td><td>'+(x.avg==null?'<span class="hint">样本不足</span>':x.avg+' <span class="hint">n='+x.ps.filter(p=>personReady(p)!=null).length+'</span>')+'</td><td>'+(x.care||'<span class="hint">0</span>')+'</td><td>'+x.train+'</td><td>'+(x.mo||'<span class="hint">0</span>')+'</td></tr>').join('')+'</table></div>';
+}
+A.pplSet=el=>{const f=pplFilter();const k=el.dataset.k;if(el.value)f[k]=el.value;else delete f[k];if(k==='region')delete f.store;if(UI.sel.pplPage)UI.sel.pplPage.page=1;render()};
+A.pplClear=()=>{UI.sel.ppl={};UI.sel.pplPage={page:1,size:20};render()};
+A.pplQuick=el=>{const f=pplFilter();if(el.dataset.v==='care')f.care='需关注';else delete f.care;render()};
+A.pplView=el=>{const f=pplFilter();f.view=el.dataset.v;render()};
+A.pplOpen=el=>{const p=personOf(el.dataset.mid);if(!p)return toast('找不到这个人','err');if(UI.role.type==='region'&&p.region!==UI.role.region)return toast('只能查看本区域人员','err');UI.page='person';UI.stuMid=p.mid;render();$('#main').scrollTop=0};
+A.pplPack=el=>{const p=personOf(el.dataset.mid);if(!p)return;if(p.group==='对照批')return toast('对照批人员不建议单独干预','warn');const k=S.kps.find(k=>k.st==='启用'&&kpMounted(k).length);if(!k)return toast('没有可指派的知识点','err');const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});toast('已给 '+p.name+' 指派补练包','ok');render()};
+
+/* ---------- 人员详情 ---------- */
+function pplProjectsOf(p){
+  return visibleP().filter(x=>eligible(x,p)).map(pr=>{
+    const app=(S.apps||[]).find(a=>a.proj===pr.id&&a.mid===p.mid);
+    const lr=(S.learn[pr.id]||{})[p.mid];
+    const rs=((S.results[pr.id]||{})[p.mid])||{};
+    const cls=(S.classes||[]).find(k=>k.proj===pr.id&&(k.members||[]).includes(p.mid));
+    const tasks=tasksOf(pr);const done=(lr||[]).filter(id=>tasks.some(n=>n.id===id)).length;
+    return {pr,app,lr,rs,cls,tasks,done};
+  });
+}
+function pgPerson(){
+  const p=personOf(UI.stuMid);
+  if(!p){UI.page='people';return pgPeople()}
+  if(UI.role.type==='region'&&p.region!==UI.role.region){UI.page='people';return pgPeople()}
+  const v=personReady(p);const items=pplWeakItems(p);const mo=personMisOpen(p);const pk=personPacks(p);
+  const projs=pplProjectsOf(p);
+  const head=crumb('<a data-act="go" data-p="people">人员</a> / '+esc(p.name))
+   +'<div class="ph"><h2>'+esc(p.name)+' '+V23_SIM+' <span class="hint" style="font-weight:400">'+esc(p.store||'—')+' · '+esc(p.region||'—')+' · '+(p.tier||'未分档')+' · '+(p.hire==null?'入职未知':'入职 '+p.hire+' 天')+'</span></h2>'
+   +'<div>'+(p.group==='对照批'?'<span class="tag">对照批 · 不建议单独干预</span> ':'')+'<button class="btn sm" data-act="pplBack">返回列表</button></div></div>'
+   +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅为相关性，不作因果结论。</span></div>';
+  const hero='<div class="grid g4" style="margin-bottom:14px">'
+   +'<div class="stat"><div class="l">就绪度</div><div class="n" style="color:'+(v==null?'':v23RdyColor(v))+'">'+(v==null?'—':v)+'</div><div class="hint">'+(p.hasEvidence?'过关线 '+S.cfg.pass:'无证据，不兜底造数')+'</div></div>'
+   +'<div class="stat"><div class="l">未关闭错题</div><div class="n" style="color:'+(mo?'#c8323a':'')+'">'+mo+'</div><div class="hint">含关闭后复发</div></div>'
+   +'<div class="stat"><div class="l">进行中学习包</div><div class="n">'+pk+'</div><div class="hint">指派补练后在这里看</div></div>'
+   +'<div class="stat"><div class="l">参与项目</div><div class="n">'+projs.length+'</div><div class="hint">按覆盖范围判定</div></div></div>';
+  const next='<div class="card"><h3>最该先补的 3 件事 <span class="hint">画像权重 × 缺口，规则生成，不是 AI</span></h3>'
+   +(v==null?'<div class="chk ok"><b>·</b><span>没有证据，先让这位同事在零售通做一次诊断测或演练，再谈补什么。</span></div>'
+     :(items.length?items.map(x=>'<div class="chk rec"><b>·</b><span>补「'+esc(x)+'」：低于画像目标</span></div>').join(''):'<div class="chk ok"><b>✓</b><span>画像项都达标，暂无必补项。</span></div>')
+     +(mo?'<div class="chk must"><b>!</b><span>有 '+mo+' 个未关闭错题，优先指派补练包</span></div>':''))+'</div>';
+  const learn='<div class="card"><h3>学习与培训 <span class="hint">参与的项目、报名、班次、成绩、结业</span></h3>'
+   +(projs.length?'<div class="tw"><table class="t nw"><tr><th>项目</th><th>报名状态</th><th>班次</th><th>任务完成</th><th>签到</th><th>线上 / 线下</th><th>结业</th></tr>'
+     +projs.map(x=>'<tr><td><a class="link" data-act="go" data-p="detail" data-id="'+x.pr.id+'">'+esc(x.pr.name)+'</a><div class="hint">'+esc(x.pr.type||'')+'</div></td>'
+      +'<td>'+(x.app?x.app.status:'<span class="hint">未报名</span>')+'</td><td>'+(x.cls?esc(x.cls.name):'<span class="hint">—</span>')+'</td>'
+      +'<td>'+x.done+' / '+x.tasks.length+'</td><td>'+(x.rs.signed?'<span class="tag ok">已签到</span>':'<span class="hint">—</span>')+'</td>'
+      +'<td>'+(x.rs.online==null&&x.rs.offline==null?'<span class="hint">—</span>':(x.rs.online==null?'—':x.rs.online)+' / '+(x.rs.offline==null?'—':x.rs.offline))+'</td>'
+      +'<td>'+(x.rs.st?'<span class="tag '+(x.rs.st==='已结业'?'ok':'')+'">'+esc(x.rs.st)+'</span>':'<span class="hint">—</span>')+'</td></tr>').join('')+'</table></div>'
+     :'<div class="hint">没有参与任何学习项目。要么不在覆盖名单内，要么还没被下发。</div>')+'</div>';
+  const coach=(function(){const ts=(S.tickets||[]).filter(t=>t.store===p.store);return '<div class="card"><h3>辅导与记录 <span class="hint">该门店的入店辅导</span></h3>'
+    +(ts.length?ts.map(t=>'<div style="padding:6px 0;border-top:1px solid #f2f3f5"><b>'+esc(t.store)+'</b> <span class="tag '+(t.st==='结案'?'ok':'blue')+'">'+t.st+'</span> <span class="hint">'+esc(t.goal||'')+'</span> <a class="link" data-act="ticket" data-id="'+t.id+'">打开辅导</a></div>').join(''):'<div class="hint">该门店没有在途或历史辅导记录。</div>')+'</div>'})();
+  return head+hero+next+learn+coach+'<div class="card"><h3>能力与证据 <span class="hint">与就绪度页、零售通同一套数</span></h3>'
+   +(p.hasEvidence&&p.tier?'<button class="btn sm" data-act="pplStudent" data-mid="'+p.mid+'">打开完整画像 / 证据流水 / 错题</button>':'<div class="hint">这位同事还没有证据数据（只在人事主数据里），所以没有画像可看。</div>')+'</div>';
+}
+A.pplStudent=el=>{UI.page='student';UI.stuMid=el.dataset.mid;render()};
+A.pplBack=()=>{UI.page='people';render()};

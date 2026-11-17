@@ -1,0 +1,30 @@
+const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')+name+(detail?' — '+detail:''));
+try{
+A.roleSwitch({value:'hq'});closeDlg();
+UI.page='people';UI.sel.ppl={};UI.sel.pplPage={page:1,size:20};render();
+const tx=()=>document.querySelector('#main').innerText;
+CK('人员页可渲染且有用途声明',/仅用于培训选样与辅导/.test(tx()));
+CK('人员列表分页 20 条',document.querySelectorAll('#main table.t tr').length<=21);
+CK('人员页有汇总与导出',/需关注/.test(tx())&&!!document.querySelector('[data-act=lstExport]'));
+UI.sel.ppl={ready:'无证据'};render();
+CK('筛选“无证据”只剩无证据的人',/无证据/.test(tx())&&personScope().filter(p=>personReady(p)==null).length>0);
+UI.sel.ppl={q:'张晨'};render();
+CK('按姓名搜索命中',/张晨/.test(tx()));
+UI.sel.ppl={};render();
+const p=personScope().find(x=>x.hasEvidence&&x.tier);
+UI.page='person';UI.stuMid=p.mid;render();
+CK('人员详情含学习与培训',/学习与培训/.test(tx()));
+const pr0=pplProjectsOf(personScope().find(x=>x.hasEvidence&&x.tier));CK('学习进度读取真实完成任务数(不全为0)',pr0.some(x=>x.done>0),pr0.map(x=>x.done+'/'+x.tasks.length).join(','));
+CK('人员详情含辅导与记录',/辅导与记录/.test(tx()));
+const projs=pplProjectsOf(p);
+CK('学习与培训项目数=按 eligible 手算',projs.length===visibleP().filter(x=>eligible(x,p)).length,projs.length+'');
+A.roleSwitch({value:'r1'});
+UI.page='people';UI.sel.ppl={};render();
+CK('区域老师列表只含本区域',personScope().every(x=>x.region===UI.role.region)&&/华北/.test(tx()));
+const other=S.lrn.find(x=>x.region!=='华北');
+UI.page='person';UI.stuMid=other.mid;render();
+CK('区域老师访问外区域被拒回列表',UI.page==='people');
+A.roleSwitch({value:'boss'});
+CK('老板菜单无人员',!/人员/.test(document.querySelector('#menu').innerText)&&!PAGES_OK.boss.includes('people'));
+A.roleSwitch({value:'hq'});UI.stuMid=S.lrn[0].mid;A.v23Stu({dataset:{mid:S.lrn[0].mid}});CK('就绪度姓名跳人员详情',UI.page==='person');
+}catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}
