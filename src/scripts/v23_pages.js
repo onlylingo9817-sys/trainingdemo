@@ -183,6 +183,7 @@ function pgMis(){
   if(!(S.mis&&S.mis.length)&&v23Empty())return '<div class="ph"><h2>错题集</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('错题数据');
   const f=UI.sel.misf||(UI.sel.misf={});
   const rows=misRows(f);const agg=misAgg(rows);
+  const misSorted=rows.slice().sort((a,b)=>UI.sel.misSort==='recent'?(b.lastTs||'').localeCompare(a.lastTs||''):(b.severity-a.severity)||(b.count-a.count));const misPg=lstPage('misPage',misSorted,20);
   const rr=v23RecurRate();
   const open=rows.filter(m=>m.status!=='closed').length;
   const recN=rows.filter(m=>m.status==='recurred').length;
@@ -227,15 +228,16 @@ function pgMis(){
      +sel('reg','区域',ALLR.map(r=>[r,r]),f.reg)
      +'<div class="fi2" style="align-self:end"><button class="btn" data-act="misClear">清除筛选</button></div>'
      +'<div class="fi2" style="align-self:end;margin-left:auto"><span class="hint">筛选后 '+rows.length+' 条</span></div></div></div>'
-   +'<div class="card"><h3>错题明细 <span class="hint">前 30 条</span></h3>'
+   +'<div class="card"><h3>错题明细 <span class="hint">按严重度排序,可翻页/导出</span></h3>'
+   +'<div class="filg" style="margin-bottom:10px"><div class="fi2"><label>排序</label><select data-wc="misSort"><option value="sev" '+(UI.sel.misSort!=='recent'?'selected':'')+'>严重度</option><option value="recent" '+(UI.sel.misSort==='recent'?'selected':'')+'>最近发生</option></select></div><div class="fi2"><label>每页</label><select data-wc="misSize">'+[20,50,100].map(n=>'<option '+(misPg.size===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div><div class="fi2" style="align-self:end">'+lstCsvBtn(['学员','门店','知识点','类型','环节','严重度','次数','代表原文','状态'],[['学员','门店','知识点','类型','环节','严重度','次数','代表原文','状态']].concat(misSorted.map(m=>{const l=lrnOf(m.mid)||{};return [l.name||m.mid,l.store||'',(kp(m.kp)||{}).name||'',m.type,m.step,m.severity,m.count,m.quote,m.status]})),'错题明细')+'</div><div class="fi2" style="align-self:end"><span class="hint">共 '+rows.length+' 条</span></div></div>'
    +'<div class="tw"><table class="t nw stk"><tr><th>学员</th><th>门店</th><th>知识点</th><th>类型</th><th>环节</th><th>严重度</th><th>次数</th><th>代表原文</th><th>首次 / 最近</th><th>状态</th><th>操作</th></tr>'
-   +rows.slice(0,30).map(m=>{const l=lrnOf(m.mid)||{};return '<tr><td><a class="link" data-act="v23Stu" data-mid="'+m.mid+'">'+esc(l.name||m.mid)+'</a></td><td>'+esc(l.store||'')+'</td><td>'+esc((kp(m.kp)||{}).name||'')+'</td>'
+   +misPg.rows.map(m=>{const l=lrnOf(m.mid)||{};return '<tr><td><a class="link" data-act="v23Stu" data-mid="'+m.mid+'">'+esc(l.name||m.mid)+'</a></td><td>'+esc(l.store||'')+'</td><td>'+esc((kp(m.kp)||{}).name||'')+'</td>'
      +'<td><span class="mis-cell mis-s2">'+m.type+'</span></td><td>'+m.step+'</td><td><span class="mis-cell mis-s'+m.severity+'">'+['','低','中','高'][m.severity]+'</span></td><td>'+m.count+'</td>'
      +'<td style="white-space:normal;min-width:200px;max-width:260px"><div class="mis-q">'+esc(m.quote)+'</div></td>'
      +'<td class="hint">'+m.firstTs.slice(5)+' / '+m.lastTs.slice(5)+'</td>'
      +'<td><span class="tag '+(m.status==='closed'?'ok':m.status==='recurred'?'err':m.status==='improving'?'warn':'')+'">'+({open:'未处理',improving:'改善中',closed:'已关闭',recurred:'关闭后复发'}[m.status])+'</span>'+(m.status==='recurred'?'<div class="mis-re">复发</div>':'')+'</td>'
      +'<td style="white-space:nowrap">'+(m.status==='closed'?'':'<a class="link" data-act="misNext" data-id="'+m.id+'">推进</a>')+' <a class="link" data-act="misPackOne" data-id="'+m.id+'">指派学习包</a></td></tr>'}).join('')
-   +'</table></div></div>'
+   +'</table></div>'+lstPager('misPage',misPg)+'</div>'
 }
 A.misSet=el=>{const f=UI.sel.misf||(UI.sel.misf={});if(el.value)f[el.dataset.k]=el.value;else delete f[el.dataset.k];render()};
 A.misClear=()=>{UI.sel.misf={};render()};
@@ -728,3 +730,6 @@ function v23DataNote(){
 A.v23DataNote=()=>{};
 
 A.rdySize=el=>{const st=UI.sel.rdy||(UI.sel.rdy={});UI.sel.rdyPage=UI.sel.rdyPage||{page:1,size:20};UI.sel.rdyPage.size=+el.value;UI.sel.rdyPage.page=1;render()};
+
+A.misSort=el=>{UI.sel.misSort=el.value;render()};
+A.misSize=el=>{const st=UI.sel.misPage||(UI.sel.misPage={page:1,size:20});st.size=+el.value;st.page=1;render()};

@@ -284,3 +284,7 @@ tr.off{opacity:.62}
 .lst-pager{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:10px}
 .lst-pager .hint{margin-right:auto}
 .lst-batch{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff8ef;border:1px solid #f3dc9b;border-radius:10px;padding:8px 12px;margin-top:8px}
+
+.mg-fold>summary{cursor:pointer;list-style:none}
+.mg-fold>summary::-webkit-details-marker{display:none}
+.mg-fold[open]>summary{color:var(--sub)}
