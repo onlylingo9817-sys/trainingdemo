@@ -88,7 +88,8 @@ function pgDrForm(){
     +'<div class="fr"><div class="flb"><b>*</b>思路点</div><div class="fc"><textarea class="w" data-dt="ideaT" data-i="'+i+'" style="min-height:64px" placeholder="每行一个:点名=说法1,说法2">'+esc(t.ideaT)+'</textarea><div class="fh">方法对不对:先认同、算账、引导体验、给下一步…决定「思路正确 50 分」</div></div></div>'
     +'<div class="fr"><div class="flb"><b>*</b>参考话术</div><div class="fc"><textarea class="w" data-dt="ref" data-i="'+i+'" style="min-height:64px">'+esc(t.ref)+'</textarea><div class="fh">答完展示给学员对照;建议直接取来源话术原文</div></div></div></div>').join('');
   const c=DF.src&&content(DF.src);const chk=drHard(Object.assign({},DF,{turns:DF.turns.map(t=>({say:t.say,ref:t.ref,must:drParse(t.mustT),idea:drParse(t.ideaT),emo:[]}))}));
-  return crumb('<a data-act="go" data-p="content">内容中心</a> / 演练 / '+(DF._new?'新增':DF.id))+'<div class="ph"><h2>'+(DF._new?'新增演练':'编辑 '+DF.id)+'</h2></div>'
+  const dockHtml='<!--DOCK_START--><div class="dock"><span class="sp"></span><button class="btn" data-act="drCancel">取消</button><button class="btn" data-act="drSave" data-s="0">保存草稿</button><button class="btn pri" data-act="drSave" data-s="1">保存并定稿</button></div><!--DOCK_END-->';
+  return crumb('<a data-act="go" data-p="content">内容中心</a> / 演练 / '+(DF._new?'新增':DF.id))+dockHtml+'<div class="ph"><h2>'+(DF._new?'新增演练':'编辑 '+DF.id)+'</h2></div>'
    +'<div class="card frm">'+FR('名称','<input type="text" data-df="name" value="'+esc(DF.name)+'" placeholder="如:客户说"你们比 GLC 贵"" style="width:100%;max-width:420px">',{req:1})
    +FR('知识点','<select data-wc="dfset" data-k="kp">'+S.kps.map(k=>'<option value="'+k.id+'" '+(DF.kp===k.id?'selected':'')+'>'+esc(kpLabel(k))+(k.type==='技能型'?'':'(事实型)')+'</option>').join('')+'</select>',{req:1,h:'技能型知识点(异议处理、探需…)最适合用演练来测'})
    +FR('场景','<select data-wc="dfset" data-k="scene">'+['展厅','试驾','外呼','客服'].map(x=>'<option '+(DF.scene===x?'selected':'')+'>'+x+'</option>').join('')+'</select>')
@@ -96,7 +97,7 @@ function pgDrForm(){
    +FR('来源话术',(c?'<a class="link" data-act="cView" data-id="'+c.id+'">'+c.id+' '+esc(c.title)+'</a>':'<span class="hint">未关联</span>')+' <select data-wc="dfset" data-k="src"><option value="">更换…</option>'+kpMounted(kp(DF.kp)||{id:''}).map(x=>'<option value="'+x.id+'">'+x.id+' '+esc(x.title)+'</option>').join('')+'</select>',{h:'从该知识点已挂载的内容里选;评分依据'})
    +FR('回合','<div>'+th+'</div><button class="btn sm" data-act="drTurnAdd">+ 增加回合</button>',{req:1})
    +(chk.length?chk.slice(0,6).map(x=>'<div class="chk must"><b>!</b><span>'+esc(x)+'(定稿前必须补)</span></div>').join('')+(chk.length>6?'<div class="hint">还有 '+(chk.length-6)+' 项…</div>':''):'<div class="chk ok"><b>✓</b><span>可以定稿</span></div>')
-   +'</div><div class="dock"><span class="sp"></span><button class="btn" data-act="drCancel">取消</button><button class="btn" data-act="drSave" data-s="0">保存草稿</button><button class="btn pri" data-act="drSave" data-s="1">保存并定稿</button></div>'}
+   +'</div>'}
 document.addEventListener('input',e=>{const el=e.target;if(!DF||!el.dataset)return;if(el.dataset.df)DF[el.dataset.df]=el.value;if(el.dataset.dt!==undefined&&el.dataset.i!==undefined)DF.turns[+el.dataset.i][el.dataset.dt]=el.value});
 A.dfset=el=>{DF[el.dataset.k]=el.value;if(el.dataset.k==='kp')DF.src='';render()};
 A.drTurnAdd=()=>{DF.turns.push(drBlank());render()};

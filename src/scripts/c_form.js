@@ -140,6 +140,9 @@ function pgForm(){
   const gOk=!F.gray.on||(grayMids().length>0&&grayMids().length<grayPool().length&&grayMids().every(m=>grayPool().some(x=>x.mid===m)));
   const secOk={gray:gOk,base:!!F.name.trim()&&F.start<F.end,cover:cv.regions.length>0||(cv.useMid&&cv.mids.trim()),goal:goalOk,mod:rules.every(r=>r.ok||!r.must)&&mods.some(x=>x.nodes.some(n=>n.rel!=='无'))};
   const navI=(id,l,n)=>'<a class="'+(secOk[id]?'ok':'')+'" data-act="jump" data-s="'+id+'"><i>'+(secOk[id]?'✓':n)+'</i>'+l+'</a>';
+  const secLabel={base:'基础信息',cover:'覆盖人群',goal:'培训目标',mod:'学习模块',gray:'下发方式'};
+  const missIds=Object.keys(secLabel).filter(k=>!secOk[k]);
+  const missingHtml=missIds.length?'<span class="hint" style="color:var(--warn)">还差：</span>'+missIds.map(k=>'<a class="link" data-act="jump" data-s="'+k+'" style="color:var(--warn)">'+secLabel[k]+'</a>').join('<span class="hint">、</span>'):'<span class="hint" style="color:var(--ok)">必填已完整，可以提交</span>';
   const sec=(id,n,t,hint,body)=>'<div class="card" id="sec_'+id+'"><div class="sech"><i>'+n+'</i><h3>'+t+'</h3>'+(hint?'<span class="hint">'+hint+'</span>':'')+'</div>'+body+'</div>';
   let b=crumb('<a data-act="go" data-p="projects">学习任务</a> / 新增学习项目')+'<div class="ph"><h2>新增学习项目<span class="hint">培训项目就是带「培训目标」的学习项目;配置沿用现有「基础信息 → 学习模块」,新增培训类型和培训目标</span></h2><div class="pill-row">'+(F.from?'<span class="tag pri">参考课题 '+F.from+'</span>':'')+'</div></div>';
   // 左导航 + 中 + 右
@@ -174,7 +177,7 @@ function pgForm(){
   let R2='<div class="fl-sum"><div class="card"><h3>实时概览</h3><dl class="kv"><dt>项目</dt><dd><b>'+(esc(F.name)||'<span class="hint">未命名</span>')+'</b></dd><dt>类型</dt><dd>'+typeTxt({type:F.type,sub:F.sub})+'</dd><dt>周期</dt><dd>'+F.start+' ~ '+F.end+'</dd><dt>覆盖</dt><dd>'+cv.regions.join('、')+' · '+cv.tag+'<br><span class="hint">预估 '+tn+' 人</span></dd><dt>目标</dt><dd>'+m.name+'<br><b>'+base+'%</b> → <b style="color:var(--pri-d)">'+(isNaN(tv)?'?':tv+'%')+'</b>'+(goalOk?' <span class="tag ok">合格</span>':'')+'</dd><dt>对照</dt><dd>'+RELEASE[g.rel].n.split('(')[0]+' · '+chip(RELEASE[g.rel].trust)+'</dd><dt>下发</dt><dd>'+(F.gray.on?'分批灰度:第一批 '+grayMids().length+' 人 · 观察 '+F.gray.days+' 天<br><span class="hint">对照批 '+Math.max(0,grayPool().length-grayMids().length)+' 人,暂不下发</span>':'一次性全量')+'</dd></dl></div>'
    +'<div class="card"><h3>类型规则检查 <span class="tag pri">'+key+'</span></h3>'+(rules.length?rules.map(r=>'<div class="chk '+(r.ok?'ok':r.must?'must':'rec')+'"><b>'+(r.ok?'✓':r.must?'!':'·')+'</b><span>'+r.l+(r.ok?'':r.must?' <span style="color:var(--err)">(必须)</span>':' <span class="hint">(建议)</span>')+'</span></div>').join(''):'<div class="hint">该类型无规则</div>')+'</div>'
    +'<div class="card"><h3>任务流程预览</h3>'+mods.map((x,i)=>'<div style="margin-bottom:10px"><div style="font-weight:600;font-size:13px">'+(i+1)+'. '+(esc(x.name)||'<span class="hint">未命名模块</span>')+'</div><div class="seq" style="margin-top:4px">'+(x.nodes.filter(n=>n.rel!=='无').map(n=>'<span class="m" style="border-left:3px solid '+NODE_META[n.t][1]+'">'+n.t+'<em>'+esc(sumOf(n)).slice(0,14)+'</em></span>').join('')||'<span class="hint">暂无任务</span>')+'</div></div>').join('')+'</div></div>';
-  b+='<div class="fl">'+L+'<div>'+M+'</div>'+R2+'</div><div class="dock"><span class="hint">所有字段提交前会校验;提交后培训目标与口径锁定</span><span class="sp"></span><button class="btn" data-act="go" data-p="projects">取消</button><button class="btn pri" data-act="fsubmit">提交</button></div>';
+  b+='<!--DOCK_START--><div class="dock form-dock"><div class="form-dock-state">'+missingHtml+'<span class="hint">· 提交后培训目标与口径锁定</span></div><span class="sp"></span><button class="btn" data-act="go" data-p="projects">取消</button><button class="btn pri" data-act="fsubmit">检查并提交</button></div><!--DOCK_END--><div class="fl">'+L+'<div>'+M+'</div>'+R2+'</div>';
   setTimeout(()=>A.tgt(),0);
   return b;
 }
@@ -254,6 +257,18 @@ function compile(p){
   if(p.off){const o=p.offNode;p.roster=o.roster;p.signup=o.signup;p.quota=+o.quota||30;p.deadline=o.deadline;p.approver=o.approver;p.offName=o.name}
 }
 A.fsubmit=()=>{if(!formCheck())return;
+  const ec=estCover();const tn=ec.est+ec.mids.length;const g=F.goal;const main=g.main;
+  openDlg('提交前确认','<div style="line-height:1.9;font-size:13.5px">'
+   +'<div><b>项目</b>：'+esc(F.name||'未命名')+'</div>'
+   +'<div><b>类型</b>：'+esc(tk(F.type,F.sub))+'</div>'
+   +'<div><b>周期</b>：'+F.start+' ~ '+F.end+'</div>'
+   +'<div><b>覆盖</b>：'+esc(F.cover.regions.join('、')||'—')+' · 预估 '+tn+' 人</div>'
+   +'<div><b>目标</b>：'+esc(main.name)+' '+baseNow()+'% → <b>'+esc(F.goal.target||'?')+'%</b></div>'
+   +'<div><b>下发</b>：'+(F.gray.on?'分批灰度（第一批 '+grayMids().length+' 人）':'一次性全量')+'</div>'
+   +'<div class="hint" style="margin-top:8px">提交后培训目标与评价口径会锁定；如需修改，要走「目标变更申请」。请确认以上信息无误。</div></div>',
+   '<button class="btn" data-act="close">返回检查</button><button class="btn pri" data-act="fsubmitOk">确认提交</button>');
+};
+A.fsubmitOk=()=>{closeDlg();
   const ec=estCover();const ol0=overLimit(ec.a,F.start,F.end);
   if(ol0.max>S.cfg.limit&&!F.overReason){openDlg('在途任务超限','<div style="margin-bottom:10px">周期内门店「'+ol0.who+'」叠加后在途任务 <b>'+ol0.max+'</b> 项,超过上限 <b>'+S.cfg.limit+'</b>(配置中心)。可调整项目下发周期,或填写原因后继续提交(留痕)。</div><div class="f"><label><b>*</b>超限原因</label><div class="in"><textarea id="ovr" placeholder="如:新车上市培训,总部要求同期完成"></textarea></div></div>','<button class="btn" data-act="close">返回修改</button><button class="btn pri" data-act="overOk">继续提交</button>');return}
   const g=F.goal;const base=baseNow();const id='P'+(S.projects.length+1);

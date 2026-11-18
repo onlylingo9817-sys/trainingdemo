@@ -28,7 +28,7 @@ const mq=S.qs.find(x=>x.type==='多选'&&x.st==='已定稿');if(mq){QZ={mode:'pr
 const jq=S.qs.find(x=>x.type==='判断'&&x.st==='已定稿');if(jq){QZ={mode:'practice',kid:jq.kp,ids:[jq.id],i:0,picked:[jq.ans[0]===0?1:0],shown:false,log:[],chg:{}};R.page='quiz';A.qzSubmit();L('判断题选反 → '+(QZ.lastOk?'判对(错!)':'判错(对)'));QZ=null}
 document.body.dataset.end='pc';A.reset();
 // 10) 区域老师能不能看到题库与知识点
-A.roleSwitch({value:'r1'});UI.page='catalog';UI.tab.catalog='题库';try{render();L('区域老师 题库 ok len='+tx().length)}catch(e){L('ERR r1 题库 '+e.message)}
+A.roleSwitch({value:'r1'});UI.page='catalog';UI.tab.catalog='题库';try{render();L('区域老师 旧题库链接 → '+UI.page+'/'+UI.tab.content+' len='+tx().length)}catch(e){L('ERR r1 题库 '+e.message)}
 A.roleSwitch({value:'boss'});L('老板 能访问知识点管理='+PAGES_OK.boss.includes('catalog')+' 菜单不显示='+!/知识点管理/.test(document.querySelector('#menu').innerText));
 A.roleSwitch({value:'hq'});
 // 11) 所有已定稿题:题干无"原文里没有的数字"自检(数字必须出现在来源话术里)

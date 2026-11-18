@@ -12,11 +12,11 @@ const html = fs.readFileSync(path.join(src, 'index.html'), 'utf8');
 const escape = value => value.replace(/<\/script/gi, '<\\/script');
 const js = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"><\/script>/g)]
   .map(match => `<script>\n${escape(fs.readFileSync(path.join(src, match[1]), 'utf8')).trim()}\n</script>`);
-const css = [...html.matchAll(/<link\b[^>]*\bhref="([^"]+)"><\/link>/g)]
+const css = [...html.matchAll(/<link\b[^>]*\bhref="([^"]+)"[^>]*>/g)]
   .map(match => `<style>\n${fs.readFileSync(path.join(src, match[1]), 'utf8').trim()}\n</style>`);
 
 let output = html.replace(/<script\b[^>]*\bsrc="[^"]+"><\/script>\n?/g, '');
-output = output.replace(/<link\b[^>]*\bhref="[^"]+"><\/link>\n?/g, '');
+output = output.replace(/<link\b[^>]*\bhref="[^"]+"[^>]*>\n?/g, '');
 output = output.replace('</head>', css.join('\n') + '\n</head>');
 output = output.replace('</body>', js.join('\n') + '\n</body>');
 

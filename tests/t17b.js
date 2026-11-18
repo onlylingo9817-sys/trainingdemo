@@ -8,7 +8,7 @@ A.cReview({dataset:{id:c.id}});A.cPass({dataset:{id:c.id}});L('pass->'+c.st+' pu
 document.body.dataset.end='rn';ME=PEOPLE[0];R.page='school';R.cat=0;renderRN();L('RN sees unpublished '+document.querySelector('#rscr').innerText.includes('未上架话术'));document.body.dataset.end='pc';
 // task
 A.cToProject({dataset:{id:c.id}});L('toProject ok ref '+F.stages[0].modules.flatMap(m=>m.nodes).some(n=>n.cfg&&n.cfg.ref===c.id));
-F.goal.target=String(+(baseNow()+8).toFixed(1));F.overReason='x';A.fsubmit();const p=S.projects[0];L('proj '+p.id+' node ver '+(p.nodes.find(n=>n.contentId===c.id)||{}).contentVer);
+F.goal.target=String(+(baseNow()+8).toFixed(1));F.overReason='x';A.fsubmit();A.fsubmitOk();const p=S.projects[0];L('proj '+p.id+' node ver '+(p.nodes.find(n=>n.contentId===c.id)||{}).contentVer);
 // B. publish immediate
 UI.page='content';UI.cid=c.id;A.cPub({dataset:{id:c.id}});A.cPubOk({dataset:{id:c.id}});L('pub->'+pubOf(c)+' v'+c.pubVer);
 document.body.dataset.end='rn';renderRN();L('RN sees published '+document.querySelector('#rscr').innerText.includes('未上架话术'));document.body.dataset.end='pc';

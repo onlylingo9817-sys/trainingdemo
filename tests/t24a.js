@@ -18,7 +18,7 @@ CK('总览不再出现「车型 × 部位」',!/车型 × 部位|车上的部位
 UI.tab.catalog='知识点库';render();const lib=tx();
 CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&/标签/.test(lib));
 CK('知识点库支持批量操作',/批量指定负责人|批量启用/.test(lib));
-UI.tab.catalog='批量新建';render();const batch=tx();
+UI.tab.catalog='知识点库';render();A.kpOpenBatch();const batch=document.querySelector('#drw-root').innerText;
 CK('批量新建含 CSV 导入',/批量导入/.test(batch)&&/下载 CSV 模板/.test(batch));
 CK('批量新建含新车克隆',/新车型一键克隆/.test(batch));
 CK('批量新建含一个点多车型',/一个卖点，多个车型/.test(batch));
@@ -31,7 +31,7 @@ const g0=WB_GROUPS[1];A.wbF({dataset:{v:g0[0]}});const shown=Math.min(25,it.filt
 /* 5. 新用户导览 */
 A.pageHelp();CK('页头「怎么用」可用',/这页怎么用/.test(document.querySelector('#dlg').innerText));closeDlg();
 /* 6. 新建一个多车型点 */
-UI.page='catalog';UI.tab.catalog='批量新建';render();
+UI.page='catalog';UI.tab.catalog='知识点库';render();A.kpOpenBatch();
 $('#kp_multi_name').value='测试多车型点';document.querySelectorAll('.kp_multi_car')[1].checked=true;document.querySelectorAll('.kp_multi_car')[2].checked=true;A.kpQuickAdd();
 const nk=S.kps.find(k=>k.name==='测试多车型点');CK('新建一个点多车型成功',!!nk&&nk.cars.length===2,nk?nk.cars.join('/'):'没建成');
 /* 7. 详情:不再出现黑话 */

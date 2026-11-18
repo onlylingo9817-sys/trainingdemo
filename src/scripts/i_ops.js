@@ -77,4 +77,4 @@ function rulesAudit(){
    ['人员异动','离职 / 转店怎么影响名单?','只在效果口径里体现(剔除 / 保留);名单、班次不会自动变化','部分闭环'],
    ['下发失败','学习任务下发失败怎么办?','沿用现有「下发失败人员列表 / 重试」,本 Demo 未复刻','沿用现有'],
    ['Excel 导入名单','指定范围能传 Excel 吗?','只支持粘贴 MID;Excel 上传未做','部分闭环']];
-  return '<div class="card"><h3>8. 闭环审查(设计走查)</h3><div class="tw"><table class="t"><tr><th>环节</th><th>问题</th><th>当前设计</th><th>状态</th></tr>'+rows.map(r=>'<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td><td><span class="tag '+(r[3].startsWith('已')?'ok':r[3].startsWith('未')?'err':'warn')+'">'+r[3]+'</span></td></tr>').join('')+'</table></div></div>'}
+  return '<div class="card"><h3>闭环审查（设计走查）</h3><div class="tw"><table class="t"><tr><th>环节</th><th>问题</th><th>当前设计</th><th>状态</th></tr>'+rows.map(r=>'<tr><td><b>'+r[0]+'</b></td><td>'+r[1]+'</td><td>'+r[2]+'</td><td><span class="tag '+(r[3].startsWith('已')?'ok':r[3].startsWith('未')?'err':'warn')+'">'+r[3]+'</span></td></tr>').join('')+'</table></div></div>'}

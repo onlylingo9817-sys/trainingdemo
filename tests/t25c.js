@@ -14,9 +14,9 @@ CK('单个骨架继承标签',S.kps[S.kps.length-1].tags.length>0||r.suggested[0
 const n1=S.kps.length;A.kpCarIgnore();
 CK('忽略只收起结果不改数据',S.kps.length===n1&&!UI.sel.kpCar);
 /* CSV 预检 */
-UI.page='catalog';UI.tab.catalog='批量新建';render();A.kpSample();
+UI.page='catalog';UI.tab.catalog='知识点库';render();A.kpOpenBatch();A.kpSample();
 A.kpAiAudit();CK('批量导入预检有汇总',UI.sel.kpCsvAudit&&UI.sel.kpCsvAudit.summary.total>0,JSON.stringify(UI.sel.kpCsvAudit&&UI.sel.kpCsvAudit.summary));
-CK('预检页面可见',/导入前预检/.test(tx()));
+CK('预检页面可见',/导入前预检/.test(document.querySelector('#drw-root').innerText));
 const n2=S.kps.length;CK('预检不写入知识点',S.kps.length===n2);
 /* 标签治理 */
 UI.page='tagmanage';render();CK('标签管理页不再常驻治理块（重复校验改在新建时）',!/标签治理：只提示/.test(tx()));

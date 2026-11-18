@@ -33,7 +33,7 @@ function tagPickerHtml(field,current,opt){
   opt=opt||{};const vals=(current||[]).map(ptagOf).filter(Boolean);
   return '<div class="tag-picker">'
    +(vals.length?vals.map(t=>'<span class="tag pri" style="margin:0 6px 6px 0;padding:3px 8px">'+esc(tagShort(t.id))+' <a class="link" data-act="tagPickDel" data-field="'+field+'" data-v="'+t.id+'">×</a></span>').join(''):'<span class="hint">未选标签</span>')
-   +'<div style="display:flex;gap:8px;margin-top:6px"><select class="tag-pick-sel" data-field="'+field+'"><option value="">选择标签…</option>'+tagOptions({leafOnly:opt.leafOnly}).map(t=>'<option value="'+t.id+'">'+'　'.repeat(t.lv-1)+esc(t.name)+'</option>').join('')+'</select><button class="btn sm" data-act="tagPickAdd" data-field="'+field+'">加上</button><button class="btn sm" data-act="tagOpenManage">管理标签</button></div></div>';
+   +'<div style="display:flex;gap:8px;margin-top:6px"><select class="tag-pick-sel" data-field="'+field+'"><option value="">选择标签…</option>'+tagOptions({leafOnly:opt.leafOnly}).map(t=>'<option value="'+t.id+'">'+'　'.repeat(t.lv-1)+esc(t.name)+'</option>').join('')+'</select><button class="btn sm" data-act="tagPickAdd" data-field="'+field+'">加上</button>'+(typeof canConfigure==='function'&&canConfigure()?'<button class="btn sm" data-act="tagOpenManage">管理标签</button>':'')+'</div></div>';
 }
 function tagTreeHtml(selected,opt){
   opt=opt||{};const expanded=UI.sel.tagOpen||(UI.sel.tagOpen={});
@@ -48,7 +48,7 @@ function tagTreeHtml(selected,opt){
   return '<div class="tag-tree">'
    +'<div class="tag-row tag-all '+(selected?'':'on')+'" data-act="tagSelect" data-id=""><span class="tag-tw" style="visibility:hidden">·</span><span class="tag-name">全部标签</span><span class="tag-n">'+(S.kps.length)+'</span></div>'
    +tagRoots().map(t=>row(t,1)).join('')
-   +'<div class="tag-tree-foot"><button class="link" data-act="tagOpenManage">管理标签</button><button class="link" data-act="tagNewRoot">+ 新建</button></div></div>';
+   +'<div class="tag-tree-foot">'+(typeof canConfigure==='function'&&canConfigure()?'<button class="link" data-act="tagOpenManage">管理标签</button><button class="link" data-act="tagNewRoot">+ 新建</button>':'')+'</div></div>';
 }
 function pgTagManage(){
   const sel=UI.sel.tagMgr||'';

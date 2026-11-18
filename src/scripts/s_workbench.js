@@ -31,13 +31,13 @@ function wbItems(){
   const dDraft=S.drills.filter(d=>d.st==='草稿');if(dDraft.length)add('备料',1,'演练待定稿','<b>'+dDraft.length+' 个演练</b>还没定稿','草稿演练不会进入学员练习','去处理',ck+' data-p="content" data-tab="演练" data-ky="none"');
   /* —— v23:效果与调优待办 —— */
   if(typeof v23Diag==='function'&&S.lrn&&S.lrn.length){
-    v23Diag().filter(x=>x.ok==='bad').forEach(x=>add('效果',3,'效果诊断','<b>第 '+x.no+' 层 · '+esc(x.ttl)+'</b>',esc(x.sym)+' · '+esc(x.read[0][0])+' '+esc(String(x.read[0][1])),'去调优',ck+' data-p="effect" data-tab="调优" data-ky="none"'));
+    v23Diag().filter(x=>x.ok==='bad').forEach(x=>add('效果',3,'效果诊断','<b>第 '+x.no+' 层 · '+esc(x.ttl)+'</b>',esc(x.sym)+' · '+esc(x.read[0][0])+' '+esc(String(x.read[0][1])),(typeof canConfigure==='function'&&!canConfigure()?'看人员就绪度': '去调优'),ck+(typeof canConfigure==='function'&&!canConfigure()?' data-p="effect" data-tab="人员就绪度" data-ky="none"':' data-p="effect" data-tab="调优与结项" data-ky="none"')));
     const rec=S.mis.filter(m=>m.status==='recurred');
     if(rec.length)add('效果',2,'错题复发','<b>'+rec.length+' 条错题关闭后复发</b>','复发率 '+v23RecurRate()+'% · 涉及 '+new Set(rec.map(m=>m.kp)).size+' 个知识点','去错题集',ck+' data-p="effect" data-tab="错题集" data-ky="none"');
     const gaps=S.lrn.filter(l=>{const r=v23Readiness(l.mid,l.tier);return r.ach!=null&&r.ach<S.cfg.pass*0.7});
-    if(gaps.length)add('效果',2,'画像缺口','<b>'+gaps.length+' 人</b>目标达成率明显低于过关线','按画像项看缺口,可指派学习包','去就绪度',ck+' data-p="effect" data-tab="就绪度" data-ky="none"');
+    if(gaps.length)add('效果',2,'画像缺口','<b>'+gaps.length+' 人</b>目标达成率明显低于过关线','按画像项看缺口,可指派学习包','去就绪度',ck+' data-p="effect" data-tab="人员就绪度" data-ky="none"');
     const cv=S.cfgV.find(v=>v.status==='观察中');const od=cv&&v23ObsDue(cv);
-    if(cv&&od)add('效果',od.left<=0?3:1,'配置观察期','<b>配置版本 v'+cv.ver+'</b> '+(od.left<=0?'观察期已满,该对比效果了':'观察中,还剩 '+od.left+' 天'),'观察期 '+S.cfg.obsWeeks+' 周,满期后对比生效前后','去对比',ck+' data-p="effect" data-tab="调优" data-ky="none"');
+    if(cv&&od)add('效果',od.left<=0?3:1,'配置观察期','<b>配置版本 v'+cv.ver+'</b> '+(od.left<=0?'观察期已满,该对比效果了':'观察中,还剩 '+od.left+' 天'),'观察期 '+S.cfg.obsWeeks+' 周,满期后对比生效前后','去对比',ck+' data-p="effect" data-tab="调优与结项" data-ky="none"');
   }
   /* —— 实施:报名审批 —— */
   const pa=pendingFor();if(pa.length)add('实施',2,'待审批','<b>'+pa.length+' 条报名</b>待审批','先到先得;名额满进候补','去审批',ck+' data-p="approvals" data-ky="none"');
@@ -63,7 +63,7 @@ function pgWorkbench(){
 A.wbMore=()=>{UI.sel.wbMore=true;render()};
 A.wbF=el=>{UI.sel.wbf=el.dataset.v;render()};
 A.wbGo=el=>{const d=el.dataset;closeDlg();UI.page=d.p;if(d.tab)UI.tab[d.p]=d.tab;if(d.ky==='tid')UI.tid=d.id;if(d.ky==='kid')UI.kid=d.id;render();$('#main').scrollTop=0};
-A.wbCand=el=>{UI.page='catalog';UI.tab.catalog='看板';UI.sel.kpf={};render()};
+A.wbCand=el=>{UI.page='catalog';UI.tab.catalog='候选';render()};
 A.wbUnmounted=()=>{UI.page='content';UI.tab.content='内容';UI.sel.cq={kp:'未挂载'};render()};
 /* ================= 内容中心:四种性质统一入口(话术 / 课程 / 题 / 演练)=================
    话术、课程 = 原来的内容(S.contents);题 = S.qs;演练 = S.drills。

@@ -60,23 +60,28 @@ function coachMetricOf(x){
 }
 function coachGoalText(x){const m=coachMetricOf(x);return m.name+' '+x.pre+'% → '+(m.target||x.goal)}
 function coachNewTicket(o){
-  const x=coachPlanOf(Object.assign({id:'W'+(S.tickets.length+1),st:'触发',owner:'-',trig:'目标未达成',src:'推荐辅导店',log:[]},o));
+  const x=coachPlanOf(Object.assign({id:'W'+(S.tickets.length+1),st:'触发',owner:'-',trig:'目标未达成',src:'推荐辅导店',visitDate:today,log:[]},o));
   x.log.unshift({t:today,who:meShort(),act:'创建辅导项目',note:x.src});
   S.tickets.push(x);return x;
 }
 const COACH_SOP=['入店前两周','入店前一周','入店前两天','入店当天 Day1','入店当天 Day2','入店第3天','远程陪跑','30天总结'];
+function coachSopDates(x){
+  const start=x.visitDate||today;
+  const add=(d,n)=>{const t=new Date(d+'T00:00:00');t.setDate(t.getDate()+n);return fmt(t)};
+  return COACH_SOP.map((stage,i)=>({stage,date:[add(start,-14),add(start,-7),add(start,-2),start,add(start,1),add(start,3),null,add(start,30)][i],offset:[-14,-7,-2,0,1,3,null,30][i]}));
+}
 A.coachNewManual=()=>{openDlg('新建辅导项目','<div class="hint" style="margin-bottom:10px">线下辅导在门店里做，不一定有系统推荐。手动建一个辅导项目，之后按 SOP 阶段记录现场过程。</div>'
   +'<div class="f"><label><b>*</b>门店名称</label><div class="in"><input type="text" id="cm_store" placeholder="如：北京望京店" style="width:100%"></div></div>'
   +'<div class="f"><label>辅导目标</label><div class="in"><input type="text" id="cm_goal" placeholder="如：留资率 40% → 45%" style="width:100%"></div></div>'
   +'<div class="f"><label>辅导前数据(%)</label><div class="in"><input type="number" id="cm_pre" step="0.1" style="width:160px"></div></div>'
   +'<div class="f"><label>触发原因</label><div class="in"><input type="text" id="cm_trig" placeholder="如：新店开业 3 个月未达预期" style="width:100%"></div></div>'
-  +'<div class="f"><label>辅导人</label><div class="in"><input type="text" id="cm_owner" value="'+esc(UI.role.name)+'" style="width:200px"></div></div>',
+  +'<div class="f"><label><b>*</b>实际到店日期</label><div class="in"><input type="date" id="cm_visit" value="'+today+'" style="width:200px"><span class="hint">SOP 节点按这一天自动推算</span></div></div><div class="f"><label>辅导人</label><div class="in"><input type="text" id="cm_owner" value="'+esc(UI.role.name)+'" style="width:200px"></div></div>',
   '<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="coachNewManualSave">创建</button>',true)};
 A.coachNewManualSave=()=>{const store=(($('#cm_store')||{}).value||'').trim();if(!store)return toast('请填写门店名称','err');
   const goal=(($('#cm_goal')||{}).value||'').trim();const pre=parseFloat(($('#cm_pre')||{}).value);const trig=(($('#cm_trig')||{}).value||'').trim()||'手动创建';const owner=(($('#cm_owner')||{}).value||'').trim()||'-';
-  const x=coachNewTicket({store,proj:null,src:'手动新建',goal:goal,pre:isNaN(pre)?null:pre,trig,owner,sop:[]});
+  const visit=(($('#cm_visit')||{}).value||today);const x=coachNewTicket({store,proj:null,src:'手动新建',goal:goal,pre:isNaN(pre)?null:pre,trig,owner,visitDate:visit,sop:[]});
   closeDlg();toast('已创建「'+store+'」辅导项目,可按 SOP 阶段记录现场过程','ok');UI.sel.coachTab='概览';A.ticket({dataset:{id:x.id}});render()};
-A.coachSopLog=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;x.sop=x.sop||[];const v=el.dataset.v;const note=((document.getElementById('sop_note')||{}).value||'').trim();x.sop.push({stage:v,t:today,who:meShort(),note});coachSave(x,null,'记录 SOP 节点:'+v,note);toast('已记录「'+v+'」','ok');A.ticket({dataset:{id:x.id}})};
+A.coachSopLog=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;x.sop=x.sop||[];const v=el.dataset.v;const note=((document.getElementById('sop_note_'+el.dataset.id)||document.getElementById('sop_note')||{}).value||'').trim();x.sop.push({stage:v,t:today,who:meShort(),note});coachSave(x,null,'记录 SOP 节点:'+v,note);toast('已记录「'+v+'」','ok');A.ticket({dataset:{id:x.id}})};
 function mkTickets(p,n,src){
   if(!p.eff)return 0;const rows=storeRows(p).filter(r=>!metV(p,r.v)).sort((a,b)=>p.goal.main.dir==='低'?b.v-a.v:a.v-b.v).slice(0,n);let c=0;
   rows.forEach(r=>{if(S.tickets.some(t=>t.store===r.store&&t.proj===p.id))return;coachNewTicket({store:r.store,proj:p.id,src,goal:p.metric+' '+r.v+'% → '+p.target+'%',pre:r.v,trig:'目标未达成'});c++});return c}
@@ -202,24 +207,38 @@ A.coachClose=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));i
 
 /* ========== 效果追踪 ========== */
 const smallNow=p=>{const e=p.eff;return Math.min(e.a,e.noCtrl?e.a:e.b)<S.cfg.minN};
+function pgCloseBlock(){
+  const L=visibleP().filter(p=>p.status==='评估中'||p.status==='已结项');
+  return '<div class="card" style="margin-top:14px"><h3>复制与回炉 <span class="hint">项目进入评估中后才能结项；区域老师只看本区域</span></h3>'+(L.length?'<div class="grid g2">'+L.map(p=>'<div class="card" style="margin:0"><h3>'+esc(p.name)+' '+chip(p.status)+'</h3><div class="hint">'+goalTxt(p)+',当前 '+p.cur+p.unit+(smallNow(p)?'(样本不足,无法判断)':'')+'</div><div style="margin:8px 0">'+(p.status==='已结项'?'结论:<b>'+p.closeRes+'</b> · '+esc(p.closeWhy||''):(smallNow(p)?'样本不足,建议延长观察期或合并下一批再判断':pct(p)>=100?'目标已达成:沉淀好做法并复制到其他区域':'目标未达成:话术回炉或转入店辅导'))+'</div>'+(p.status==='已结项'?'':'<button class="btn pri" data-act="closeProj" data-id="'+p.id+'">结项并选结论</button>')+'</div>').join('')+'</div>':'<div class="hint">暂无可结项的项目。项目进入「评估中」后出现在这里。</div>')+'</div>';
+}
 function pgEffect(){
-  const tabs=UI.role.type==='boss'?['效果看板','就绪度','错题集','人员','效果报告']:['效果看板','就绪度','错题集','人员','调优','效果报告','复制与回炉'];const t=curTab('effect',tabs);let b='';
+  const bossRole=UI.role.type==='boss';
+  const cfgRole=typeof canConfigure==='function'&&canConfigure();
+  const tabs=bossRole?['效果看板','人员就绪度','错题集','效果报告']:(cfgRole?['效果看板','人员就绪度','错题集','效果报告','调优与结项']:['效果看板','人员就绪度','错题集','效果报告']);
+  let t=curTab('effect',tabs);
+  const EFF_ALIAS={'人员':'人员就绪度',就绪度:'人员就绪度','人员就绪度':'人员就绪度',调优:'调优与结项','复制与回炉':'调优与结项','调优与结项':'调优与结项'};
+  if(EFF_ALIAS[t])t=EFF_ALIAS[t];
+  if(!tabs.includes(t))t=tabs[0];
+  let b='';
   const withEff=visibleP().filter(p=>p.eff);
   if(t==='效果看板')b=withEff.length?efBoard(withEff):srcBar('效果数据不是手工录入的:项目提交 → 培训 → 观察期结束后,系统在「评估中」阶段从北斗 BI(业务结果)、汽车语料(行为/话术)、清河大学(掌握度)同步。')+cta('还没有项目产生效果数据',S.projects.length?'已有 '+S.projects.length+' 个项目,但都还没到「评估中」。到项目概览里推进阶段。':'先「新增学习项目」,走完培训,再回来看效果。',S.projects.length?'<button class="btn pri" data-act="go" data-p="projects">去培训项目</button>':'<button class="btn pri" data-act="formNew">新增学习项目</button>');
   if(t==='效果报告')b=rptTab(withEff);
-  if(t==='就绪度')return tabsH('effect',tabs)+pgRdy();
-  if(t==='错题集')return tabsH('effect',tabs)+pgMis();
-  if(t==='人员'){
-    if(UI.role.type==='boss')return tabsH('effect',tabs)+'<div class="src">老板视图只看群体结果；个人级明细请用区域/总部身份查看。</div>'+pgRdy();
-    return tabsH('effect',tabs)+pgPeople();
+  if(t==='人员就绪度'){
+    const view=bossRole?'group':(UI.sel.effView||'ready');
+    const bar=bossRole?'<div class="src">老板视图只看群体结果；个人级明细请用区域/总部身份查看。</div>':'<div class="dnav" style="margin-bottom:10px"><button class="btn sm '+(view==='ready'?'pri':'')+'" data-act="v23EffView" data-v="ready">就绪度看板</button> <button class="btn sm '+(view==='people'?'pri':'')+'" data-act="v23EffView" data-v="people">人员明细</button></div>';
+    return tabsH('effect',tabs)+bar+(view==='people'?pgPeople():pgRdy());
   }
-  if(t==='调优')return tabsH('effect',tabs)+pgTune();
-  if(t==='复制与回炉'){
+  if(t==='错题集')return tabsH('effect',tabs)+pgMis();
+  if(t==='调优与结项'){
+    return tabsH('effect',tabs)+pgTune();
+  }
+  if(false){
     const L=visibleP().filter(p=>p.status==='评估中'||p.status==='已结项');
     b=srcBar('结项是闭环的最后一步:项目进入「评估中」后在这里(或项目概览)选结论 → 复制 / 回炉 / 转入店辅导(自动生成辅导工单)/ 终止。')+(L.length?'<div class="grid g2">'+L.map(p=>'<div class="card"><h3>'+esc(p.name)+' '+chip(p.status)+'</h3><div class="hint">'+goalTxt(p)+',当前 '+p.cur+p.unit+(smallNow(p)?'(样本不足,无法判断)':'')+'</div><div style="margin:8px 0">'+(p.status==='已结项'?'结论:<b>'+p.closeRes+'</b> · '+esc(p.closeWhy||''):(smallNow(p)?'样本不足,建议延长观察期或合并下一批再判断':pct(p)>=100?'目标已达成:沉淀好做法并复制到其他区域':'目标未达成:话术回炉或转入店辅导'))+'</div>'+(p.status==='已结项'?'':(UI.role.type==='boss'?'<span class="hint">老板只读,由项目负责人结项</span>':'<button class="btn pri" data-act="closeProj" data-id="'+p.id+'">结项并选结论</button>'))+'</div>').join('')+'</div>':cta('暂无可结项的项目','项目进入「评估中」后出现在这里。',''));
   }
   return '<div class="ph"><h2>效果追踪</h2><span class="hint">扩展现有「数据看板」:学习完成层沿用,新增目标 / 对照 / 三层指标</span></div>'+tabsH('effect',tabs)+b;
 }
+A.v23EffView=el=>{UI.sel.effView=el.dataset.v||'ready';UI.tab.effect='人员就绪度';render();$('#main').scrollTop=0};
 A.subOk=()=>toast('订阅已保存','ok');
 A.efsel=el=>{UI.ef=el.value;UI.drill=[];render()};
 function efBoard(list){
@@ -291,6 +310,7 @@ function pgConfig(){
      +'<div class="card"><h3>硬规则(提交审核前必须满足,代码固定)</h3><div class="hint" style="line-height:2">政策类内容:必须有有效期和出处 · 话术:必须有关键词组 · 其余沿用现有「内容管理」的必填校验(标题、讲师、封面图、可见范围、对应素材)</div></div>';
   }
   if(t==='数据源')b=srcBar('系统里所有「不是人手工录入」的数据都来自这里,只读。点「立即同步」模拟一次拉取。')
+    +(typeof kpQh==='function'?'<div class="card" style="margin-bottom:14px"><h3>清河迁移清单 <span class="hint">原「知识点 → 清河迁移」，一次性任务，不占日常页签</span></h3>'+kpQh()+'</div>':'')
     +'<div class="tw"><table class="t"><tr><th>数据源</th><th>系统</th><th>提供什么</th><th>用在哪里</th><th>同步频率</th><th>状态</th></tr>'+DS.map(d=>'<tr><td><b>'+d[0]+'</b></td><td>'+d[1]+'</td><td>'+d[2]+'</td><td>'+d[3]+'</td><td>'+d[4]+'</td><td><span class="tag ok">已连接</span> <button class="link" data-act="dsSync" data-n="'+d[0]+'">立即同步</button></td></tr>').join('')+'</table></div>'
     +'<div class="card" style="margin-top:14px"><h3>人员主数据概况(人事系统)</h3><table class="t"><tr><th>区域</th><th>销售顾问</th><th>其中新人(入职 ≤ 90 天)</th><th>门店</th></tr>'+Object.keys(REG).map(r=>'<tr><td>'+r+'</td><td>'+REG[r].all+'</td><td>'+REG[r].nb+'</td><td>'+REG[r].stores.join('、')+'</td></tr>').join('')+'</table><div class="hint" style="margin-top:6px">「覆盖角色」的预估人数、新人判定都取自这张表;演示名单 '+PEOPLE.length+' 人是其中可在零售通扮演的学员。</div></div>';
   if(t==='标签管理')b='<div class="src">标签树由业务自主维护：可以是车上部位、政策口径、卖点或场景。改名不影响已挂载的知识点与内容。</div>'+pgTagManage();
@@ -369,10 +389,22 @@ A.coachPrescribeFill=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.datase
   toast('已按处方填入学 / 练项与目标,请核对后保存计划','ok');A.ticket({dataset:{id:x.id}})};
 function coachSopHtml(x){
   const done=x.sop||[];
-  return '<div class="card coach-sop"><h3>线下 SOP 记录 <span class="hint">按门店实际发生的阶段记录，没做的可以不记；每次记录都会留痕</span></h3>'
-   +'<div class="coach-sop-grid">'+COACH_SOP.map(v=>{const hit=done.filter(r=>r.stage===v);return '<div class="coach-sop-row'+(hit.length?' on':'')+'"><b>'+esc(v)+'</b>'+(hit.length?'<span class="tag ok">已记录 '+hit.length+' 次</span><span class="hint">最近 '+esc(hit[hit.length-1].t)+'</span>':'<span class="hint">未记录</span>')+'<button class="btn sm" data-act="coachSopLog" data-id="'+x.id+'" data-v="'+esc(v)+'">记一次</button></div>'}).join('')+'</div>'
-   +'<div style="margin-top:8px"><input id="sop_note" placeholder="这次发生了什么（选填，如：Day1 完成关键岗位沟通，店长认可 3 条问题）" style="width:100%"></div></div>';
+  const days=coachSopDates(x);
+  const first=days[0].date,last=days[days.length-1].date;
+  const noteId='sop_note_'+x.id;
+  return '<div class="card coach-sop"><div class="coach-sop-head"><div><h3>线下 SOP 记录 <span class="hint">以实际到店日为锚点自动推算；没发生的节点不用记</span></h3>'
+   +'<div class="hint" style="margin-top:4px">到店日 <b>'+esc(x.visitDate||today)+'</b> · 时间轴 '+esc(first)+' ~ '+esc(last)+'</div></div>'
+   +'<button class="btn sm" data-act="coachVisitEdit" data-id="'+x.id+'">改到店日期</button></div>'
+   +'<div class="coach-sop-timeline">'+days.map(d=>{const hit=done.filter(r=>r.stage===d.stage);const late=hit.length&&hit[hit.length-1].t&&hit[hit.length-1].t>d.date;const ongoing=d.stage==='远程陪跑';const future=!!d.date&&d.date>today&&!hit.length&&!ongoing;return '<div class="coach-sop-node'+(hit.length?' on':'')+(future?' future':'')+'">'
+     +'<div class="coach-sop-date">'+esc(d.date||'持续')+'</div>'
+     +'<div class="coach-sop-line"><i></i></div>'
+     +'<div class="coach-sop-body"><b>'+esc(d.stage)+'</b>'+(hit.length?'<span class="tag ok">已记录 '+hit.length+' 次</span>'+(late?'<span class="tag warn">补录</span>':'')+'<div class="hint">最近 '+esc(hit[hit.length-1].t)+'</div>':future?'<span class="hint">未到日期</span>':ongoing?'<span class="hint">持续中，可随时记录</span>':'<span class="hint">未记录</span>')
+     +(future?'':'<button class="btn sm" data-act="coachSopLog" data-id="'+x.id+'" data-v="'+esc(d.stage)+'">'+(hit.length?'再记一次':'记录')+'</button>')+'</div></div>'}).join('')+'</div>'
+   +'<div style="margin-top:10px"><input id="'+noteId+'" placeholder="这次发生了什么（选填，如：Day1 完成关键岗位沟通，店长认可 3 条问题）" style="width:100%"></div></div>';
 }
+A.coachVisitEdit=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;openDlg('修改实际到店日期','<div class="hint" style="margin-bottom:10px">改到店日期后，SOP 节点会按新日期重新推算；已记录的内容保留，日期按新时间轴显示。</div><div class="f"><label><b>*</b>实际到店日期</label><div class="in"><input type="date" id="cv_date" value="'+esc(x.visitDate||today)+'"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="coachVisitSave" data-id="'+x.id+'">保存</button>')};
+A.coachVisitSave=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));if(!x)return;const v=(($('#cv_date')||{}).value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return toast('请选择到店日期','err');x.visitDate=v;coachSave(x,null,'修改实际到店日期',v);closeDlg();toast('已按 '+v+' 重新推算 SOP 节点','ok');A.ticket({dataset:{id:x.id}})};
+
 function coachPrescribeHtml(x){
   const rx=coachPrescribe(x);
   return '<div class="ai-box coach-rx"><div class="ai-box-h">'+AI_TAG+' <span class="hint">门店处方（草稿）：根据触发证据和未完成的检核生成，只填表不保存</span></div>'

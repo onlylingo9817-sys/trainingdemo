@@ -48,10 +48,11 @@ function v23RdyPill(v){const t=v==null?['—','']:v>=80?['就绪','ok']:v>=60?['
 /* ---------- 效果 · 就绪度 ---------- */
 A.v23Stu=el=>{closeDlg();const p=personOf(el.dataset.mid);if(p&&(UI.role.type!=='region'||p.region===UI.role.region)){UI.page='person';UI.stuMid=el.dataset.mid}else{UI.page='people';if(p&&p.region!==UI.role.region)toast('只能查看本区域人员','err');else UI.page='student',UI.stuMid=el.dataset.mid}render();$('#main').scrollTop=0};
 function pgRdy(){
+  if(typeof isBoss==='function'&&isBoss())return pgRdyAgg();
   if(v23Empty())return '<div class="ph"><h2>就绪度</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('就绪度数据');
   const f=UI.sel.rdy||(UI.sel.rdy={scope:'全国',store:'',tier:''});
   const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {l,rdy:r.val,ach:r.ach,items:r.items,pass:r.ach!=null&&r.ach>=S.cfg.pass}});
-  const scopeRows=all.filter(x=>f.scope==='全国'||x.l.region===f.scope);
+  const scopeRows=all.filter(x=>f.scope==='全国'||x.l.region===f.scope).filter(x=>typeof personInScope!=='function'||personInScope(x.l.region));
   const kw=(f.q||'').trim().toLowerCase();
   const rows=scopeRows.filter(x=>(!f.store||x.l.store===f.store)&&(!f.tier||x.l.tier===f.tier)&&(!kw||x.l.name.toLowerCase().includes(kw)||String(x.l.mid).includes(kw))&&(!f.verdict||(f.verdict==='已达标'?x.pass:f.verdict==='未达标'?(!x.pass&&x.rdy!=null):x.rdy==null)));
   const q=v23Quadrant();
@@ -167,7 +168,7 @@ function pgStudent(){
 A.v23MisJump=el=>{const d=el.dataset;const f=UI.sel.misf||(UI.sel.misf={});
   if(d.kp)f.kp=d.kp;if(d.st)f.st=d.st;if(d.type)f.type=d.type;UI.page='effect';UI.tab.effect='错题集';render();$('#main').scrollTop=0};
 function misRows(f){
-  return S.mis.filter(m=>(!f.kp||m.kp===f.kp)&&(!f.type||m.type===f.type)&&(!f.st||m.status===f.st)&&(!f.store||(lrnOf(m.mid)||{}).store===f.store)&&(!f.reg||(lrnOf(m.mid)||{}).region===f.reg));
+  return S.mis.filter(m=>(!f.kp||m.kp===f.kp)&&(!f.type||m.type===f.type)&&(!f.st||m.status===f.st)&&(!f.store||(lrnOf(m.mid)||{}).store===f.store)&&(!f.reg||(lrnOf(m.mid)||{}).region===f.reg)&&(typeof personInScope!=='function'||personInScope((lrnOf(m.mid)||{}).region)));
 }
 /* 按知识点聚合:错题人数 / 次数 / 复发 / 代表原文 / 金牌话术 */
 function misAgg(rows){
@@ -180,6 +181,7 @@ function misAgg(rows){
   return Object.values(m).sort((a,b)=>b.n-a.n);
 }
 function pgMis(){
+  if(typeof isBoss==='function'&&isBoss())return pgMisAgg();
   if(!(S.mis&&S.mis.length)&&v23Empty())return '<div class="ph"><h2>错题集</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('错题数据');
   const f=UI.sel.misf||(UI.sel.misf={});
   const rows=misRows(f);const agg=misAgg(rows);
@@ -329,15 +331,15 @@ function pgTune(){
        +'<div class="rd">'+x.read.map(r=>'<div><span class="k">'+r[0]+'</span> <b>'+r[1]+'</b></div>').join('')+'</div>'
        +'<div><div class="tn-verdict '+x.ok+'">'+x.verdict+'</div>'
          +'<div class="hint" style="margin-top:6px;line-height:1.6">建议:'+x.lever+'</div>'
-         +(x.ok==='bad'?'<button class="btn sm pri" style="margin-top:8px;width:100%" data-act="tnFix" data-no="'+x.no+'">一键创建调整项</button>':
+         +(x.ok==='bad'&&(typeof canConfigure!=='function'||canConfigure())?'<button class="btn sm pri" style="margin-top:8px;width:100%" data-act="tnFix" data-no="'+x.no+'">一键创建调整项</button>':
            x.fix&&x.fix!=='null'?'<button class="btn sm" style="margin-top:8px;width:100%" data-act="go" data-p="'+x.go[0]+'" '+((x.go[1]&&x.go[0]==='effect')?'data-t="'+x.go[1]+'"':(x.go[0]==='cfgEval'?'data-p="config" data-t="评价口径"':''))+'">'+esc(x.fix)+'</button>':'')
        +'</div></div>').join('')
      +'</div>'
      +'<div class="card" style="border-color:var(--pri)"><h3>推荐的下一步</h3>'
-     +(hit.length?'<div class="hint" style="line-height:1.9">当前命中:<b>第 '+hit.map(x=>x.no+' '+x.ttl).join(' / ')+'</b> 层。'
+     +(hit.length?'<div class="hint" style="line-height:1.9">'+(typeof canConfigure==='function'&&!canConfigure()?'当前为只读：你可以查看诊断结果，调整项仅总部培训部可创建。<br>':'')+'当前命中:<b>第 '+hit.map(x=>x.no+' '+x.ttl).join(' / ')+'</b> 层。'
      +'<br>剧本:新人训第10期 —— 试点批在「顾虑解除」上测评 + 演练都过关,但<b>实战行为出现率几乎没升</b>,和对照批差不多 → 问题不在"学没学",而在"练得不够、没在店里用起来"。'
      +'<br>建议:① 提高演练比重;② 提高「演练」来源权重;③ 新增「顾虑解除专项」学习包(带演练与复测)。三项一起生成配置版本 v'+(Math.max(...S.cfgV.map(v=>v.ver))+1)+',进入观察期。</div>'
-     +'<div style="margin-top:10px"><button class="btn pri" data-act="tnFix" data-no="③">一键创建调整项</button> <button class="btn" data-act="tnTab" data-v="配置版本">看看已有版本</button></div>'
+     +'<div style="margin-top:10px">'+(typeof canConfigure!=='function'||canConfigure()?'<button class="btn pri" data-act="tnFix" data-no="③">一键创建调整项</button> ':'')+'<button class="btn" data-act="tnTab" data-v="配置版本">看看已有版本</button></div>'
      :'<div class="hint" style="line-height:1.9">各层目前都没有命中「问题」。'+(cv?'配置版本 v'+cv.ver+' 正在观察期,可以去「前后对比」看效果。':'')+'</div>'
       +'<div style="margin-top:10px">'+(cv?'<button class="btn pri" data-act="tnTab" data-v="前后对比">看前后对比</button> ':'')+'<button class="btn" data-act="tnTab" data-v="配置版本">看配置版本</button></div>')+'</div>';
   }
@@ -365,12 +367,16 @@ function pgTune(){
   if(sub==='前后对比'){
     b=pgCompare();
   }
-  return '<div class="ph"><h2>调优 <span class="hint" style="font-weight:400">效果不理想 → 知道哪里不理想 → 改一个杠杆 → 看改完有没有变好 → 不行就回滚</span></h2><div>'+V23_SIM+'</div></div>'
-   +tabsH('tune',['诊断','配置版本','前后对比'])+b;
+  if(sub==='结项'){
+    b=pgCloseBlock();
+  }
+  return '<div class="ph"><h2>调优与结项 <span class="hint" style="font-weight:400">先诊断 → 改口径 → 看对比；项目结束后在「结项」选结论</span></h2><div>'+V23_SIM+'</div></div>'
+   +tabsH('tune',['诊断','配置版本','前后对比','结项'])+b;
 }
 A.tnTab=el=>{UI.tab.tune=el.dataset.v;render();$('#main').scrollTop=0};
 /* 一键创建调整项:提高演练比重 + 行为权重下调 + 新增专项学习包 → 生成新配置版本(观察中) */
 A.tnFix=()=>{
+  if(typeof canConfigure==='function'&&!canConfigure())return toast('仅总部培训部可调整评价口径','err');
   const last=Math.max(...S.cfgV.map(v=>v.ver));
   const oldW=Object.assign({},S.cfg.srcW);
   const newW={quiz:.30,drill:.40,behavior:.20,coach:.10,self:0};
@@ -395,6 +401,7 @@ A.tnFix=()=>{
    '<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="tnFixDo">确认创建(进入观察期)</button>',true);
 };
 A.tnFixDo=()=>{
+  if(typeof canConfigure==='function'&&!canConfigure())return toast('仅总部培训部可调整评价口径','err');
   const last=Math.max(...S.cfgV.map(v=>v.ver));const nv=last+1;
   const newW={quiz:.30,drill:.40,behavior:.20,coach:.10,self:0};
   const oldW=Object.assign({},S.cfg.srcW);
@@ -418,10 +425,12 @@ A.tnFixDo=()=>{
 A.tnSnap=el=>{const v=S.cfgV.find(x=>x.ver===+el.dataset.v);
   openDlg('配置快照 · v'+v.ver,Object.keys(v.snap).map(k=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f2f3f5"><span class="hint">'+esc(k)+'</span><b>'+esc(String(v.snap[k]))+'</b></div>').join(''),
    '<button class="btn" data-act="close">关闭</button>')};
-A.tnRollback=el=>{const v=S.cfgV.find(x=>x.ver===+el.dataset.v);const prev=S.cfgV.filter(x=>x.ver<v.ver).sort((a,b)=>b.ver-a.ver)[0];
+A.tnRollback=el=>{
+  if(typeof canConfigure==='function'&&!canConfigure())return toast('仅总部培训部可调整评价口径','err');const v=S.cfgV.find(x=>x.ver===+el.dataset.v);const prev=S.cfgV.filter(x=>x.ver<v.ver).sort((a,b)=>b.ver-a.ver)[0];
   if(!prev)return toast('没有更早的版本可回滚','err');
   A.tnRollbackTo({dataset:{v:prev.ver}})};
-A.tnRollbackTo=el=>{const v=S.cfgV.find(x=>x.ver===+el.dataset.v);if(!v)return;
+A.tnRollbackTo=el=>{
+  if(typeof canConfigure==='function'&&!canConfigure())return toast('仅总部培训部可调整评价口径','err');const v=S.cfgV.find(x=>x.ver===+el.dataset.v);if(!v)return;
   const cur={ver:Math.max(...S.cfgV.map(x=>x.ver)),srcW:Object.assign({},S.cfg.srcW)};
   S.cfg.srcW=Object.assign({},v.raw.srcW);S.cfg.win=v.raw.win;S.cfg.decay=v.raw.decay;S.cfg.behWin=v.raw.behWin;S.cfg.behN=v.raw.behN;S.cfg.pass=v.raw.pass;S.cfg.obsWeeks=v.raw.obsWeeks;S.cfg.smallN=v.raw.smallN;S.cfg.corrTh=v.raw.corrTh;
   S.cfgV.filter(x=>x.status==='观察中').forEach(x=>x.status='已回滚');
@@ -938,3 +947,31 @@ A.pplBulkCoachOk=()=>{const t=pplBulkTargets();const trig=(($('#bc_trig')||{}).v
 /* ---------- 需关注口径配置 ---------- */
 A.pplCareSave=()=>{const c=pplCareCfg();const r=+($('#care_ratio')||{}).value;const m=+($('#care_packs')||{}).value;if(!(r>0&&r<=1))return toast('比例需在 0~1 之间','err');if(!(m>=0))return toast('学习包阈值需 ≥0','err');c.ratio=r;c.maxPacks=m;c.misRecur=!!($('#care_rec')||{}).checked;closeDlg();toast('已保存需关注口径','ok');render()};
 A.pplCareDlg=()=>{const c=pplCareCfg();openDlg('需关注口径','<div class="hint" style="margin-bottom:10px">满足任一条即算“需关注”。改动只影响页面统计与筛选，不改任何业务数据。</div><div class="f"><label>就绪度低于过关线的比例</label><div class="in"><input id="care_ratio" type="number" step="0.05" min="0.1" max="1" value="'+c.ratio+'" style="width:120px"> × 过关线 '+S.cfg.pass+'</div></div><div class="f"><label>进行中学习包超过</label><div class="in"><input id="care_packs" type="number" min="0" value="'+c.maxPacks+'" style="width:120px"> 个</div></div><div class="f"><label><input type="checkbox" id="care_rec" '+(c.misRecur?'checked':'')+'> 关闭后复发的错题算需关注</label></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplCareSave">保存</button>')};
+
+/* 老板身份：只给群体聚合，不输出姓名/MID */
+function pgRdyAgg(){
+  if(v23Empty())return '<div class="ph"><h2>就绪度</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('就绪度数据');
+  const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {l,rdy:r.val,ach:r.ach,pass:r.ach!=null&&r.ach>=S.cfg.pass}});
+  const tested=all.filter(x=>x.rdy!=null);
+  const avg=tested.length?Math.round(tested.reduce((s,x)=>s+x.rdy,0)/tested.length):null;
+  const by={};tested.forEach(x=>{const k=x.l.tier||'未分档';(by[k]=by[k]||[]).push(x)});
+  const regs=[...new Set(all.map(x=>x.l.region))].filter(Boolean);
+  return '<div class="src">老板视图只看群体结果；个人级明细请用区域/总部身份查看。</div><div class="ph"><h2>就绪度 <span class="hint" style="font-weight:400">老板视图：只看群体分布，不看个人明细</span></h2><div>'+V23_SIM+'</div></div>'
+   +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅相关，不作因果。</span></div>'
+   +'<div class="grid g3" style="margin-bottom:14px">'
+   +'<div class="stat"><div class="l">有证据人数</div><div class="n">'+tested.length+'</div><div class="hint">共 '+all.length+' 人</div></div>'
+   +'<div class="stat"><div class="l">平均就绪度</div><div class="n" style="color:'+v23RdyColor(avg)+'">'+(avg==null?'—':avg)+'</div><div class="hint">过关线 '+S.cfg.pass+'</div></div>'
+   +'<div class="stat"><div class="l">达标人数</div><div class="n">'+tested.filter(x=>x.pass).length+' / '+tested.length+'</div><div class="hint">目标达成率</div></div></div>'
+   +'<div class="card"><h3>按岗位档</h3><table class="t"><tr><th>岗位档</th><th>人数</th><th>平均就绪度</th><th>达标人数</th></tr>'
+   +Object.keys(by).map(k=>{const a=by[k];const v=Math.round(a.reduce((s,x)=>s+x.rdy,0)/a.length);return '<tr><td>'+esc(k)+'</td><td>'+a.length+'</td><td>'+v+'</td><td>'+a.filter(x=>x.pass).length+'</td></tr>'}).join('')+'</table></div>'
+   +'<div class="card"><h3>按区域</h3><table class="t"><tr><th>区域</th><th>有证据</th><th>平均就绪度</th><th>达标人数</th></tr>'
+   +regs.map(r=>{const a=tested.filter(x=>x.l.region===r);if(!a.length)return '';const v=Math.round(a.reduce((s,x)=>s+x.rdy,0)/a.length);return '<tr><td>'+esc(r)+'</td><td>'+a.length+'</td><td>'+v+'</td><td>'+a.filter(x=>x.pass).length+'</td></tr>'}).join('')+'</table><div class="hint" style="margin-top:6px">样本 &lt;3 人的分组不下结论。</div></div>';
+}
+function pgMisAgg(){
+  const L=S.mis||[];
+  const byKp={};L.forEach(m=>{(byKp[m.kp]=byKp[m.kp]||[]).push(m)});
+  const rows=Object.keys(byKp).map(k=>({k,rows:byKp[k],n:new Set(byKp[k].map(x=>x.mid)).size,cnt:byKp[k].reduce((a,b)=>a+b.count,0),recur:byKp[k].filter(x=>x.status==='recurred').length})).sort((a,b)=>b.cnt-a.cnt);
+  return '<div class="ph"><h2>错题集 <span class="hint" style="font-weight:400">老板视图：按知识点聚合，不显示学员姓名</span></h2><div>'+V23_SIM+'</div></div>'
+   +'<div class="card"><h3>按知识点聚合 <span class="hint">共 '+rows.length+' 个知识点有错题</span></h3>'
+   +(rows.length?'<table class="t"><tr><th>知识点</th><th>涉及人数</th><th>错题次数</th><th>复发</th></tr>'+rows.map(x=>'<tr><td>'+esc((kp(x.k)||{}).name||x.k)+'</td><td>'+x.n+'</td><td>'+x.cnt+'</td><td>'+(x.recur||'<span class="hint">0</span>')+'</td></tr>').join('')+'</table>':'<div class="hint">暂无错题数据</div>')+'</div>';
+}

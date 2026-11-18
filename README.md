@@ -25,7 +25,7 @@ src/
   index.html          页面骨架，按顺序加载脚本
   styles/app.css      v23 既有样式
   styles/v23.css      v23 新增页面样式
-  scripts/            29 个脚本，按 index.html 顺序执行
+  scripts/            30 个脚本，按 index.html 顺序执行
 tests/                交互回归探针（按 tools/run-tests.js 的清单执行）
 tools/dev-server.js   零依赖开发服务器
 tools/build-single-file.js  可选单文件导出
@@ -65,6 +65,8 @@ npm run build
 
 生成 `dist/培训全链路闭环_Demo.html`，可以直接双击打开。日常开发不需要这一步。
 
+构建命令会自动做一次完整性校验（`npm run verify:single`）：确认 CSS/JS 已全部内联、无外部资源引用。单文件约 1.1 MB，纯离线可运行，双击即可体验，不需要启动服务。
+
 ## 数据与边界
 
 - 真实作答会写入证据流；掌握度、就绪度、错题与调优页面共用同一套派生数据。
@@ -78,10 +80,12 @@ npm run build
 ```bash
 npm run dev        # 启动 http://127.0.0.1:4173/
 npm run check      # 语法 / 脚本顺序 / 启动链
-npm test           # 全量页面探针测试
+npm test           # 全量页面探针测试（当前 64 组）
 ```
 
 - 源码入口：`src/index.html`。不要重新合并回单文件；`npm run build` 只用于对外分享。
+- 当前知识点页签为 3 个：总览 / 知识点库 / 候选；题目与演练统一在「内容中心」维护，批量导入与新车克隆在页头抽屉，清河迁移在「配置中心 → 数据源」。
+- 当前效果追踪页签：总部 5 个、区域老师 4 个、老板 4 个；旧页签名做了兼容映射。
 - 交互与业务决策：`docs/HANDOFF-v23.md`。改业务规则前先读第 17 节与第 22–23 节。
 - 课程样例：`assets/cemn_course.md`（CEMN 讲师手册清洗稿），可直接在「内容中心 → 导入」上传/粘贴正文。
 - AI 建议是规则模拟，不是真实模型；只建议、不自动写入，采纳/忽略有留痕。替换推荐函数即可接真实模型。

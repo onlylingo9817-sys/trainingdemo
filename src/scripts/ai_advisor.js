@@ -280,7 +280,7 @@ function aiKpCsvAuditHtml(){
    +(a.rows.filter(x=>x.recTags.length).slice(0,5).map(x=>'<div style="margin:3px 0;font-size:12.5px">第 '+x.line+' 行推荐标签：'+x.recTags.map(t=>'<span class="tag pri" style="margin:0 4px">'+esc(t.tag.name)+' <span class="hint" style="color:inherit;opacity:.7">'+esc(t.reason)+'</span></span>').join('')+'</div>').join(''))
    +'<div class="hint" style="margin-top:4px">预检只提示，不改数据；未知标签仍会被正式导入拦截。</div></div>';
 }
-A.kpAiAudit=()=>{const text=($('#kp_csv')||{}).value||'';if(!text.trim())return toast('请先粘贴或载入 CSV','err');UI.sel.kpCsvAudit=aiKpCsvAudit(text);toast('预检完成：'+UI.sel.kpCsvAudit.summary.total+' 行','ok');render()};
+A.kpAiAudit=()=>{const text=($('#kp_csv')||{}).value||'';if(!text.trim())return toast('请先粘贴或载入 CSV','err');UI.sel.kpCsvAudit=aiKpCsvAudit(text);if(typeof kpBatchCapture==='function')kpBatchCapture();toast('预检完成：'+UI.sel.kpCsvAudit.summary.total+' 行','ok');if(typeof kpBatchRefresh==='function')kpBatchRefresh();else render()};
 /* ---------- 标签治理 ---------- */
 function aiTagAudit(){
   const out=[];const active=tagActive();
@@ -323,7 +323,7 @@ A.drNewFrom=el=>{const kid=el.dataset.kp;const src=el.dataset.src;A.drNew();if(D
 /* ---------- 全站操作动线：新人第一次进来先做什么 ---------- */
 const AI_PAGE_GUIDE={
  workbench:['今天先处理最紧急的 3 件事','待办按「紧急 → 建议 → 可选」排；点「去处理」直达对象。AI 建议卡只提示缺口，不会自动改数据。','aiOpen','看 AI 建议'],
- catalog:['先看「总览」哪款车缺什么','总览 → 车型 × 标签矩阵 → 点格子筛知识点；补清单用「批量新建」，造讲解去内容中心。','go','看车型矩阵'],
+ catalog:['先看「总览」哪款车缺什么','总览 → 车型 × 标签矩阵 → 点格子筛知识点；补清单用「批量导入 / 新车克隆」，造讲解去内容中心。','go','看车型矩阵'],
  kp:['先看这个点能不能上课','按「负责人 → 讲解 → 题 → 演练」看缺口；缺讲解点「去内容中心」，缺题/演练在下方入口。','aiOpen','AI 检查建议'],
  tagmanage:['标签由业务自己维护','统一用业务词建标签（部位 / 政策 / 卖点 / 场景）；先治理重复标签，再补空白标签。','tagAiAudit','AI 查重'],
  content:['先确认内容有没有挂对知识点','列表按标签树筛选；没挂知识点的内容进不了完备度。导入内容时会自动推荐知识点 / 标签，确认后才写入。','aiGoUnlinked','看未挂载'],

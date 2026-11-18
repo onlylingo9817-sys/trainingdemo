@@ -8,8 +8,9 @@
     "start": "node tools/dev-server.js",
     "check": "node tools/check.js",
     "test": "node tools/run-tests.js",
-    "build": "node tools/build-single-file.js",
-    "export": "node tools/build-single-file.js"
+    "build": "node tools/build-single-file.js && node tools/verify-single-file.js",
+    "export": "node tools/build-single-file.js",
+    "verify:single": "node tools/verify-single-file.js"
   },
   "engines": {
     "node": ">=18"

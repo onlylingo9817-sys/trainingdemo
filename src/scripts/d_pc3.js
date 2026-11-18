@@ -104,7 +104,7 @@ function approveApp(a){const p=proj(a.proj);a.status=cntOk(a.proj)<p.quota?'已�
 function pgApprovals(){
   const fp=UI.sel.fp||'',fs=UI.sel.fs===undefined?'待审批':UI.sel.fs;
   const aq=(UI.sel.aq||'').trim().toLowerCase();
-  const rows=myApprovals().filter(a=>(!fp||a.proj===fp)&&(!fs||a.status===fs)&&(!aq||String((pp(a.mid)||{}).name||'').toLowerCase().includes(aq)||String(a.mid).includes(aq)||String((pp(a.mid)||{}).store||'').toLowerCase().includes(aq)));
+  const rows=myApprovals().filter(a=>(!fp||a.proj===fp)&&(!fs||a.status===fs)&&(typeof personInScope!=='function'||personInScope((pp(a.mid)||{}).region))&&(!aq||String((pp(a.mid)||{}).name||'').toLowerCase().includes(aq)||String(a.mid).includes(aq)||String((pp(a.mid)||{}).store||'').toLowerCase().includes(aq)));
   const apg=lstPage('apPage',rows,20);
   const ids=visibleP().filter(p=>p.off&&p.signup==='报名制');
   const cnt=s=>myApprovals().filter(a=>a.status===s).length;

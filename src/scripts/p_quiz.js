@@ -99,7 +99,8 @@ function pgQForm(){
   const oh=opts.map((o,i)=>'<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><label style="width:34px;font-weight:600">'+qLetters[i]+'</label>'+(isJ?'<span style="min-width:160px">'+o+'</span>':'<input type="text" data-qf-o="'+i+'" value="'+esc(o)+'" placeholder="选项 '+qLetters[i]+'" style="width:100%;max-width:380px">')+'<label class="sw2"><input type="'+(QF.type==='多选'?'checkbox':'radio')+'" name="qa" data-wc="qAnsSet" data-i="'+i+'" '+(QF.ans.includes(i)?'checked':'')+'> 正确答案</label>'+(!isJ&&opts.length>2?'<a class="link err" data-act="qOptDel" data-i="'+i+'">删除</a>':'')+'</div>').join('');
   const c=QF.src&&content(QF.src);
   const chk=[];if(!QF.stem.trim())chk.push('请填写题干');if(!isJ&&opts.some(o=>!String(o).trim()))chk.push('有选项没填');if(!QF.ans.length)chk.push('请选择正确答案');if(QF.type==='多选'&&QF.ans.length<2)chk.push('多选题至少 2 个正确答案');if(!QF.why.trim())chk.push('请写解析(学员答错会看到)');if(!isJ&&new Set(opts.map(o=>String(o).trim())).size<opts.length)chk.push('选项有重复');if(/请编干扰项|AI 草稿/.test(QF.stem+opts.join('')))chk.push('还有 AI 占位文字没改');
-  return crumb('<a data-act="go" data-p="content">内容中心</a> / 题 / '+(QF._new?'新增':QF.id))+'<div class="ph"><h2>'+(QF._new?'新增题目':'编辑 '+QF.id)+'</h2></div>'
+  const dockHtml='<!--DOCK_START--><div class="dock"><span class="sp"></span><button class="btn" data-act="qCancel">取消</button><button class="btn" data-act="qSave" data-s="0">保存草稿</button><button class="btn pri" data-act="qSave" data-s="1">保存并定稿</button></div><!--DOCK_END-->';
+  return crumb('<a data-act="go" data-p="content">内容中心</a> / 题 / '+(QF._new?'新增':QF.id))+dockHtml+'<div class="ph"><h2>'+(QF._new?'新增题目':'编辑 '+QF.id)+'</h2></div>'
    +'<div class="card frm">'+FR('知识点','<select data-wc="qfset" data-k="kp">'+S.kps.map(k=>'<option value="'+k.id+'" '+(QF.kp===k.id?'selected':'')+'>'+esc(kpLabel(k))+'</option>').join('')+'</select>',{req:1,h:'题挂在知识点上;诊断时每个知识点抽题'})
    +FR('题型','<div class="rels">'+Q_TYPES.map(x=>'<span class="'+(QF.type===x?'on':'')+'" data-act="qType" data-v="'+x+'">'+x+'</span>').join('')+'</div>',{req:1})
    +FR('题干','<textarea class="w" data-qf="stem" style="min-height:70px">'+esc(QF.stem)+'</textarea>',{req:1,h:'只考话术 / 课程原文里明确有的事实;不要出原文里没有的数字'})
@@ -108,7 +109,7 @@ function pgQForm(){
    +FR('难度','<select data-wc="qfset" data-k="lv"><option value="1" '+(QF.lv==1?'selected':'')+'>1 · 记忆</option><option value="2" '+(QF.lv==2?'selected':'')+'>2 · 辨析</option></select>')
    +FR('来源话术',(c?'<a class="link" data-act="cView" data-id="'+c.id+'">'+c.id+' '+esc(c.title)+'</a>':'<span class="hint">未关联</span>')+' <select data-wc="qfset" data-k="src"><option value="">更换…</option>'+kpMounted(kp(QF.kp)||{id:''}).map(x=>'<option value="'+x.id+'">'+x.id+' '+esc(x.title)+'</option>').join('')+'</select>',{h:'从该知识点已挂载的内容里选;出题依据'})
    +(chk.length?chk.map(x=>'<div class="chk must"><b>!</b><span>'+esc(x)+'(定稿前必须补)</span></div>').join(''):'<div class="chk ok"><b>✓</b><span>可以定稿</span></div>')
-   +'</div><div class="dock"><span class="sp"></span><button class="btn" data-act="qCancel">取消</button><button class="btn" data-act="qSave" data-s="0">保存草稿</button><button class="btn pri" data-act="qSave" data-s="1">保存并定稿</button></div>'}
+   +'</div>'}
 document.addEventListener('input',e=>{const el=e.target;if(!QF||!el.dataset)return;if(el.dataset.qf)QF[el.dataset.qf]=el.value;if(el.dataset.qfO!==undefined)QF.opts[+el.dataset.qfO]=el.value});
 A.qfset=el=>{QF[el.dataset.k]=el.dataset.k==='lv'?+el.value:el.value;if(el.dataset.k==='kp')QF.src='';render()};
 A.qType=el=>{const t=el.dataset.v;QF.type=t;if(t==='判断'){QF.opts=['正确','错误'];QF.ans=[0]}else{if(QF.opts.length<3||QF.opts[0]==='正确')QF.opts=['','','',''];QF.ans=[0]}render()};

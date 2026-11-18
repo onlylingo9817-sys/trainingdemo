@@ -8,8 +8,8 @@ CK('关系形成有向链(SPIN)',kp('K_SPIN1').pre.includes('K_SPIN0')&&kp('K_SP
 CK('孤岛知识点少于 5 个',act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length).length<=5);
 UI.page='catalog';UI.tab.catalog='总览';render();
 const t=document.querySelector('#main').innerText;
-CK('总览有知识图谱',/知识图谱/.test(t)&&document.querySelectorAll('#main svg circle').length>10);
-CK('图谱连线体现前置/相关',/实线=前置关系/.test(t));
+CK('总览有知识图谱全貌/单点双视图',/知识图谱/.test(t)&&!!document.querySelector('[data-act=kgView]')&&!!document.querySelector('#main .kg-net'));
+CK('图谱网络有节点与连线',document.querySelectorAll('#main .kg-net circle').length>20&&document.querySelectorAll('#main .kg-net line').length>10);
 CK('总览有知识点治理面板',/知识点治理/.test(t)&&/没挂标签/.test(t)&&/没进岗位画像/.test(t));
 CK('所有启用知识点都有标签',act.filter(k=>!(k.tags||[]).length).length===0,act.filter(k=>!(k.tags||[]).length).map(k=>k.name).join(','));
 A.kpNew();KF.name='无标签拦截测试';KF.cars=['通用车型'];KF.abId=(kpAbRows()[0]||{}).id;KF.tags=[];A.kfSave();

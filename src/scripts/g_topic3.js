@@ -66,7 +66,7 @@ function topicWriteback(p){const t=p.from&&topic(p.from);if(!t)return;
   t.result={proj:p.id,closeRes:p.closeRes,closeWhy:p.closeWhy,status:st};
   if(p.closeRes==='回炉'){t.flow='新发现';t.reopen=(t.reopen||0)+1;thist(t,'系统','项目回炉退回','项目 '+p.id+' 效果「'+st+'」,话术已下线;问题回到「新发现」,可以再建一个项目')}
   else{const cs=(t.cids||[]).map(content).filter(Boolean);const gap=[];if(!cs.length)gap.push('无内容');else if(!cs.some(isPub))gap.push('未上架');if(!p.id)gap.push('无项目');t.flow='已闭环';t.evidenceGap=gap;thist(t,'系统','项目结项回写','项目 '+p.id+' 效果「'+st+'」,结论「'+p.closeRes+'」:'+p.closeWhy+(gap.length?';证据不全:'+gap.join(' / '):''))}}
-function rulesTopic(){return '<div class="card"><h3>6. 课题池(辅助工具)</h3><div class="tw"><table class="t"><tr><th>状态</th><th>怎么进入</th><th>谁做</th><th>下一步</th></tr>'
+function rulesTopic(){return '<div class="card"><h3>7. 课题池（辅助工具，不是必经流程）</h3><div class="tw"><table class="t"><tr><th>状态</th><th>怎么进入</th><th>谁做</th><th>下一步</th></tr>'
  +[['新发现','系统出题 / 对外洞察转入 / 有人提出问题;AI 自动分析','系统 / agent / 任何有后台权限的人','看分析 → 「用它建学习项目」,或「暂不做」'],['已采纳','用它生成了内容,或用它建了学习项目(自动关联)','总部培训部 / 区域老师','内容走「审核 → 定稿 → 做成学习任务 / 上架零售通」;项目走完状态机'],['暂不做','手动收起,可填原因','任何能处理的人','可恢复'],['已闭环','关联项目结项(复制 / 转入店辅导 / 终止)','系统','效果结论写回,方便复盘;选「回炉」则回到「新发现」']].map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</table></div><div class="hint" style="margin-top:6px">课题池不是必经入口:没有课题也可以直接去「内容管理」生成内容或新增学习项目;有课题时,「生成内容」会把问题、证据带给 agent,内容入库后再做成学习任务。没有校对、定题、审批。出题阈值:会话 ≥ '+S.cfg.topicSess+'、门店 ≥ '+S.cfg.topicStores+'(配置中心可改)。</div></div>'}
 
 A.topicKp=el=>{const t=topic(el.dataset.id);if(!t)return;t.kpId=el.value||'';thist(t,meName(),'关联知识点',el.value?((kp(el.value)||{}).name||''):'取消关联');toast(t.kpId?'已关联「'+((kp(t.kpId)||{}).name||'')+'」':'已取消关联','ok');render()};

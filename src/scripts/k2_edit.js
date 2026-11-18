@@ -151,8 +151,8 @@ function pgContentEdit(){
    +'</div>';
   const qc='<div class="card"><h3>质量检查 <span class="hint">硬规则不满足不能提交审核;提醒项由你决定</span></h3><div id="qcbox">'+qcHtml()+'</div></div>';
   const aud2=C.id&&content(C.id)?content(C.id).rName:meFull();
-  const dock='<div class="dock"><span class="hint">审核人:'+esc(aud2)+'(本人,预留可配置)</span><span class="sp"></span>'+(C.rv?'<button class="btn pri" data-act="cSave" data-s="2">保存修改</button>':'<button class="btn pri" data-act="cSave" data-s="1">提交审核</button><button class="btn" data-act="cSave" data-s="0">保存草稿</button>')+'<button class="btn" data-act="cPreview">预 览</button><button class="btn" data-act="go" data-p="content">取 消</button></div>';
-  return crumb('<a data-act="go" data-p="content">内容管理</a> / '+(C.id?'编辑 '+C.id:'新增内容'))+'<div class="ph"><h2>'+(C.id?'编辑内容 '+C.id:'新增内容')+(t?' <span class="tag pri">课题 '+t.id+'</span>':'')+(C.rv?' <span class="tag warn">审核人直接修改</span>':'')+'</h2></div>'+(C.id?'':ai)+f+nw+qc+dock;
+  const dock='<!--DOCK_START--><div class="dock"><span class="hint">审核人:'+esc(aud2)+'(本人,预留可配置)</span><span class="sp"></span>'+(C.rv?'<button class="btn pri" data-act="cSave" data-s="2">保存修改</button>':'<button class="btn pri" data-act="cSave" data-s="1">提交审核</button><button class="btn" data-act="cSave" data-s="0">保存草稿</button>')+'<button class="btn" data-act="cPreview">预 览</button><button class="btn" data-act="go" data-p="content">取 消</button></div><!--DOCK_END-->';
+  return crumb('<a data-act="go" data-p="content">内容管理</a> / '+(C.id?'编辑 '+C.id:'新增内容'))+dock+'<div class="ph"><h2>'+(C.id?'编辑内容 '+C.id:'新增内容')+(t?' <span class="tag pri">课题 '+t.id+'</span>':'')+(C.rv?' <span class="tag warn">审核人直接修改</span>':'')+'</h2></div>'+(C.id?'':ai)+f+nw+qc;
 }
 A.cpt=el=>{C.publishType=el.dataset.v;render()};
 A.cPreview=()=>{const o=cAsObj();const L=C.kind==='话术'?[]:spl(C.intro);
