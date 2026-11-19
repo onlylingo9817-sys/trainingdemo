@@ -9,7 +9,7 @@ CK('AI 匹配标签有结果',adv&&adv.tags.length>0,'tags='+(adv?adv.tags.lengt
 CK('建议不自动写入选中的标签',KF.tags.length===0,KF.tags.join(','));
 const tid=adv.tags[0].tag.id;A.kfAiTag({dataset:{v:tid}});
 CK('采纳后写入表单标签',KF.tags.includes(tid),KF.tags.join(','));
-const n0=KF.tags.length;A.kfAiTagIgnore({dataset:{v:adv.tags[1]?adv.tags[1].tag.id:tid}});A.kfAdvice();
+const n0=KF.tags.length;const igId=adv.tags[1]?adv.tags[1].tag.id:tid;A.kfAiTagIgnore({dataset:{v:igId}});A.kfAiTagIgnore({dataset:{v:igId,rs:'1'}});A.kfAdvice();
 CK('忽略建议不会新增标签',KF.tags.length===n0,'before='+n0+' after='+KF.tags.length);
 CK('知识点表单可见 AI 建议',!!document.querySelector('#kfAbAdv')&&/建议主要训练能力/.test((document.querySelector('#main')||{}).innerText||''));
 /* 内容编辑：推荐知识点 / 标签 */

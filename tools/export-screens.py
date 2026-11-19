@@ -17,7 +17,8 @@ RN_CSS = ".topbar,.menu,.gd,#pc{display:none!important}#rn{height:auto!important
 
 def pc(fid, js, extra=None, fit="#main .content, #main"):
     o={"id":fid,"html":"src/index.html","profile":"pc","js":"A.reset();A.roleSwitch({value:'hq'});closeDlg();"+js,"css":PC_CSS,"fit":".content"}
-    if extra: o["height"]=extra
+    if isinstance(extra, int): o["height"]=extra
+    elif extra and isinstance(fit, int): o["height"]=fit  # ("#dlg", 900) 约定:弹窗截图用定高
     return o
 
 shots = []
@@ -77,6 +78,8 @@ shots.append(pc("P-46","UI.cid='N10';UI.ctab='内容';UI.page='cdetail';render()
 shots.append(pc("P-47","UI.cid='N10';UI.ctab='内容';UI.page='cdetail';render();rvStartDlg('content','N10','async');A.rvStartOk({dataset:{k:'content',id:'N10'}});UI.cid='N10';UI.ctab='内容';UI.page='cdetail';render();rvProxyDlg(rvActive('content','N10').id)"))
 shots.append(pc("P-48","UI.page='catalog';UI.tab.catalog='知识点库';render();rvStartDlg('kpx','K3','async');A.rvStartOk({dataset:{k:'kpx',id:'K3'}});UI.page='catalog';UI.tab.catalog='知识点库';render()"))
 shots.append(pc("P-49","UI.cid='N10';UI.ctab='内容';UI.page='cdetail';render();rvStartDlg('content','N10','async');A.rvStartOk({dataset:{k:'content',id:'N10'}});rvFinishAsync(rvActive('content','N10'),false,'系统','测试');UI.page='cdetail';UI.ctab='内容';render()"))
+shots.append(pc("P-50","UI.page='config';UI.tab.config='学习包模板';render()"))
+shots.append(pc("P-51","UI.page='config';UI.tab.config='学习包模板';render();A.pkTplEdit({dataset:{id:'PT1'}})","#dlg",900))
 
 # 移动端
 def rn(fid, js, extra=None, crop=None):

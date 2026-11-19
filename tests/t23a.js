@@ -7,7 +7,7 @@ A.roleSwitch({value:'hq'});
 CK('学员 41 人 / 6 店',S.lrn.length===41&&v23Stores().length===6,S.lrn.length+' 人 '+v23Stores().length+' 店');
 CK('学员 MID 唯一(不重号)',new Set(S.lrn.map(l=>l.mid)).size===S.lrn.length,'去重后 '+new Set(S.lrn.map(l=>l.mid)).size+' / '+S.lrn.length);
 CK('生成学员的 MID 不与 v22 演示学员冲突',S.lrn.filter(l=>!V23_BASE.some(b=>b[0]===l.mid)&&!['2023202','2023201','2023203','2023204','2024113','2023206'].includes(l.mid)).every(l=>!PEOPLE.some(p=>p.mid===l.mid)));
-CK('四档岗位都有人',V23_TIER.every(t=>S.lrn.some(l=>l.tier===t)),JSON.stringify(S.lrn.reduce((a,x)=>(a[x.tier]=(a[x.tier]||0)+1,a),{})));
+CK('三档岗位都有人',V23_TIER.length===3&&V23_TIER.every(t=>S.lrn.some(l=>l.tier===t)),JSON.stringify(S.lrn.reduce((a,x)=>(a[x.tier]=(a[x.tier]||0)+1,a),{})));
 CK('12 周数据',Object.values(S.out)[0].length===12&&Object.values(S.beh)[0].K1.length===12);
 CK('试点批 / 对照批都有',S.lrn.some(l=>l.group==='试点批')&&S.lrn.some(l=>l.group==='对照批'));
 const sig1=JSON.stringify(S.lrn.map(l=>v23Readiness(l.mid,l.tier).val));
@@ -20,15 +20,15 @@ CK('维度 id 稳定且无重复值 id',S.dims.every(d=>new Set(d.values.map(v=>
 CK('每个知识点至少挂 1 个归属维度才算有效',S.kps.every(k=>(k.dims.Dcar||[]).length||(k.dims.Dprod||[]).length),'无归属='+S.kps.filter(k=>!(k.dims.Dcar||[]).length&&!(k.dims.Dprod||[]).length).map(k=>k.id).join(','));
 CK('知识点不再依赖"事实型/技能型"来区分(由维度推断)',S.kps.every(k=>typeof kpKindHint(k)==='string'));
 /* ---- 3. 画像 ---- */
-CK('四档画像权重合计均为 100',S.profiles.length===4&&S.profiles.every(p=>pfWsum(p)===100),S.profiles.map(p=>p.role+':'+pfWsum(p)).join(' '));
+CK('三档画像权重合计均为 100',S.profiles.length===3&&S.profiles.every(p=>pfWsum(p)===100),S.profiles.map(p=>p.role+':'+pfWsum(p)).join(' '));
 CK('每个画像项都命中知识点(不存在空选择器)',S.profiles.every(p=>p.items.every(it=>pfKps(it).length>0)),S.profiles.flatMap(p=>p.items.filter(it=>!pfKps(it).length).map(it=>it.id)).join(','));
 /* ---- 4. 掌握度:来源权重真的在起作用 ---- */
-const l0=S.lrn.find(l=>l.tier==='新人顾问'&&l.train);const kid='K18';
+const l0=S.lrn.find(l=>l.train);const kid='K18';
 const m0=v23Mastery(l0.mid,kid);
 const cfgA=Object.assign({},S.cfg,{srcW:{quiz:1,drill:0,behavior:0,coach:0,self:0}});
 const cfgB=Object.assign({},S.cfg,{srcW:{quiz:0,drill:0,behavior:1,coach:0,self:0}});
 /* 用剧本群体(试点批新人 · 顾虑解除 K18)断言:测评过关但实战行为低 → 两种口径下掌握度应显著不同 */
-const pil=S.lrn.filter(l=>l.tier==='新人顾问'&&l.train);
+const pil=S.lrn.filter(l=>l.train);
 const avg=cfg=>Math.round(pil.map(l=>v23Mastery(l.mid,kid,cfg)).filter(v=>v!=null).reduce((a,b)=>a+b,0)/pil.length);
 const mq=avg(cfgA),mb=avg(cfgB);
 CK('试点批 K18:只看测评 vs 只看行为 掌握度明显不同(权重生效)',mq-mb>=15,'测评='+mq+' 行为='+mb+' (单人 '+l0.name+' 合成='+m0+')');
@@ -46,7 +46,7 @@ CK('就绪度与手算一致(Σ权重×min(均值,目标)/Σ权重)',r.val===han
 CK('就绪度封顶:某项超过目标等级不会多算',r.items.every(x=>x.cap==null||x.cap<=x.item.target+1e-9));
 /* ---- 6. 同源同数:就绪度页 / 学员详情 / 零售通 / 工作台 ---- */
 v23RefreshAll();
-const lx=S.lrn.find(l=>l.tier==='新人顾问');const rd=v23Readiness(lx.mid,lx.tier);
+const lx=S.lrn.find(l=>l.tier==='零售顾问');const rd=v23Readiness(lx.mid,lx.tier);
 UI.page='effect';UI.tab.effect='就绪度';UI.sel.rdy={scope:'全国',store:'',tier:'',q:lx.name};UI.sel.rdyPage={page:1,size:20};render();
 const rowTxt=[...document.querySelectorAll('#main table.t.nw tr')].find(tr=>tr.innerText.includes(lx.name));
 CK('就绪度页该学员的数 = 引擎',!!rowTxt&&rowTxt.innerText.includes(String(rd.val)),rowTxt?rowTxt.innerText.replace(/\s+/g,' ').slice(0,80):'没找到行');

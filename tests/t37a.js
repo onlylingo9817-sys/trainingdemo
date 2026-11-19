@@ -41,7 +41,7 @@ CK('异步评审期间仍可打开上架弹窗',(()=>{A.cPub({dataset:{id:'N10'}
 CK('异步评审期间仍可改版',(()=>{const v=c3.ver;A.cRevise({dataset:{id:'N10'}});return c3.ver>v||c3.st!=='已定稿'})());
 /* ===== 4. 异步评审的结果回流 ===== */
 fresh();ra=startAsync('N10');const c4=content('N10');
-rvVote(ra,'hq:liuxiang','pass','','刘翔');const g=ra.jury.filter(j=>j.ch==='rn');rvVote(ra,g[0].mid,'pass','','x');rvVote(ra,g[1].mid,'pass','','x');
+rvVote(ra,'hq:liuxiang','pass','','刘翔');const g=ra.jury.filter(j=>j.ch==='rn');const need=Math.floor(ra.jury.length/2)+1;g.slice(0,need-1).forEach(j=>rvVote(ra,j.mid,'pass','','x'));
 CK('异步评审通过:打「已评审」,内容状态不变',ra.st==='已通过'&&c4.st==='已定稿'&&rvPassedNow(c4),ra.st+'/'+c4.st);
 fresh();ra=startAsync('N10');const c5=content('N10');
 rvVote(ra,'hq:liuxiang','deny','口径有误','刘翔');
@@ -154,11 +154,11 @@ const shown=()=>document.querySelector('#mask').classList.contains('show');
 const gate=()=>{rvCfg().ruleMode='gate'};
 /* R1 异步评审期间内容被改:通过结果只对旧版本有效,不当作当前内容已评审,也不绕过强制评审 */
 fresh();gate();ra=startAsync('N10');const cr1=content('N10');cr1.title='评审期间被改的标题';cr1.st='草稿';
-rvVote(ra,'hq:liuxiang','pass','','x');const gg=ra.jury.filter(j=>j.ch==='rn');rvVote(ra,gg[0].mid,'pass','','x');rvVote(ra,gg[1].mid,'pass','','x');
+rvVote(ra,'hq:liuxiang','pass','','x');const gg=ra.jury.filter(j=>j.ch==='rn');gg.slice(0,Math.floor(ra.jury.length/2)).forEach(j=>rvVote(ra,j.mid,'pass','','x'));
 CK('异步评审期间内容被改:通过结论不算当前内容已评审',ra.st==='已通过'&&!rvPassedNow(cr1)&&!cr1.rvBad);
 CK('异步评审通过时不覆盖发起时的内容指纹',!!ra.fp&&ra.fp!==rvFp(cr1));
 fresh();gate();ra=startAsync('N10');const cr2=content('N10');
-rvVote(ra,'hq:liuxiang','pass','','x');const g2=ra.jury.filter(j=>j.ch==='rn');rvVote(ra,g2[0].mid,'pass','','x');rvVote(ra,g2[1].mid,'pass','','x');
+rvVote(ra,'hq:liuxiang','pass','','x');const g2=ra.jury.filter(j=>j.ch==='rn');g2.slice(0,Math.floor(ra.jury.length/2)).forEach(j=>rvVote(ra,j.mid,'pass','','x'));
 CK('内容没被改:异步评审通过算评审通过',rvPassedNow(cr2));
 /* R2 结项守卫与回炉幂等 */
 fresh();A.closeProj({dataset:{id:'P7'}});

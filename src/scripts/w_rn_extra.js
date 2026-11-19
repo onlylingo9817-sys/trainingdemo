@@ -2,6 +2,27 @@
    约定：所有函数只在调用时访问 S/R/UI，脚本顶层不碰全局状态。 */
 const RX_STEP_GO={学:'去学习',练题:'做几道题',演练:'去演练',复测:'去复测'};
 
+/* 学习项目里的「学习包」节点 → 为学员物化一个学习包实例(幂等) */
+function packEnsure(p,n,mid){
+  let pk=S.packs.find(x=>x.proj===p.id&&x.nodeId===n.id&&(x.mid===mid||(x.mids||[]).includes(mid)));
+  if(pk)return pk;
+  const tpl=(S.packTpl||[]).find(t=>t.id===n.packTpl)||(S.packTpl||[]).find(t=>t.on!==false);
+  if(!tpl)return null;
+  const k=kp(n.packKp)||{};
+  pk={id:'PK'+(S.packs.length+1),tpl:tpl.id,mid:mid,mids:[mid],kp:n.packKp||'',name:tpl.name+' · '+(k.name||''),steps:tpl.steps.map(s=>({t:s[0],need:s[1],done:false})),due:addDays(today,tpl.dueDays||7),status:'进行中',ts:today,audience:1,proj:p.id,nodeId:n.id};
+  S.packs.unshift(pk);return pk;
+}
+/* 复测开放口径:有 openAt(按步独立开放)看 openAt;老数据回退到「到截止日才开放」 */
+function packStepLock(p,s,i){
+  if(s.done)return '';
+  if(s.openAt)return today<s.openAt?'<span class="rst2 lock">'+Math.max(1,Math.round((new Date(s.openAt)-new Date(today))/864e5))+' 天后开放(间隔复习)</span>':'';
+  if(s.t==='复测'){
+    if((p.steps||[]).some((x,j)=>j<i&&!x.done))return '<span class="rst2 lock">先完成前面的步骤</span>';
+    if(p.due&&today<p.due)return '<span class="rst2 lock">'+Math.max(1,Math.round((new Date(p.due)-new Date(today))/864e5))+' 天后开放</span>';
+  }
+  return '';
+}
+
 /* ---------- 学习包详情 ---------- */
 function rxPackHtml(){
   const isCtrl=(typeof personOf==='function'&&(personOf(ME.mid)||{}).group==='对照批');
@@ -11,7 +32,7 @@ function rxPackHtml(){
   const k=kp(p.kp)||{};const pg=packProgress(p);
   const rows=(p.steps||[]).map((s,i)=>{
     const need=packStepNeed(s);
-    const lock=(s.t==='复测'&&!s.done&&p.due&&today<p.due)?'<span class="rst2 lock">'+Math.max(1,Math.round((new Date(p.due)-new Date(today))/864e5))+' 天后开放</span>':'';
+    const lock=packStepLock(p,s,i);
     return '<div class="rx-step '+(s.done?'done':'')+'"><div class="rx-step-h"><b>'+(i+1)+'. '+esc(s.t)+'</b>'+(s.done?'<span class="rst2 ok">已完成</span>':lock||'<button class="rb" data-act="rxPackGo" data-id="'+p.id+'" data-i="'+i+'">'+RX_STEP_GO[s.t]+'</button>')+'</div>'
       +'<div class="rx-step-b">'+rxStepHint(s,need,k)+'</div></div>';
   }).join('');
@@ -24,7 +45,7 @@ function rxStepHint(s,need,k){
   if(s.t==='学')return '读完「'+esc(k.name||'该知识点')+'」的已上架讲解，并答对 1 道理解题。';
   if(s.t==='练题')return '完成 '+need+' 道该知识点的题（按作答记录计数，重复答同一题不重复计）。';
   if(s.t==='演练')return '完成 1 场演练，得分 ≥ '+need+' 分。';
-  if(s.t==='复测')return '间隔 3/7/14 天后复测，掌握度 ≥ '+((typeof KP_PASS!=='undefined')?KP_PASS:70)+'。';
+  if(s.t==='复测')return '完成前面的步骤后,间隔几天再复测(按步独立开放,开放时会显示入口),掌握度 ≥ '+((typeof KP_PASS!=='undefined')?KP_PASS:70)+'。';
   return '';
 }
 A.rxPackGo=el=>{const p=S.packs.find(x=>x.id===el.dataset.id);if(!p)return;const i=+el.dataset.i;const s=p.steps[i];if(!s||s.done)return;
@@ -34,7 +55,7 @@ A.rxPackGo=el=>{const p=S.packs.find(x=>x.id===el.dataset.id);if(!p)return;const
     R.packQuizKp=p.kp;R.page='quiz';R.quizCtx={mode:'pack',packId:p.id,kp:p.kp};return rxPackLearnStart(p,c)}
   if(s.t==='练题'){R.page='quiz';R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,need:packStepNeed(s)};return qzStartPack(p)}
   if(s.t==='演练'){const d=drPick(ME.mid,p.kp);if(!d)return toast('还没有可练的演练，已记入待办','warn');R.page='drill';DZ={id:d.id,i:0,step:'intro',text:'',hint:false,log:[],chg:{},packId:p.id};return renderRN()}
-  if(s.t==='复测'){R.page='quiz';R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,retest:true};return qzStartPack(p)}
+  if(s.t==='复测'){if(packStepLock(p,s,i))return toast('复测还没到开放时间，先完成前面的步骤或等间隔期到','warn');R.page='quiz';R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,retest:true};return qzStartPack(p)}
 };
 /* 学：先看做讲解，再做 1 道理解题 */
 function rxPackLearnStart(p,c){

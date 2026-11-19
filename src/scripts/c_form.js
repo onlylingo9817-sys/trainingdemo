@@ -11,6 +11,7 @@ const apprDef=()=>{const r=UI.role.type==='region'?{name:UI.role.name,region:UI.
 const FS={
  '学习|学堂内容':[{k:'ref',l:'学堂内容',t:'content',req:1,full:1,h:'来自「内容管理」中审核通过的内容(话术是其中的图文内容)。点「选择」打开选择学堂内容弹窗;没有合适的先去内容管理新建或生成'},{k:'req',l:'完成条件',t:'sel',o:['按内容类型自动判定','累计学习时长达标'],d:'按内容类型自动判定',h:'图文读到末尾 / 视频看完 / PDF 翻到末页'},{k:'mins',l:'要求时长(分钟)',t:'num',d:10,show:c=>c.req==='累计学习时长达标',h:'即现有「学习时长要求」'},{k:'seq',l:'解锁方式',t:'sel',o:['自由学习','完成上一节点后解锁'],d:'自由学习'}],
  '学习|清河大学课程':[{k:'link',l:'课程链接',t:'url',req:1,full:1,v:'course',h:'清河大学课程链接,需包含 /course/课程 id'},{k:'prog',l:'完成条件',t:'sel',o:['学习进度 100%','学习进度 ≥ 80%'],d:'学习进度 100%',h:'进度由清河大学回写'},{k:'seq',l:'解锁方式',t:'sel',o:['自由学习','完成上一节点后解锁'],d:'自由学习'}],
+ '学习|学习包':[{k:'tpl',l:'学习包模板',t:'sel2',opts:()=>(S.packTpl||[]).filter(t=>t.on!==false).map(t=>t.id+' · '+t.name+'（'+t.steps.map(s=>s[0]).join('→')+' · '+t.dueDays+' 天）'),req:1,full:1,h:'模板在「配置中心 → 学习包模板」维护；项目生效后为覆盖范围内每名学员生成一个学习包实例，步骤由系统证据推进'},{k:'kp',l:'针对知识点',t:'sel2',opts:()=>S.kps.filter(k=>k.st==='启用').map(k=>k.id+' '+k.name),req:1,full:1,h:'学习包的学 / 练 / 演 / 测都围绕这个知识点'},{k:'seq',l:'解锁方式',t:'sel',o:['自由学习','完成上一节点后解锁'],d:'自由学习'}],
  '练习|有作业':[{k:'link',l:'作业链接',t:'url',req:1,full:1,v:'homework',h:'清河大学作业链接,需包含 homeworkid'},{k:'submit',l:'完成条件',t:'sel',o:['提交即完成','评阅通过才完成'],d:'评阅通过才完成'},{k:'grader',l:'评阅方',t:'sel',o:['清河大学评阅','带教师傅评阅','培训老师评阅'],d:'清河大学评阅'},{k:'pass',l:'通过分',t:'num',d:60,show:c=>c.submit==='评阅通过才完成',min:0,max:100}],
  '考试|有考试':[{k:'link',l:'考试链接',t:'url',req:1,full:1,v:'exam',h:'清河大学考试链接,需包含 /exam/考试 id'},{k:'pass',l:'及格分',t:'num',d:()=>S.cfg.pass,min:0,max:100,h:'默认取「配置中心 → 培训结果通过线」'},{k:'tries',l:'补考次数',t:'num',d:1,min:0,max:3},{k:'limit',l:'考试时限(分钟)',t:'num',d:60,min:5,max:240},{k:'unlock',l:'考试前提',t:'sel',o:['无','需先完成本模块学习任务'],d:'需先完成本模块学习任务'},{k:'late',l:'逾期处理',t:'sel',o:['逾期不可考','逾期可补考一次'],d:'逾期不可考'}],
  '检核|有检核':[{k:'ref',l:'检核任务',t:'sel2',opts:CHECKS,req:1,full:1,h:'来自「检核任务管理」'},{k:'mode',l:'检核对象',t:'sel',o:['话术录音','演练视频','实拍视频'],d:'话术录音'},{k:'std',l:'通过标准(分)',t:'num',d:80,min:0,max:100},{k:'sample',l:'人工抽检比例(%)',t:'num',d:10,min:0,max:100,h:'沿用「AI 检核抽检」'}],
@@ -25,7 +26,7 @@ const FS={
   {k:'passrule',l:'通过规则',t:'text',ro:1,d:()=>'总评 ≥ '+S.cfg.pass+' 分(线上 '+S.cfg.wOnline+'% + 线下 '+(100-S.cfg.wOnline)+'%)',full:1,h:'取自「配置中心 → 阈值与口径」,这里只读'},
   {g:'提醒',k:'remind',l:'开班前提醒',t:'sel',o:['不提醒','前 1 天','前 3 天'],d:'前 1 天',h:'通过零售通消息提醒已分班学员'}]
 };
-const RELS={'学习':['学堂内容','清河大学课程'],'练习':['有作业'],'考试':['有考试'],'检核':['有检核'],'报名任务':['清河大学报名','线下班次培训'],'情景演练':['有情景演练']};
+const RELS={'学习':['学堂内容','清河大学课程','学习包'],'练习':['有作业'],'考试':['有考试'],'检核':['有检核'],'报名任务':['清河大学报名','线下班次培训'],'情景演练':['有情景演练']};
 const cfgDef=(t,rel)=>{const o={};(FS[t+'|'+rel]||[]).forEach(f=>{if(f.d!==undefined)o[f.k]=typeof f.d==='function'?f.d():f.d});return o};
 const mkNode=(t,rel,patch)=>{const n={t,rel:rel||'无',cfg:{}};if(rel&&rel!=='无')n.cfg=Object.assign(cfgDef(t,rel),patch||{});return n};
 const newModule=()=>({name:'',nodes:NODE_TYPES.map(t=>mkNode(t[0],'无'))});
@@ -37,6 +38,7 @@ const sumOf=n=>{const c=n.cfg||{};
   if(n.rel==='有考试')return '及格 '+c.pass+' · 补考 '+c.tries+' 次';
   if(n.rel==='有检核')return '≥ '+c.std+' 分 · '+c.mode;
   if(n.rel==='有情景演练')return c.kind+' · '+c.times+' 次 · 通关 '+c.pass;
+  if(n.rel==='学习包')return '学习包 · '+(String(c.tpl||'').split(' · ')[1]||c.tpl||'-')+(c.kp?' · '+String(c.kp).split(' ')[0]:'');
   if(n.rel==='线下班次培训')return (c.signup==='报名制'?'报名制 · 名额 '+c.quota+' · 需审批':'指定范围 · 免审批')+' · '+c.hours;
   return ''};
 /* 按类型的推荐配置(什么类型配什么内容) */
@@ -99,7 +101,7 @@ function injectContent(cid,useSug){
   F.modDirty=true;F.open=null;if(!F.name.trim()||useSug)F.name=((F.sub||F.type)+'·'+c.title).slice(0,15);
   if(!c.orig&&contentUse(c.id)===0)toast('已带入内容「'+c.title+'」。它还没被一线验证过,建议在「下发方式」里先分批灰度','ok');else toast('已带入内容「'+c.title+'」','ok')}
 function applyType(){
-  const key=tk(F.type,F.sub);const d=S.cfg.typeDef[key];
+  const key=tk(F.type,F.sub);const d=S.cfg.typeDef[key]||S.cfg.typeDef['政策类'];
   F.cover.tag=F.type==='新人训'?'新人':'全员';F.cover.regions=OFFLINE_TYPES.includes(F.type)?['华北']:allRegions.slice();if(UI.role.type==='region')F.cover.regions=[UI.role.region];
   const mid=(ind(d.main)&&ind(d.main).on!==false)?d.main:activeInds()[0].id;F.goal={main:indSnap(mid,null,F.sugKw?{kw:F.sugKw,trig:F.sugTrig}:null),aux:d.aux.filter(id=>ind(id)&&ind(id).on!==false&&id!==mid).map(id=>indSnap(id)),rel:d.rel,cycle:d.cycle,target:''};
   if(!F.modDirty){F.stages[0].modules=tplMods(key);F.open=null}
@@ -110,7 +112,7 @@ const icn={base:'1',cover:'2',goal:'3',mod:'4'};
 function fld(path,f,cfg){
   if(f.show&&!f.show(cfg))return '';
   const v=cfg[f.k]===undefined?'':cfg[f.k];const id=path+f.k;let inp='';
-  if(f.t==='sel'||f.t==='sel2'||f.t==='appr'){const opts=f.t==='sel'?f.o:f.t==='sel2'?f.opts:apprList();inp='<select data-wc="fset" data-f="'+id+'">'+(f.t!=='sel'?'<option value="">请选择</option>':'')+opts.map(o=>'<option '+(String(v)===String(o)?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'}
+  if(f.t==='sel'||f.t==='sel2'||f.t==='appr'){const opts=f.t==='sel'?f.o:f.t==='sel2'?(typeof f.opts==='function'?f.opts():f.opts):apprList();inp='<select data-wc="fset" data-f="'+id+'">'+(f.t!=='sel'?'<option value="">请选择</option>':'')+opts.map(o=>'<option '+(String(v)===String(o)?'selected':'')+'>'+esc(o)+'</option>').join('')+'</select>'}
   else if(f.t==='seg')inp='<div class="rels">'+f.o.map(o=>'<span class="'+(String(v)===o?'on':'')+'" data-act="fseg" data-f="'+id+'" data-v="'+o+'">'+o+'</span>').join('')+'</div>';
   else if(f.t==='content'){const sc=content(v);inp='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm pri" data-act="cpick" data-f="'+id+'">'+(sc?'重新选择':'选择学堂内容')+'</button>'+(sc?'<span><b>'+esc(sc.title)+'</b> <span class="hint">ID '+sc.id+' · '+esc(sc.type)+(sc.script?' · 话术':'')+'</span></span>':'<span class="hint">未选择</span>')+'</div>';if(sc)inp+='<div class="fh">来源 '+esc(sc.origin)+' · 可见 '+esc(sc.vis)+(sc.script?' · 关键词:'+esc(sc.kw||'未设置'):'')+(!sc.orig&&contentUse(sc.id)===0?' · <b style="color:var(--warn)">首次使用,建议灰度</b>':'')+(expState(sc)==='即将到期'?' · <b style="color:var(--warn)">'+expDays(sc)+' 天后到期</b>':'')+' · 提交后锁定 v'+sc.ver+'</div>'}
   else if(f.t==='num')inp='<input type="number" data-f="'+id+'" value="'+esc(v)+'"'+(f.min!=null?' min="'+f.min+'"':'')+(f.max!=null?' max="'+f.max+'"':'')+'>';
@@ -250,6 +252,7 @@ function compile(p){
     const o={id:'T'+(++k),t:n.t,rel:n.rel,module:m.name,mi,cfg:c,sum:sumOf(n)};
     if(n.rel==='学堂内容'){o.contentId=c.ref;const cc=content(c.ref);o.name=(cc||{title:n.t}).title;o.contentVer=cc?cc.ver:1;if(cc&&cc.vers&&cc.vers.length){const vv=cc.vers.find(x=>x.v===cc.ver)||cc.vers[cc.vers.length-1];o.contentVer=vv.v;o.snap=JSON.parse(JSON.stringify(vv.snap))}}
     else if(c.link)o.name='清河大学'+n.t+'('+(String(c.link).match(/(\d{3,}|homeworkid=\w+)/)||[''])[0].slice(0,10)+')';
+    else if(n.rel==='学习包'){o.name='学习包 · '+(String(c.tpl||'').split(' · ')[1]||String(c.tpl||''));o.packTpl=String(c.tpl||'').split(' · ')[0];o.packKp=String(c.kp||'').split(' ')[0]}
     else if(n.rel==='线下班次培训'){o.name=c.name;o.offline=1;p.offNode=c}
     else o.name=c.ref||n.t;
     p.nodes.push(o)})));
@@ -281,6 +284,7 @@ A.fsubmitOk=()=>{closeDlg();
   toast('提交成功。培训目标与口径已锁定'+(p.status==='未生效'?';到下发周期开始后下发':p.gray?';任务已下发给第一批 '+p.gray.mids.length+' 人,对照批暂不下发':';任务已下发到零售通'),'ok')};
 function afterPublish(p){
   if(p.from){const t=S.topics.find(x=>x.id===p.from);if(t){t.flow='已采纳';t.proj=p.id;thist(t,UI.role.n.split(' · ')[0],'建了学习项目','项目 '+p.id+'「'+p.name+'」,目标 '+p.metric+' '+p.base+'% → '+p.target+'%')}}
+  if(p.status==='已生效'&&typeof packEnsure==='function')(p.nodes||[]).filter(n=>n.rel==='学习包').forEach(n=>{const n0=S.packs.length;PEOPLE.filter(x=>eligible(p,x)).forEach(x=>packEnsure(p,n,x.mid));const n1=S.packs.length-n0;if(n1)notify('学习项目「'+p.name+'」：已为 '+n1+' 名覆盖学员生成学习包')});
   if(p.off&&p.signup==='指定范围'){const o=p.offNode;const ms=o.roster==='导入名单(MID)'?String(o.rosterMids||'').split(/[\s,，;；、]+/).filter(Boolean):PEOPLE.filter(x=>eligible(p,x)).map(x=>x.mid);ms.forEach(m=>S.apps.push({id:'A'+m+p.id,proj:p.id,mid:m,time:today+' 09:00',status:'已通过',src:o.roster==='导入名单(MID)'?'导入名单(免审)':'范围选择(免审)'}))}
   notify('学习项目「'+p.name+'」已提交'+(p.off?(p.signup==='报名制'?',覆盖范围内学员可在零售通报名':',参训名单已按范围生成'):',任务已下发'));
 }

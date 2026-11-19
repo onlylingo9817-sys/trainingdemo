@@ -148,7 +148,9 @@ function pgContent(){
 A.cTab=el=>{UI.tab.content=el.dataset.v||'全部内容';render()};
 A.cNewMenu=()=>{openDlg('新增什么?','<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+[['话术','一条一线话术(SPIN 四段)'],['课程','图文 / 视频 / PDF / 外链'],['题','单选 / 多选 / 判断,带解析'],['演练','客户一句 → 学员答 → 评分点评']].map(x=>'<div class="card kp-click" style="cursor:pointer;margin:0;text-align:center" data-act="cNewAny" data-v="'+x[0]+'"><b style="font-size:16px">'+x[0]+'</b><div class="hint" style="margin-top:6px">'+x[1]+'</div></div>').join('')+'</div>','<button class="btn" data-act="close">取消</button>')};
 const _cNewAny=A.cNewAny;A.cNewAny=el=>{closeDlg();const k=el.dataset.v;if(k==='题')return A.qNew();if(k==='演练')return A.drNew();A.cNew({dataset:{}});C.kind=k;if(k==='课程')C.type='图文';render()};
-A.cafAdv=()=>{UI.sel.cadv=true;render()};A.cafAdvOff=()=>{UI.sel.cadv=false;render()};
+/* 简版(caf) ↔ 高级(cq)筛选互通:进入高级时带上简版条件,回简版时带回来 */
+A.cafAdv=()=>{const f=UI.sel.caf||{};const q={};if(f.kp)q.kp=f.kp;if(f.st)q.st=f.st;if(f.k==='话术'||f.k==='课程')q.kind=f.k;UI.sel.cq=q;UI.sel.cqs=f.q||'';UI.sel.cadv=true;render()};
+A.cafAdvOff=()=>{const q=UI.sel.cq||{};const f=UI.sel.caf||(UI.sel.caf={});if(q.kp)f.kp=q.kp;else delete f.kp;if(q.st)f.st=q.st;else delete f.st;if(q.kind)f.k=q.kind;else if(f.k==='话术'||f.k==='课程')delete f.k;if(UI.sel.cqs)f.q=UI.sel.cqs;else delete f.q;UI.sel.cadv=false;render()};
 A.cafAdvToggle=()=>{UI.sel.cadv=!UI.sel.cadv;render()};
 function cList(V){
   const q=Object.assign({},UI.sel.cq||{},{tag:(UI.sel.caf||{}).tag});const kw=UI.sel.cqs||'';

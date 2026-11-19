@@ -30,7 +30,7 @@ function tryBox(){
   const grp=document.body.dataset.end==='rn'?TRYS[1]:TRYS[0];const n=grp[2].filter(tryDone).length;
   return '<div class="gd-h" data-act="gdToggle"><b>体验任务</b><span>'+n+' / '+grp[2].length+'</span><em>'+(UI.gdOpen?'收起':'展开')+'</em></div>'
    +(UI.gdOpen?'<div class="gd-b"><div class="gd-t">'+esc(grp[0])+'</div>'+grp[2].map(t=>'<div class="gd-i '+(tryDone(t)?'ok':'')+'"><i>'+(tryDone(t)?'✓':'○')+'</i><div><div>'+esc(t[1])+'</div>'+(t[3]?'<small>'+esc(t[3])+'</small>':'')+'</div></div>').join('')
-    +'<div class="gd-f"><button class="btn sm" data-act="gdOther">'+(document.body.dataset.end==='rn'?'看培训部任务':'看学员任务')+'</button> <button class="btn sm pri" data-act="fbkOpen">写反馈</button> <button class="btn sm" data-act="fbkAll">看全部反馈('+S.fbk.length+')</button></div></div>':'');}
+    +'<div class="gd-f"><button class="btn sm" data-act="gdOther">'+(document.body.dataset.end==='rn'?'看培训部任务':'看学员任务')+'</button> <button class="btn sm" data-act="stuck">我卡住了</button> <button class="btn sm pri" data-act="fbkOpen">写反馈</button> <button class="btn sm" data-act="fbkAll">看全部反馈('+S.fbk.length+')</button></div></div>':'');}
 A.gdToggle=()=>{UI.gdOpen=!UI.gdOpen;gdRender()};
 A.gdOther=()=>{A.end({dataset:{v:document.body.dataset.end==='rn'?'pc':'rn'}})};
 function gdRender(){let e=document.getElementById('gd');if(!e){e=document.createElement('div');e.id='gd';document.body.appendChild(e)}e.className='gd'+(UI.gdOpen?' open':'');e.innerHTML=tryBox()}
@@ -55,7 +55,20 @@ const WELCOME_HTML='<div style="line-height:1.9;font-size:13.5px"><p><b>这是�
  +'<p><b>两个端:</b>顶部切换「学堂后台」(培训部 / 区域老师用)和「零售通」(一线学员用)。右上角下拉可以换身份。</p>'
  +'<p style="color:#98a2b3;font-size:12.5px">体验完请点「看全部反馈 → 导出 CSV」发回给我们。刷新页面会丢失反馈。</p></div>';
 function welcome(){openDlg('欢迎来体验',WELCOME_HTML,'<button class="btn" data-act="close">先自己看看</button><button class="btn pri" data-act="welcomeGo">打开体验任务</button>')}
-function pageHelp(){const map={workbench:'先看这边：把待办按「紧急」处理完，点「去处理」会自动跳到对应对象。',catalog:'先看「总览」的车型 × 标签矩阵；补清单去「知识点库」，或用页头的「批量导入 / 新车克隆」。',kp:'这里看一个点的资料齐不齐；缺的项点「去补」会到内容中心。',content:'这里是做讲课材料的地方：话术、课程、题、演练；做完要挂知识点、审核定稿。',publish:'这里决定内容在零售通给谁看；只能上架已定稿的内容。',projects:'这里组织一场培训：选人、配学习任务、排线下班次。',effect:'这里回答「培训有没有用」：先看就绪度，再看错题和调优。',config:'这里改规则和标准；一线日常不用常来。'};return map[UI.page]||''}
+function pageHelpText(){const map={workbench:'先看这边：把待办按「紧急」处理完，点「去处理」会自动跳到对应对象。',catalog:'先看「总览」的车型 × 标签矩阵；补清单去「知识点库」，或用页头的「批量导入 / 新车克隆」。',kp:'这里看一个点的资料齐不齐；缺的项点「去补」会到内容中心。',content:'这里是做讲课材料的地方：话术、课程、题、演练；做完要挂知识点、审核定稿。',publish:'这里决定内容在零售通给谁看；只能上架已定稿的内容。',projects:'这里组织一场培训：选人、配学习任务、排线下班次。',effect:'这里回答「培训有没有用」：先看就绪度，再看错题和调优。',config:'这里改规则和标准；一线日常不用常来。'};return map[UI.page]||''}
+function pageHelp(){return pageHelpText()}
 A.pageHelp=()=>{const h=pageHelp();openDlg('这页怎么用',h?'<div style="font-size:13.5px;line-height:1.8">'+esc(h)+'</div>':'<div class="hint">当前页没有额外说明。</div>','<button class="btn pri" data-act="close">知道了</button>')};
 A.welcomeGo=()=>{closeDlg();UI.gdOpen=true;gdRender()};
 A.welcome=()=>{welcome()};
+/* ---- 我卡住了:按当前位置给"接下来可执行的几步",对接体验任务与反馈 ---- */
+const RN_HELP={school:'学堂首页：先看「我的提升清单」，它按岗位画像权重排好了你最该补的点。',learn:'学习中心：这里是要学的内容，点进去读原文，读完回来打勾。',adapt:'提升清单：按「学一学 → 练一练 → 去演练」的顺序补一个点，掌握度到 70 就过关。',quiz:'答题页：答错会立刻给解析；错题会自动进错题本，之后再练会优先出这些题。',trainDetail:'学习任务：按节点顺序完成就行，卡在某个节点点进去看要求。',offDetail:'班次页：看清时间地点，到现场点签到。'};
+A.stuck=()=>{
+  const rn=document.body.dataset.end==='rn';
+  const grp=rn?TRYS[1]:TRYS[0];
+  const todo=grp[2].filter(t=>!tryDone(t)).slice(0,3);
+  const help=rn?(RN_HELP[R.page]||''):(pageHelpText()||(typeof AI_PAGE_GUIDE!=='undefined'&&AI_PAGE_GUIDE[UI.page]?AI_PAGE_GUIDE[UI.page][0]+'。'+AI_PAGE_GUIDE[UI.page][1]:''));
+  openDlg('我卡住了','<div class="f" style="margin-bottom:8px"><label>你现在在</label><div style="color:#667085">'+esc(fbkWhere())+'</div></div>'
+   +(help?'<div class="chk" style="margin-bottom:10px"><b>💡</b><span>'+esc(help)+'</span></div>':'')
+   +(todo.length?'<div style="font-size:12.5px;color:#667085;margin-bottom:4px">接下来可以做这几步（取自你的体验任务，做完会自动打勾）：</div>'+todo.map((t,i)=>'<div style="display:flex;gap:10px;padding:7px 0;border-top:1px solid #f2f3f5"><b style="color:#175cd3">'+('123'[i])+'</b><div><div>'+esc(t[1])+'</div>'+(t[3]?'<div class="hint" style="margin-top:2px">'+esc(t[3])+'</div>':'')+'</div></div>').join(''):'<div class="chk ok"><b>✓</b><span>你这边的体验任务都完成了！可以写条反馈告诉我们感受。</span></div>')
+   +'<div class="hint" style="margin-top:10px">还是找不到？点「写反馈」，系统会自动记下你在哪个页面，我们来跟进。</div>',
+   '<button class="btn" data-act="close">继续自己试</button><button class="btn" data-act="welcomeGo">打开体验任务</button><button class="btn pri" data-act="fbkOpen">写反馈</button>')};
