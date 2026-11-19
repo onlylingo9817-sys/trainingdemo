@@ -5,3 +5,5 @@ test-results/
 dist/
 # 截图可由 npm run screens 重建，不入库
 docs/screens/
+# 汇报材料为二进制产物，按需本地生成
+docs-report/
