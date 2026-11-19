@@ -3,3 +3,5 @@ node_modules/
 test-results/
 *.log
 dist/
+# 截图可由 npm run screens 重建，不入库
+docs/screens/

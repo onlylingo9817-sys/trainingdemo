@@ -10,7 +10,8 @@
     "test": "node tools/run-tests.js",
     "build": "node tools/build-single-file.js && node tools/verify-single-file.js",
     "export": "node tools/build-single-file.js",
-    "verify:single": "node tools/verify-single-file.js"
+    "verify:single": "node tools/verify-single-file.js",
+    "screens": "python3 tools/export-screens.py"
   },
   "engines": {
     "node": ">=18"
