@@ -12,7 +12,7 @@ const desired = process.argv.slice(2);
 const DEFAULT_ORDER = [
   't17a', 't17b', 't18a', 't18b', 't192', 't193',
   't19a', 't19b', 't20a', 't20b', 't20c', 't21a',
-  't22a', 't23a', 't23b', 't23c', 't24a', 't24b', 't24c', 't24d', 't25a', 't25b', 't25c', 't25d', 't26a', 't27a', 't27b', 't27c', 't27d', 't27e', 't27f', 't27g', 't27h', 't27i', 't27j', 't27k', 't27l', 't27m', 't27n', 't27o', 't27p', 't27q', 't27r', 't28a', 't28b', 't28c', 't28d', 't28e', 't29a', 't29b', 't29c', 't29e', 't30a', 't30b', 't31a', 't31b', 't32a', 't33a', 't33b', 't34a', 't34b', 't34c', 't34d', 't34e'
+  't22a', 't23a', 't23b', 't23c', 't24a', 't24b', 't24c', 't24d', 't25a', 't25b', 't25c', 't25d', 't26a', 't27a', 't27b', 't27c', 't27d', 't27e', 't27f', 't27g', 't27h', 't27i', 't27j', 't27k', 't27l', 't27m', 't27n', 't27o', 't27p', 't27q', 't27r', 't28a', 't28b', 't28c', 't28d', 't28e', 't29a', 't29b', 't29c', 't29e', 't30a', 't30b', 't31a', 't31b', 't32a', 't33a', 't33b', 't34a', 't34b', 't34c', 't34d', 't34e', 't35a', 't36a', 't37a', 't38a', 't39a'
 ];
 const available = new Set(fs.readdirSync(testsDir)
   .filter(name => /^t\d+[a-z]?\.js$/.test(name))

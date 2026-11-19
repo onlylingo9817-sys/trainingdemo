@@ -87,7 +87,7 @@ function pgRdy(){
    +'</div>'
    +(zero?cta('这个范围内还没有证据','换一个范围,或先到零售通做诊断 / 演练产生证据。','')
    :'<div class="rd-grid"><div class="card"><h3>学得好 · 卖得好 <span class="hint">点任意点看学员详情</span></h3>'
-     +'<div class="rd-quad">'+v23QuadSvg(q.rows.filter(r=>f.scope==='全国'||r.region===f.scope))+'</div>'
+     +'<div class="rd-quad">'+v23QuadSvg(q.rows.filter(r=>(f.scope==='全国'||r.region===f.scope)&&(typeof personInScope!=='function'||personInScope(r.region))))+'</div>'
      +'<div class="hint" style="margin-top:8px">橙 = 试点批,蓝 = 对照批。相关系数 r='+(q.r==null?'—':q.r)+',属于弱到中等相关;<b>存在明显离群点</b>(高就绪低业绩 / 低就绪高业绩),说明就绪度不能单独解释业绩。</div></div>'
      +'<div class="card"><h3>就绪度分布 <span class="hint">橙色 = 已达过关线</span></h3>'+hist
      +'<div class="hint" style="margin-top:10px">按画像项看(新人档画像,全范围平均):</div>'
@@ -707,24 +707,6 @@ function packAdvance(p,type,evidence){
   return true;
 }
 
-/* ---------- 知识点页:维度组合展示(替代"事实型 / 技能型"硬分类的说明) ---------- */
-function kpDimsHtml(k){
-  if(!k.dims||!Object.keys(k.dims).length)return '';
-  const order=['Dprod','Dcar','Dab','Dscene','Dcust','Dcomp','Dstage'];
-  return order.filter(did=>(k.dims[did]||[]).length&&dimOf(did)).map(did=>{const d=dimOf(did);
-    return '<div style="margin-bottom:6px"><span class="hint" style="display:block;font-size:11px;margin-bottom:2px">'+esc(d.name)+'</span>'
-     +k.dims[did].map(v=>'<span class="dm-tag '+d.role+'"><b>'+esc(dimLabel(did,v))+'</b></span>').join('')+'</div>'}).join('')
-   +'<div class="hint" style="margin-top:4px;line-height:1.6">'+kpKindHint(k)+'</div>';
-}
-/* 由挂的维度自然区分:有产品维度 = 产品卖点;只有能力 + 场景 = 销售动作 */
-function kpKindHint(k){
-  if(!k.dims)return '';
-  const hasProd=(k.dims.Dprod||[]).length,hasAb=(k.dims.Dab||[]).length;
-  if(hasProd&&hasAb)return '(挂了产品 + 能力:产品卖点)';
-  if(hasAb&&!hasProd)return '(只挂能力 + 场景:销售动作)';
-  return '';
-}
-
 /* ---------- 数据说明(理想态数据自检):让评审者一眼看懂"这些数是怎么来的、有多真" ---------- */
 function v23DataNote(){
   if(v23Empty())return '';
@@ -871,9 +853,36 @@ A.pplClear=()=>{UI.sel.ppl={};UI.sel.pplPage={page:1,size:20};render()};
 A.pplQuick=el=>{const f=pplFilter();if(el.dataset.v==='care')f.care='需关注';else delete f.care;render()};
 A.pplView=el=>{const f=pplFilter();f.view=el.dataset.v;render()};
 A.pplOpen=el=>{const p=personOf(el.dataset.mid);if(!p)return toast('找不到这个人','err');if(UI.role.type==='region'&&p.region!==UI.role.region)return toast('只能查看本区域人员','err');UI.page='person';UI.stuMid=p.mid;render();$('#main').scrollTop=0};
-A.pplPack=el=>{const p=personOf(el.dataset.mid);if(!p)return;if(p.group==='对照批')return toast('对照批人员不建议单独干预','warn');const k=S.kps.find(k=>k.st==='启用'&&kpMounted(k).length);if(!k)return toast('没有可指派的知识点','err');const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});toast('已给 '+p.name+' 指派补练包','ok');render()};
+A.pplPack=el=>{const p=personOf(el.dataset.mid);if(!p)return;
+  { const g=typeof bizCtrlGate==='function'?bizCtrlGate(p):{ok:p.group!=='对照批'}; if(!g.ok)return toast(g.msg||'对照批人员不建议单独干预','warn');
+    if(g.needWhy&&!el.dataset.why){return openDlg('干预对照批人员:'+p.name,'<div class="hint" style="margin-bottom:8px">「'+esc(p.name)+'」是对照批。干预会让本次效果对照失真;系统会在相关项目的效果页标记「对照已被干预」。</div><div class="f"><label><b>*</b>原因</label><div class="in"><input type="text" id="ctrlWhy" style="min-width:320px" placeholder="如:该学员连续 3 周异常,门店要求补救"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplPackCtrlOk" data-mid="'+p.mid+'">确认干预</button>')}
+    if(g.mark)bizCtrlMark(p,'指派补练包',el.dataset.why||'');}
+  const k=S.kps.find(k=>k.st==='启用'&&kpMounted(k).length);if(!k)return toast('没有可指派的知识点','err');const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});toast('已给 '+p.name+' 指派补练包','ok');render()};
 
 /* ---------- 人员详情 ---------- */
+/* 人的维度效果:这个人参加的多个项目,在各自关联知识点上,项目开始前 vs 结束后的实战行为率变化。
+   只有「实战行为」有按周序列(测评/演练只存最近一次),所以口径只用行为率;只展示相关性,不归因给单个项目。 */
+function pplProjectDelta(p,pr){
+  const wkOf=d=>{for(let i=0;i<V23_NWK;i++)if(v23WeekEnd(i)>=d)return i;return V23_NWK-1};
+  const end=v23End();const s=wkOf(pr.start),e=wkOf(pr.end);
+  const kids=[...new Set((pr.nodes||[]).map(n=>n.contentId).filter(Boolean).flatMap(i=>(content(i)||{}).kps||[]))];
+  const avg=(arr,a,b)=>{let sw=0,so=0;arr.filter(x=>x.w>=a&&x.w<=b&&x.w<=end&&x.n>=S.cfg.behN*0.3).forEach(x=>{sw+=x.n;so+=x.n*x.rate});return sw?so/sw:null};
+  const rows=kids.map(k=>{const arr=((S.beh||{})[p.mid]||{})[k];if(!arr)return null;
+    const pre=avg(arr,Math.max(0,s-3),s-1),post=avg(arr,e+1,end);
+    return {k,name:(S.kps.find(x=>x.id===k)||{}).name||k,pre:pre==null?null:Math.round(pre),post:post==null?null:Math.round(post)}}).filter(Boolean);
+  return {kids,rows,ready:e<end}; /* ready=项目已结束且之后至少有一周数据 */
+}
+function pplEffectCard(p,projs){
+  const L=projs.map(x=>({x,d:pplProjectDelta(p,x.pr)})).filter(o=>o.d.kids.length);
+  if(!L.length)return '<div class="card"><h3>参与项目前后的行为变化 <span class="hint">相关性,非因果</span></h3><div class="hint">这个人参与的项目没有关联知识点,或没有参与项目,暂无可对照的行为数据。</div></div>';
+  return '<div class="card"><h3>参与项目前后的行为变化 <span class="hint">多个项目叠加时无法拆分各自贡献,这里按项目分别展示「参加前 3 周 vs 项目结束后」,只是相关性,不是因果</span></h3>'
+   +'<div class="tw"><table class="t nw"><tr><th>项目</th><th>关联知识点</th><th>实战行为率 前</th><th>实战行为率 后</th><th>变化</th></tr>'
+   +L.map(o=>{const rs=o.d.rows;if(!rs.length)return '<tr><td>'+esc(o.x.pr.name)+'</td><td colspan="4"><span class="hint">没有该人的行为样本</span></td></tr>';
+     return rs.map((r,i)=>{const dl=r.pre!=null&&r.post!=null?r.post-r.pre:null;
+       return '<tr>'+(i===0?'<td rowspan="'+rs.length+'"><a class="link" data-act="go" data-p="detail" data-id="'+o.x.pr.id+'" data-pt="效果">'+esc(o.x.pr.name)+'</a><div class="hint">'+esc(o.x.pr.start)+' ~ '+esc(o.x.pr.end)+(o.d.ready?'':' · 项目未结束,暂无「后」数据')+'</div></td>':'')
+        +'<td>'+esc(r.name)+'</td><td>'+(r.pre==null?'<span class="hint">样本不足</span>':r.pre+'%')+'</td><td>'+(r.post==null?'<span class="hint">暂无</span>':r.post+'%')+'</td><td>'+(dl==null?'<span class="hint">—</span>':'<b style="color:'+(dl>=0?'var(--ok)':'var(--err)')+'">'+(dl>=0?'+':'')+dl+'pt</b>')+'</td></tr>'}).join('')}).join('')
+   +'</table></div><div class="hint" style="margin-top:6px">数据来源:汽车语料(模拟)。测评 / 演练只保留最近一次,没有时间序列,所以不参与前后对比。</div></div>';
+}
 function pplProjectsOf(p){
   return visibleP().filter(x=>eligible(x,p)).map(pr=>{
     const app=(S.apps||[]).find(a=>a.proj===pr.id&&a.mid===p.mid);
@@ -892,7 +901,7 @@ function pgPerson(){
   const projs=pplProjectsOf(p);
   const head=crumb('<a data-act="go" data-p="people">人员</a> / '+esc(p.name))
    +'<div class="ph"><h2>'+esc(p.name)+' '+V23_SIM+' <span class="hint" style="font-weight:400">'+esc(p.store||'—')+' · '+esc(p.region||'—')+' · '+(p.tier||'未分档')+' · '+(p.hire==null?'入职未知':'入职 '+p.hire+' 天')+'</span></h2>'
-   +'<div>'+(p.group==='对照批'?'<span class="tag">对照批 · 不建议单独干预</span> <button class="btn sm" disabled title="对照批人员不参与干预，避免破坏效果评估">指派学习包</button> <button class="btn sm" disabled title="同上">加入项目</button> ':'<button class="btn sm" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</button> ')+'<button class="btn sm" data-act="pplBack">返回列表</button></div></div>'
+   +'<div>'+(p.group==='对照批'&&(typeof bizCtrlMode!=='function'||bizCtrlMode()==='block')?'<span class="tag">对照批 · 不建议单独干预</span> <button class="btn sm" disabled title="对照批人员不参与干预,避免破坏效果评估(配置中心 → 业务规则 可调整)">指派学习包</button> <button class="btn sm" disabled title="同上">加入项目</button> ':(p.group==='对照批'?'<span class="tag warn">对照批 · 干预会被标记</span> ':'')+'<button class="btn sm" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</button> ')+'<button class="btn sm" data-act="pplBack">返回列表</button></div></div>'
    +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅为相关性，不作因果结论。</span></div>';
   const hero='<div class="grid g4" style="margin-bottom:14px">'
    +'<div class="stat"><div class="l">就绪度</div><div class="n" style="color:'+(v==null?'':v23RdyColor(v))+'">'+(v==null?'—':v)+'</div><div class="hint">'+(p.hasEvidence?'过关线 '+S.cfg.pass:'无证据，不兜底造数')+'</div></div>'
@@ -913,7 +922,7 @@ function pgPerson(){
      :'<div class="hint">没有参与任何学习项目。要么不在覆盖名单内，要么还没被下发。</div>')+'</div>';
   const coach=(function(){const ts=(S.tickets||[]).filter(t=>t.store===p.store);return '<div class="card"><h3>辅导与记录 <span class="hint">该门店的入店辅导</span></h3>'
     +(ts.length?ts.map(t=>'<div style="padding:6px 0;border-top:1px solid #f2f3f5"><b>'+esc(t.store)+'</b> <span class="tag '+(t.st==='结案'?'ok':'blue')+'">'+t.st+'</span> <span class="hint">'+esc(t.goal||'')+'</span> <a class="link" data-act="ticket" data-id="'+t.id+'">打开辅导</a></div>').join(''):'<div class="hint">该门店没有在途或历史辅导记录。</div>')+'</div>'})();
-  return head+hero+next+learn+coach+'<div class="card"><h3>能力与证据 <span class="hint">与就绪度页、零售通同一套数</span></h3>'
+  return head+hero+next+learn+pplEffectCard(p,projs)+coach+'<div class="card"><h3>能力与证据 <span class="hint">与就绪度页、零售通同一套数</span></h3>'
    +(p.hasEvidence&&p.tier?'<button class="btn sm" data-act="pplStudent" data-mid="'+p.mid+'">打开完整画像 / 证据流水 / 错题</button>':'<div class="hint">这位同事还没有证据数据（只在人事主数据里），所以没有画像可看。</div>')+'</div>';
 }
 A.pplStudent=el=>{UI.page='student';UI.stuMid=el.dataset.mid;render()};
@@ -922,27 +931,29 @@ A.pplBack=()=>{UI.page='people';render()};
 /* ---------- 人员批量动作 ---------- */
 function pplBulkTargets(){
   const ids=lstPicked('pplPage');const list=ids.map(personOf).filter(Boolean);
-  const skip=list.filter(p=>p.group==='对照批');const ok=list.filter(p=>p.group!=='对照批');
+  const mode=typeof bizCtrlMode==='function'?bizCtrlMode():'block';
+  const skip=list.filter(p=>p.group==='对照批'&&mode!=='free');const ok=list.filter(p=>!(p.group==='对照批'&&mode!=='free'));
   return {list,ok,skip};
 }
 A.pplBulkPack=()=>{const t=pplBulkTargets();if(!t.list.length)return toast('先勾选人员','err');
   const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return toast('没有可指派的知识点','err');
   openDlg('批量指派学习包','<div>将为 <b>'+t.ok.length+'</b> 人指派补练包（知识点：'+esc(k.name)+'）。'+(t.skip.length?'<div class="hint" style="color:#b54708;margin-top:6px">跳过 '+t.skip.length+' 位对照批人员：'+t.skip.map(p=>esc(p.name)).join('、')+'（避免破坏效果对照）</div>':'')+'</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkPackOk">确认指派</button>')};
 A.pplBulkPackOk=()=>{const t=pplBulkTargets();const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return;const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};let n=0;
-  t.ok.forEach(p=>{S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});n++});
-  lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已指派 '+n+' 人'+(t.skip.length?'，跳过 '+t.skip.length+' 位对照批':''),'ok');render()};
+  t.ok.forEach(p=>{if(p.group==='对照批'&&typeof bizCtrlMark==='function')bizCtrlMark(p,'批量指派补练包','批量操作(配置允许)');S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});n++});
+  A.lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已指派 '+n+' 人'+(t.skip.length?'，跳过 '+t.skip.length+' 位对照批':''),'ok');render()};
 A.pplBulkProj=()=>{const t=pplBulkTargets();if(!t.ok.length)return toast(t.skip.length?'勾选的都是对照批人员，已跳过':'先勾选人员','err');
   const ps=visibleP().filter(p=>p.status!=='已结项'&&p.status!=='已下线');
   openDlg('批量加入学习项目','<div class="f"><label>选择项目</label><div class="in"><select id="bp_pid" style="width:100%">'+ps.map(p=>'<option value="'+p.id+'">'+esc(p.name)+'（'+p.status+'）</option>').join('')+'</select></div></div><div class="hint">将把 '+t.ok.length+' 人加入项目覆盖名单（指定 MID），不影响其他人。</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkProjOk">确认加入</button>')};
-A.pplBulkProjOk=()=>{const t=pplBulkTargets();const pid=(($('#bp_pid')||{}).value);const p=proj(pid);if(!p)return toast('请选择项目','err');p.mids=[...new Set((p.mids||[]).concat(t.ok.map(x=>x.mid)))];logp(p,'批量加入覆盖名单 '+t.ok.length+' 人（操作人 '+meShort()+'）');lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已把 '+t.ok.length+' 人加入「'+p.name+'」','ok');render()};
+A.pplBulkProjOk=()=>{const t=pplBulkTargets();const pid=(($('#bp_pid')||{}).value);const p=proj(pid);if(!p)return toast('请选择项目','err');p.mids=[...new Set((p.mids||[]).concat(t.ok.map(x=>x.mid)))];t.ok.forEach(x=>{if(x.group==='对照批'&&typeof bizCtrlMark==='function')bizCtrlMark(x,'批量加入项目','批量操作(配置允许)')});logp(p,'批量加入覆盖名单 '+t.ok.length+' 人（操作人 '+meShort()+'）');A.lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已把 '+t.ok.length+' 人加入「'+p.name+'」','ok');render()};
 A.pplBulkCoach=()=>{const t=pplBulkTargets();if(!t.ok.length)return toast(t.skip.length?'勾选的都是对照批人员，已跳过':'先勾选人员','err');
   const stores=[...new Set(t.ok.map(p=>p.store))];
   openDlg('批量发起入店辅导','<div>将按门店去重，为 <b>'+stores.length+'</b> 家门店各建一个辅导项目：<div class="hint" style="margin-top:4px">'+stores.map(esc).join('、')+'</div></div>'+(t.skip.length?'<div class="hint" style="color:#b54708;margin-top:6px">跳过 '+t.skip.length+' 位对照批人员</div>':'')+'<div class="f" style="margin-top:8px"><label>触发原因</label><div class="in"><input type="text" id="bc_trig" value="人员批量发起" style="width:100%"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkCoachOk">确认发起</button>')};
 A.pplBulkCoachOk=()=>{const t=pplBulkTargets();const trig=(($('#bc_trig')||{}).value||'').trim()||'人员批量发起';const stores=[...new Set(t.ok.map(p=>p.store))];let n=0;
   stores.forEach(s=>{if((S.tickets||[]).some(x=>x.store===s&&x.st!=='结案'))return;
+    t.ok.filter(p=>p.store===s&&p.group==='对照批').forEach(p=>{if(typeof bizCtrlMark==='function')bizCtrlMark(p,'批量发起入店辅导','批量操作(配置允许)')});
     const who=t.ok.filter(p=>p.store===s)[0];const x=coachPlanOf(Object.assign({id:'W'+(S.tickets.length+1),st:'触发',owner:UI.role.name,trig,src:'人员批量发起',log:[]},{store:s,goal:'（待定）',pre:null}));
     x.log.unshift({t:today,who:meShort(),act:'创建辅导项目',note:'来源：人员批量发起（'+who.name+' 等 '+t.ok.filter(p=>p.store===s).length+' 人）'});S.tickets.push(x);n++});
-  lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已发起 '+n+' 家门店辅导'+(stores.length-n?'，'+ (stores.length-n)+' 家已有在途跳过':''),'ok');render()};
+  A.lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已发起 '+n+' 家门店辅导'+(stores.length-n?'，'+ (stores.length-n)+' 家已有在途跳过':''),'ok');render()};
 
 /* ---------- 需关注口径配置 ---------- */
 A.pplCareSave=()=>{const c=pplCareCfg();const r=+($('#care_ratio')||{}).value;const m=+($('#care_packs')||{}).value;if(!(r>0&&r<=1))return toast('比例需在 0~1 之间','err');if(!(m>=0))return toast('学习包阈值需 ≥0','err');c.ratio=r;c.maxPacks=m;c.misRecur=!!($('#care_rec')||{}).checked;closeDlg();toast('已保存需关注口径','ok');render()};
@@ -975,3 +986,4 @@ function pgMisAgg(){
    +'<div class="card"><h3>按知识点聚合 <span class="hint">共 '+rows.length+' 个知识点有错题</span></h3>'
    +(rows.length?'<table class="t"><tr><th>知识点</th><th>涉及人数</th><th>错题次数</th><th>复发</th></tr>'+rows.map(x=>'<tr><td>'+esc((kp(x.k)||{}).name||x.k)+'</td><td>'+x.n+'</td><td>'+x.cnt+'</td><td>'+(x.recur||'<span class="hint">0</span>')+'</td></tr>').join('')+'</table>':'<div class="hint">暂无错题数据</div>')+'</div>';
 }
+A.pplPackCtrlOk=el=>{const w=(($('#ctrlWhy')||{}).value||'').trim();if(!w)return toast('干预对照批人员必须写原因','err');closeDlg();A.pplPack({dataset:{mid:el.dataset.mid,why:w}})};

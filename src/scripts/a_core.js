@@ -140,7 +140,7 @@ const appsOf=id=>S.apps.filter(a=>a.proj===id);
 const cntOk=id=>appsOf(id).filter(a=>a.status==='已通过').length;
 const pendingAll=()=>S.apps.filter(a=>a.status==='待审批');
 const NOTIF=[['apply','报名审批结果(通过 / 候补 / 驳回)','学员','零售通消息','审批后立即','报名、审批'],['class','分班结果发布 / 调班','学员','零售通消息','发布时','分班'],['grad','结业与成绩发布','学员','零售通消息','结业时','培训结果'],['topic','系统出题完成','总部培训部','后台通知','每双周','课题池'],['ai','课题 AI 分析完成','提出人','后台通知','agent 回传后','课题池'],['sync','项目数据同步完成(进入评估中)','项目负责人','后台通知','同步后','效果追踪'],['submit','学习项目提交 / 下发','项目负责人','后台通知','提交时','学习任务'],['review','内容审核通过 / 退回','内容创建人','后台通知','审核时','内容管理'],['retake','补考后仍未通过','区域老师','后台通知','补考出分后','培训结果'],['tai','问题 AI 分析完成 / 失败','提出人','后台通知','agent 回传后','课题池']];
-function evOf(m){if(/审批结果|被驳回|候补/.test(m))return 'apply';if(/分班结果|班次已调整/.test(m))return 'class';if(/结业/.test(m))return 'grad';if(/系统出题/.test(m))return 'topic';if(/AI 分析/.test(m))return 'tai';if(/数据同步/.test(m))return 'sync';if(/内容「.*(审核|入库|发布|回炉)/.test(m))return 'review';if(/补考/.test(m))return 'retake';return 'submit'}
+function evOf(m){if(/审批结果|被驳回|候补/.test(m))return 'apply';if(/分班结果|班次已调整/.test(m))return 'class';if(/结业/.test(m))return 'grad';if(/系统出题/.test(m))return 'topic';if(/AI 分析/.test(m))return 'tai';if(/数据同步/.test(m))return 'sync';if(/(内容「.*(审核|入库|发布|回炉))|评审灰度|评审「|候选知识点「/.test(m))return 'review';if(/补考/.test(m))return 'retake';return 'submit'}
 function notify(msg){if(S.cfg.notifOff.includes(evOf(msg)))return;S.notices.unshift({t:new Date().toTimeString().slice(0,5),m:msg});renderBell()}
 function renderBell(){const n=S.notices.length;const e=$('#bellN');e.style.display=n?'block':'none';e.textContent=n}
 const indUse=id=>S.projects.filter(p=>p.goal&&(p.goal.main.id===id||p.goal.aux.some(a=>a.id===id))).length;
@@ -183,7 +183,7 @@ function overLimit(aud,start,end){ // 新建项目叠加后是否超限
 /* ---------- 持久化（E1）：只存用户可变子集，不存可从种子重算的理想态 ---------- */
 const LS_KEY='trainingdemo.save.v1';
 const LS_SCHEMA=1;
-const LS_FIELDS=['kps','contents','qs','drills','topics','projects','apps','classes','results','learn','tickets','packs','fbk','aiLog','PTAGS','cfg','cfgV','kpCand','cimps','feedback','aiSnooze'];
+const LS_FIELDS=['kps','contents','qs','drills','topics','projects','apps','classes','results','learn','tickets','packs','fbk','aiLog','PTAGS','cfg','cfgV','kpCand','cimps','feedback','aiSnooze','rvw','ctrlHit'];
 function saveNow(){
   try{
     const data={schema:LS_SCHEMA,today:today,at:new Date().toISOString()};

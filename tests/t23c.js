@@ -3,7 +3,7 @@ const L=m=>out.push(String(m));const tx=()=>document.querySelector('#main').inne
 const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')+name+(detail?' — '+detail:''));
 try{
 const allTabs={overview:['闭环总览','老板视图','流程与规则'],config:['指标库','培训类型默认值','阈值与口径','维度体系','岗位画像','评价口径','学习包模板','内容管理','知识点规则','数据源'],
- effect:['效果看板','就绪度','错题集','调优','效果报告','复制与回炉'],topics:['发现的问题'],projects:['学习项目配置'],catalog:['总览','看板','候选','清河迁移'],content:['全部内容','导入','使用与反馈'],publish:['已上架','待上架','已下架','首页推荐位'],coach:['工单看板','推荐辅导店']};
+ effect:['效果总览','就绪度','错题集','调优','效果报告','复制与回炉'],topics:['发现的问题'],projects:['学习项目配置'],catalog:['总览','看板','候选','清河迁移'],content:['全部内容','导入','使用与反馈'],publish:['已上架','待上架','已下架','首页推荐位'],coach:['工单看板','推荐辅导店']};
 let errs=0,pages=0;
 ['hq','r1','r2','boss'].forEach(role=>{A.roleSwitch({value:role});const pg=PAGES_OK[UI.role.type];
   Object.keys(allTabs).forEach(p=>{if(!pg.includes(p))return;

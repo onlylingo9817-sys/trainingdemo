@@ -73,7 +73,7 @@ function pgDetail(){
   if(t==='报名')b=tabSignup(p);
   if(t==='分班')b=tabClass(p);
   if(t==='培训结果')b=tabResult(p);
-  if(t==='效果')b=p.eff?'<div class="card"><h3>效果概要</h3>'+progBar(p)+'<div style="margin-top:10px">'+goalTxt(p)+',当前 <b>'+p.cur+p.unit+'</b></div><div style="margin-top:10px"><button class="btn pri" data-act="go" data-p="effect" data-t="效果看板" data-ef="'+p.id+'">查看完整效果看板</button></div></div>':cta('还没有效果数据','项目当前处于「'+p.status+'」。效果数据在「评估中」阶段同步(北斗 BI / 汽车语料 / 清河大学)。','<button class="btn" data-act="ptab" data-v="概览">去概览推进阶段</button>');
+  if(t==='效果')b=tabEffect(p);
   const estP=estN(p.aud)+(p.mids||[]).length;const appN=appsOf(p.id);
   const hero='<div class="hero-kpi" style="margin-bottom:18px"><div><div class="l">培训目标('+p.metric+')</div><div class="v">'+p.base+p.unit+' → <span style="color:var(--pri-d)">'+p.target+p.unit+'</span></div></div><div><div class="l">当前值</div><div class="v">'+(p.cur==null?'<span style="color:var(--mut)">待同步</span>':p.cur+p.unit)+'</div></div><div><div class="l">达成进度</div><div class="v">'+(p.cur==null?'-':pct(p)+'%')+'</div></div><div><div class="l">'+(p.off?'报名 / 名额':'覆盖人数(预估)')+'</div><div class="v">'+(p.off?cntOk(p.id)+' / '+p.quota:estP)+'</div></div></div>';
   return crumb('<a data-act="go" data-p="projects">学习任务</a> / '+esc(p.name))+'<div class="ph"><div><h2>'+esc(p.name)+' '+chip(p.status)+'</h2><div class="ph-meta"><span class="tag">'+typeTxt(p)+'</span><span class="tag">'+p.start+' ~ '+p.end+'</span><span class="tag">'+esc(p.owner)+'</span>'+(p.off?'<span class="tag '+(p.signup==='报名制'?'blue':'pri')+'">报名类型:'+p.signup+'</span>':'')+(p.from?'<span class="tag pri">来自课题 '+p.from+'</span>':'')+(p.gray?'<span class="tag '+(p.gray.stage==='灰度中'?'blue':p.gray.stage==='已全量'?'ok':'err')+'">分批灰度:'+p.gray.stage+'</span>':'')+'</div></div></div>'+hero+'<div class="tabs">'+tabs.map(x=>'<div class="tab '+(t===x?'on':'')+'" data-act="ptab" data-v="'+x+'">'+x+(x==='报名'&&appsOf(p.id).some(a=>a.status==='待审批')?' <span class="dot" style="display:inline-block">'+appsOf(p.id).filter(a=>a.status==='待审批').length+'</span>':'')+'</div>').join('')+'</div>'+b;
@@ -85,13 +85,20 @@ A.chgGoal=el=>{const p=proj(el.dataset.id);if(p.chg&&p.chg.status==='待审批')
 A.chgOk=el=>{const p=proj(el.dataset.id);const v=parseFloat($('#ng').value),r=$('#nr').value.trim();if(isNaN(v)||!r)return toast('请填写新目标值和变更原因','err');if(p.goal.main.dir==='低'?v>=p.base:v<=p.base)return toast('新目标值仍需优于基线 '+p.base+'%','err');
   p.chg={val:v,from:p.target,reason:r,by:UI.role.n.split(' · ')[0],status:'待审批'};logp(p,'提交目标变更申请:'+p.target+'% → '+v+'%,原因:'+r);closeDlg();toast('变更申请已提交,等待总部培训部审批','ok');render()};
 A.chgDo=el=>{const p=proj(el.dataset.id);const ok=el.dataset.v==='通过';p.chg.status=ok?'已通过':'已驳回';if(ok){p.target=p.chg.val;p.goal.target=p.chg.val}logp(p,'目标变更申请'+el.dataset.v+(ok?',目标值改为 '+p.target+'%':''));toast('目标变更'+el.dataset.v,'ok');render()};
-A.closeProj=el=>{const p=proj(el.dataset.id);const nContents=[...new Set(p.nodes.filter(n=>n.contentId&&content(n.contentId)&&content(n.contentId).script).map(n=>n.contentId))].length;
+A.closeProj=el=>{const p=proj(el.dataset.id);
+  if(!p)return;if(p.status!=='评估中')return toast('只有「评估中」的项目能结项(当前:'+p.status+')','err');if(p.reworkPending)return toast('该项目的回炉正在等总部确认','err');
+  if(typeof bizCanClose==='function'&&!bizCanClose(p))return toast(bizCloseWhyNot(p)||'你没有结项权限','err');const nContents=[...new Set(p.nodes.filter(n=>n.contentId&&content(n.contentId)&&content(n.contentId).script).map(n=>n.contentId))].length;
   openDlg('结项','<div class="f"><label><b>*</b>结论</label><div class="in" style="display:block">'
    +'<label style="display:block;margin-bottom:6px"><input type="radio" name="cr" value="复制" checked> <b>复制</b> <span class="hint">目标达成,沉淀好做法:带入本项目配置新建一个项目,选其他区域(仅总部培训部)</span></label>'
    +'<label style="display:block;margin-bottom:6px"><input type="radio" name="cr" value="回炉"> <b>回炉</b> <span class="hint">话术无效:把本项目用到的 '+nContents+' 条话术内容下线,重新生产</span></label>'
    +'<label style="display:block;margin-bottom:6px"><input type="radio" name="cr" value="转入店辅导"> <b>转入店辅导</b> <span class="hint">按本项目效果下钻中未达标的门店自动生成辅导工单(最多 3 家)</span></label>'
    +'<label style="display:block"><input type="radio" name="cr" value="终止"> <b>终止</b> <span class="hint">只结项,不触发其他动作</span></label></div></div><div class="f"><label><b>*</b>原因(一句话)</label><div class="in"><input type="text" id="cw" style="min-width:380px"></div></div>'+(p.eff&&smallNow(p)?'<div class="hint" style="margin-left:0;color:#b27900">样本不足,效果无法判断,不建议选「复制」。</div>':''),'<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="closeOk" data-id="'+p.id+'">确认结项</button>')};
-A.closeOk=el=>{const w=$('#cw').value.trim();if(!w)return toast('结项必须写一句原因','err');const p=proj(el.dataset.id);p.status='已结项';p.closeRes=document.querySelector('input[name=cr]:checked').value;p.closeWhy=w;
+A.closeOk=el=>{const w=(($('#cw')||{}).value||'').trim();if(!w)return toast('结项必须写一句原因','err');const p=proj(el.dataset.id);
+  if(!p)return;if(p.status!=='评估中'){closeDlg();return toast('只有「评估中」的项目能结项(当前:'+p.status+')','err')}if(p.reworkPending){closeDlg();return toast('该项目的回炉正在等总部确认','err')}
+  if(typeof bizCanClose==='function'&&!bizCanClose(p))return toast(bizCloseWhyNot(p)||'你没有结项权限','err');
+  { const pick=document.querySelector('input[name=cr]:checked').value;
+    if(pick==='回炉'&&UI.role.type==='region'&&typeof bizCfg==='function'&&bizCfg().close.rework==='hq'){
+      p.status='已结项';p.closeRes='回炉(待总部确认)';p.closeWhy=w;p.reworkPending={by:meShort(),why:w,t:today};logp(p,'区域老师结项,选择「回炉」:'+w+';等待总部确认后才会下线内容');topicWriteback(p);notify('项目「'+p.name+'」区域老师申请回炉,待总部确认');closeDlg();toast('已结项。「回炉」需总部确认,确认前内容不会下线','ok');render();return}}p.status='已结项';p.closeRes=document.querySelector('input[name=cr]:checked').value;p.closeWhy=w;
   let extra='';
   if(p.closeRes==='转入店辅导'){const n=mkTickets(p,3,'项目结项转入');extra=',已生成 '+n+' 张辅导工单'}
   if(p.closeRes==='回炉'){const ids=[...new Set(p.nodes.filter(n=>n.contentId&&content(n.contentId)&&content(n.contentId).script).map(n=>n.contentId))];ids.forEach(id=>{const cc=content(id);cc.st='草稿';cc.ver++;chist(cc,'项目结项回炉,进入改版','项目「'+p.name+'」结项回炉:'+w)});extra=',已转改版 '+ids.length+' 条话术内容';if(ids.length)notify('项目「'+p.name+'」回炉:'+ids.length+' 条话术已下线,请到内容中心「改版」后重新提交审核')}
@@ -223,3 +230,10 @@ const chip2s=s=>'<span class="tag '+({'已结业':'ok','已签到':'ok','已分�
 A.aq=el=>{UI.sel.aq=el.value;render()};
 
 A.issueF=el=>{const f=UI.sel.issueF||(UI.sel.issueF={});const k=el.dataset.k;const v=el.value;if(v)f[k]=v;else delete f[k];if(UI.sel.issuePage)UI.sel.issuePage.page=1;render()};
+/* 区域老师选「回炉」且配置要求总部确认时:总部在项目效果页确认 / 驳回 */
+A.reworkOk=el=>{const p=proj(el.dataset.id);if(!p||!p.reworkPending)return;if(UI.role.type!=='hq')return toast('只有总部能确认回炉','err');
+  const ids=[...new Set(p.nodes.filter(n=>n.contentId&&content(n.contentId)&&content(n.contentId).script).map(n=>n.contentId))];
+  ids.forEach(id=>{const cc=content(id);cc.st='草稿';cc.ver++;chist(cc,'项目回炉(总部确认),进入改版','项目「'+p.name+'」:'+p.reworkPending.why)});
+  p.closeRes='回炉';logp(p,'总部确认回炉,'+ids.length+' 条话术转改版');p.reworkPending=null;topicWriteback(p);notify('项目「'+p.name+'」回炉已确认:'+ids.length+' 条话术已下线,请到内容中心改版');toast('已确认回炉,'+ids.length+' 条话术转改版','ok');render()};
+A.reworkNo=el=>{const p=proj(el.dataset.id);if(!p||!p.reworkPending)return;if(UI.role.type!=='hq')return toast('只有总部能处理','err');
+  p.closeRes='终止(总部驳回回炉)';logp(p,'总部驳回回炉申请,按「终止」结项,内容未下线');p.reworkPending=null;topicWriteback(p);toast('已驳回,内容保持不变','ok');render()};

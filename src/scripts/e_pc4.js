@@ -209,19 +209,19 @@ A.coachClose=el=>{const x=coachPlanOf(S.tickets.find(t=>t.id===el.dataset.id));i
 const smallNow=p=>{const e=p.eff;return Math.min(e.a,e.noCtrl?e.a:e.b)<S.cfg.minN};
 function pgCloseBlock(){
   const L=visibleP().filter(p=>p.status==='评估中'||p.status==='已结项');
-  return '<div class="card" style="margin-top:14px"><h3>复制与回炉 <span class="hint">项目进入评估中后才能结项；区域老师只看本区域</span></h3>'+(L.length?'<div class="grid g2">'+L.map(p=>'<div class="card" style="margin:0"><h3>'+esc(p.name)+' '+chip(p.status)+'</h3><div class="hint">'+goalTxt(p)+',当前 '+p.cur+p.unit+(smallNow(p)?'(样本不足,无法判断)':'')+'</div><div style="margin:8px 0">'+(p.status==='已结项'?'结论:<b>'+p.closeRes+'</b> · '+esc(p.closeWhy||''):(smallNow(p)?'样本不足,建议延长观察期或合并下一批再判断':pct(p)>=100?'目标已达成:沉淀好做法并复制到其他区域':'目标未达成:话术回炉或转入店辅导'))+'</div>'+(p.status==='已结项'?'':'<button class="btn pri" data-act="closeProj" data-id="'+p.id+'">结项并选结论</button>')+'</div>').join('')+'</div>':'<div class="hint">暂无可结项的项目。项目进入「评估中」后出现在这里。</div>')+'</div>';
+  return '<div class="card" style="margin-top:14px"><h3>待结项与已结项 <span class="hint">结项决策已并入各项目详情的「效果」页签：先看效果，再在同一页选结论；这里只是汇总入口。区域老师只看本区域</span></h3>'+(L.length?'<table class="t"><tr><th>项目</th><th>状态</th><th>目标 / 当前</th><th>判断</th><th>结论</th><th></th></tr>'+L.map(p=>'<tr><td><b>'+esc(p.name)+'</b></td><td>'+chip(p.status)+'</td><td>'+goalTxt(p)+',当前 '+p.cur+p.unit+'</td><td>'+(smallNow(p)?'样本不足,无法判断':pct(p)>=100?'已达成':'未达成')+'</td><td>'+(p.status==='已结项'?'<b>'+esc(p.closeRes||'')+'</b> · '+esc(p.closeWhy||''):'<span class="hint">未结项</span>')+'</td><td><a class="link" data-act="go" data-p="detail" data-id="'+p.id+'" data-pt="效果">'+(p.status==='已结项'?'查看效果':(typeof bizCanClose!=='function'||bizCanClose(p)?'去看效果并结项':'查看效果'))+' ›</a></td></tr>').join('')+'</table>':'<div class="hint">暂无可结项的项目。项目进入「评估中」后出现在这里。</div>')+'</div>';
 }
 function pgEffect(){
   const bossRole=UI.role.type==='boss';
   const cfgRole=typeof canConfigure==='function'&&canConfigure();
-  const tabs=bossRole?['效果看板','人员就绪度','错题集','效果报告']:(cfgRole?['效果看板','人员就绪度','错题集','效果报告','调优与结项']:['效果看板','人员就绪度','错题集','效果报告']);
+  const tabs=bossRole?['效果总览','人员就绪度','错题集','效果报告']:(cfgRole?['效果总览','人员就绪度','错题集','效果报告','调优与结项']:['效果总览','人员就绪度','错题集','效果报告']);
   let t=curTab('effect',tabs);
-  const EFF_ALIAS={'人员':'人员就绪度',就绪度:'人员就绪度','人员就绪度':'人员就绪度',调优:'调优与结项','复制与回炉':'调优与结项','调优与结项':'调优与结项'};
+  const EFF_ALIAS={'效果看板':'效果总览','效果总览':'效果总览','人员':'人员就绪度',就绪度:'人员就绪度','人员就绪度':'人员就绪度',调优:'调优与结项','复制与回炉':'调优与结项','调优与结项':'调优与结项'};
   if(EFF_ALIAS[t])t=EFF_ALIAS[t];
   if(!tabs.includes(t))t=tabs[0];
   let b='';
   const withEff=visibleP().filter(p=>p.eff);
-  if(t==='效果看板')b=withEff.length?efBoard(withEff):srcBar('效果数据不是手工录入的:项目提交 → 培训 → 观察期结束后,系统在「评估中」阶段从北斗 BI(业务结果)、汽车语料(行为/话术)、清河大学(掌握度)同步。')+cta('还没有项目产生效果数据',S.projects.length?'已有 '+S.projects.length+' 个项目,但都还没到「评估中」。到项目概览里推进阶段。':'先「新增学习项目」,走完培训,再回来看效果。',S.projects.length?'<button class="btn pri" data-act="go" data-p="projects">去培训项目</button>':'<button class="btn pri" data-act="formNew">新增学习项目</button>');
+  if(t==='效果总览')b=withEff.length?efOverview(visibleP()):srcBar('效果数据不是手工录入的:项目提交 → 培训 → 观察期结束后,系统在「评估中」阶段从北斗 BI(业务结果)、汽车语料(行为/话术)、清河大学(掌握度)同步。')+cta('还没有项目产生效果数据',S.projects.length?'已有 '+S.projects.length+' 个项目,但都还没到「评估中」。到项目概览里推进阶段。':'先「新增学习项目」,走完培训,再回来看效果。',S.projects.length?'<button class="btn pri" data-act="go" data-p="projects">去培训项目</button>':'<button class="btn pri" data-act="formNew">新增学习项目</button>');
   if(t==='效果报告')b=rptTab(withEff);
   if(t==='人员就绪度'){
     const view=bossRole?'group':(UI.sel.effView||'ready');
@@ -241,12 +241,54 @@ function pgEffect(){
 A.v23EffView=el=>{UI.sel.effView=el.dataset.v||'ready';UI.tab.effect='人员就绪度';render();$('#main').scrollTop=0};
 A.subOk=()=>toast('订阅已保存','ok');
 A.efsel=el=>{UI.ef=el.value;UI.drill=[];render()};
-function efBoard(list){
-  if(!list.some(p=>p.id===UI.ef))UI.ef=list[0].id;
-  const p=proj(UI.ef),e=p.eff;const small=smallNow(p);const d=e.did;const asrBad=S.cfg.asrNow<S.cfg.asr;
+/* 效果总览:按培训类型综合。不同类型主指标不同,不硬压成一个数;每个项目的详细效果在项目详情「效果」页签 */
+function efVerdict(p){
+  if(p.status==='已结项')return {k:'closed',t:'已结项:'+(p.closeRes||'')};
+  if(!p.eff)return {k:'wait',t:'尚无效果数据'};
+  if(smallNow(p))return {k:'small',t:'样本不足'};
+  return pct(p)>=100?{k:'ok',t:'已达成'}:{k:'bad',t:'未达成'};
+}
+function efOverview(P){
+  const q=UI.sel.efType||'';
+  const groups={};P.forEach(p=>{const k=tk(p.type,p.sub);(groups[k]||(groups[k]=[])).push(p)});
+  const keys=Object.keys(S.cfg.typeDef).filter(k=>groups[k]).concat(Object.keys(groups).filter(k=>!S.cfg.typeDef[k]));
+  const mainName=k=>{const d=S.cfg.typeDef[k];const i=d&&S.indicators.find(x=>x.id===d.main);return i?i.name:'—'};
+  const cards=keys.map(k=>{const L=groups[k],V=L.map(efVerdict);const n=f=>V.filter(x=>x.k===f).length;const judged=n('ok')+n('bad');
+    return '<div class="card kp-click" data-act="efType" data-k="'+esc(k)+'" style="margin:0;'+(q===k?'border-color:var(--pri);box-shadow:0 0 0 2px #ffe3d1;':'')+'"><h3>'+esc(k)+' <span class="hint">'+L.length+' 个项目</span></h3>'
+      +'<div class="hint">主指标:'+esc(mainName(k))+'</div>'
+      +'<div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap"><span><b style="color:var(--ok)">'+n('ok')+'</b> 已达成</span><span><b style="color:var(--err)">'+n('bad')+'</b> 未达成</span><span><b>'+n('small')+'</b> 样本不足</span><span><b>'+n('wait')+'</b> 待同步</span><span><b>'+n('closed')+'</b> 已结项</span></div>'
+      +'<div class="hint" style="margin-top:6px">'+(judged?'已判断 '+judged+' 个,达成率 '+Math.round(n('ok')/judged*100)+'%':'暂无可判断的项目')+'</div></div>'}).join('');
+  const show=q?P.filter(p=>tk(p.type,p.sub)===q):P;
+  const rows=show.map(p=>{const v=efVerdict(p);const tag={ok:'ok',bad:'err',small:'warn',wait:'',closed:'blue'}[v.k];
+    return '<tr><td>'+(UI.role.type==='boss'?'<b>'+esc(p.name)+'</b>':'<a class="link" data-act="go" data-p="detail" data-id="'+p.id+'" data-pt="效果"><b>'+esc(p.name)+'</b></a>')+'</td><td>'+esc(tk(p.type,p.sub))+'</td><td>'+esc(p.metric)+'</td><td>'+p.base+p.unit+' → '+p.target+p.unit+'</td><td>'+(p.cur==null?'<span class="hint">待同步</span>':p.cur+p.unit)+'</td><td>'+(p.cur==null||smallNow(p)?'—':pct(p)+'%')+'</td><td><span class="tag '+tag+'">'+esc(v.t)+'</span></td><td>'+chip(p.status)+'</td></tr>'}).join('');
+  return srcBar('效果必须落在具体的项目 / 培训目标上才有意义。这里按培训类型综合：每类用自己的主指标，不混成一个数；点类型筛选下面的列表，'+(UI.role.type==='boss'?'老板视图只读群体结果，不进入项目明细。':'点项目进入详情里的「效果」页签（目标 vs 实际、对照、下钻、结项都在那里）。')+'个人维度的综合结果看「人员就绪度」。')
+    +(keys.length?'<div class="grid g3" style="margin-bottom:14px">'+cards+'</div>':'')
+    +'<div class="card"><h3>项目列表 '+(q?'<span class="tag pri">'+esc(q)+'</span> <a class="link" data-act="efType" data-k="">清除筛选</a>':'<span class="hint">全部类型</span>')+'</h3>'
+    +(rows?'<table class="t"><tr><th>项目</th><th>培训类型</th><th>主指标</th><th>基线 → 目标</th><th>当前</th><th>进度</th><th>判断</th><th>阶段</th></tr>'+rows+'</table>':'<div class="hint">没有符合条件的项目。</div>')+'</div>';
+}
+A.efType=el=>{UI.sel.efType=(UI.sel.efType===el.dataset.k)?'':el.dataset.k;render()};
+/* 项目详情「效果」页签:效果本就针对某个项目,直接在详情里看,不再跳到全局页面;结项决策放在看完结论的地方 */
+function tabEffect(p){
+  if(!p.eff)return cta('还没有效果数据','项目当前处于「'+p.status+'」。效果数据在「评估中」阶段同步(北斗 BI / 汽车语料 / 清河大学)。','<button class="btn" data-act="ptab" data-v="概览">去概览推进阶段</button>');
+  const closed=p.status==='已结项';
+  const verdict=smallNow(p)?'样本不足,建议延长观察期或合并下一批再判断':pct(p)>=100?'目标已达成:沉淀好做法并复制到其他区域':'目标未达成:话术回炉或转入店辅导';
+  const decide='<div class="card" style="border-color:var(--pri)"><h3>结项与下一步 '+chip(p.status)+'</h3>'
+    +(closed?'<div>结论:<b>'+esc(p.closeRes||'')+'</b> · '+esc(p.closeWhy||'')+'</div>'
+      :'<div class="hint" style="margin-bottom:8px">看完上面的目标达成、对照和下钻,在这里决定:复制 / 回炉 / 转入店辅导 / 终止。参考:'+verdict+'</div>'
+        +(p.status==='评估中'?(typeof bizCanClose!=='function'||bizCanClose(p)?'<button class="btn pri" data-act="closeProj" data-id="'+p.id+'">结项并选结论</button>':'<span class="hint">你不能结项:'+esc(bizCloseWhyNot(p))+'</span>'):'<span class="hint">项目进入「评估中」后才能结项(当前:'+p.status+')</span>'))
+    +(p.reworkPending?'<div class="tag warn" style="display:block;margin-top:8px;white-space:normal;line-height:1.8;padding:6px 12px">区域老师申请「回炉」,等待总部确认:'+esc(p.reworkPending.why)+(UI.role.type==='hq'?' <button class="btn sm pri" data-act="reworkOk" data-id="'+p.id+'">确认回炉</button> <button class="btn sm" data-act="reworkNo" data-id="'+p.id+'">驳回</button>':'')+'</div>':'')
+    +(p.ctrlHit?'<div class="tag warn" style="display:block;margin-top:8px;white-space:normal;line-height:1.8;padding:6px 12px">对照已被干预 '+p.ctrlHit+' 次(见项目操作记录),本项目的「受训 vs 对照」结论仅供参考。</div>':'')
+    +'</div>';
+  return efBoard(null,p)+decide;
+}
+/* efBoard(list):效果追踪里的多项目版(带项目下拉);efBoard(null,p):项目详情「效果」页签的内嵌版(固定本项目,不带下拉) */
+function efBoard(list,only){
+  if(only){if(UI.drillP!==only.id){UI.drillP=only.id;UI.drill=[]}}
+  else if(!list.some(p=>p.id===UI.ef))UI.ef=list[0].id;
+  const p=only||proj(UI.ef),e=p.eff;const small=smallNow(p);const d=e.did;const asrBad=S.cfg.asrNow<S.cfg.asr;
   const status=small?'<span class="tag warn" style="font-size:14px">无法判断</span>':(metV(p,p.cur)?'<span class="tag ok" style="font-size:14px">已达成</span>':'<span class="tag err" style="font-size:14px">未达成</span>');
   const diff=(d[1]-d[0])-(d[3]-d[2]);
-  let b='<div class="fil"><span>选择项目:</span><select data-wc="efsel">'+list.map(i=>'<option value="'+i.id+'" '+(UI.ef===i.id?'selected':'')+'>'+esc(i.name)+'('+i.status+')</option>').join('')+'</select><span class="hint">数据同步于 '+e.syncAt+';观察期结束后留出数据延迟再出结论</span></div>'
+  let b=(only?'<div class="fil"><span class="hint">数据同步于 '+e.syncAt+';观察期结束后留出数据延迟再出结论</span></div>':'<div class="fil"><span>选择项目:</span><select data-wc="efsel">'+list.map(i=>'<option value="'+i.id+'" '+(UI.ef===i.id?'selected':'')+'>'+esc(i.name)+'('+i.status+')</option>').join('')+'</select><span class="hint">数据同步于 '+e.syncAt+';观察期结束后留出数据延迟再出结论</span> <a class="link" data-act="go" data-p="projects" data-id="'+p.id+'" data-pt="效果">在项目详情里查看 ›</a></div>')
    +srcBar('本页每个数字都标注了来源:基线来自创建项目时的北斗 BI / 汽车语料快照;当前值与三层指标在「评估中」阶段同步;样本门槛 '+S.cfg.minN+'、ASR 底线 '+S.cfg.asr+'% 取自「配置中心」。')
    +'<div class="card"><h3>目标 vs 实际 '+status+'</h3><div class="grid g4"><div><div class="hint">指标</div><b>'+p.metric+'</b></div><div><div class="hint">基线</div><b>'+p.base+p.unit+'</b>'+ds(p.baseSrc)+'</div><div><div class="hint">目标(创建时设定)</div><b style="color:var(--pri)">'+p.target+p.unit+'</b></div><div><div class="hint">当前</div><b>'+p.cur+p.unit+'</b></div></div>'+(small?'':'<div style="margin-top:10px"><div class="bar" style="height:12px"><i class="'+(metV(p,p.cur)?'ok':'')+'" style="width:'+Math.min(100,pct(p))+'%"></i></div><div class="hint" style="margin-top:4px">达成进度 '+pct(p)+'%(类型:'+typeTxt(p)+')</div></div>')
    +(small?'<div class="card" style="background:#fff7e0;margin:10px 0 0;border-color:#f3dc9b">样本不足:受训 '+e.a+' 人'+(e.noCtrl?'':' / 对照 '+e.b+' 人')+',低于门槛 '+S.cfg.minN+' 人(配置中心)。只展示趋势,不写「达成 / 未达成」。</div>':'')+'</div>'
@@ -268,7 +310,10 @@ A.drill=el=>{UI.drill=el.dataset.l?el.dataset.l.split(','):[];render()};
 
 /* ========== 配置中心 ========== */
 function pgConfig(){
-  const tabs=['指标库','培训类型默认值','阈值与口径','维度体系','岗位画像','评价口径','学习包模板','内容管理','知识点规则','标签管理','数据源'];const t=curTab('config',tabs);let b='';
+  /* 12 个页签按「改的是什么」分组:页签值不变(旧链接、测试、跳转都沿用),只是多一层分组栏 */
+  const CFG_GROUPS=[['培训项目',['指标库','培训类型默认值','阈值与口径','业务规则']],['能力与评价',['维度体系','岗位画像','评价口径','学习包模板']],['内容与知识点',['内容管理','知识点规则','评审灰度','标签管理']],['系统',['数据源']]];
+  const tabs=[].concat(...CFG_GROUPS.map(g=>g[1]));const t=curTab('config',tabs);let b='';
+  const grp=(CFG_GROUPS.find(g=>g[1].includes(t))||CFG_GROUPS[0]);
   const cellsOver=()=>{let n=0;[...new Set(PEOPLE.map(x=>x.store))].forEach(s=>WEEKS.forEach(w=>{if(loadAt(s,w)>S.cfg.limit)n++}));return n};
   const resN=Object.values(S.results).reduce((s,r)=>s+Object.values(r).filter(x=>x.offline!=null).length,0);
   if(t==='指标库'){
@@ -309,12 +354,16 @@ function pgConfig(){
      +'<div class="card"><h3>有效期与质量规则</h3><div class="fgrid"><div class="fld"><label>到期提前提醒(天)</label><input type="number" id="cf_expWarn" value="'+S.cfg.expWarn+'" style="width:120px"><div class="fh">内容到期前这么多天进入创建人的「即将到期」待办;到期当天自动下线(可续期 / 改版)</div></div><div class="fld full"><label>绝对化 / 高风险用语词表(逗号分隔)</label><input type="text" id="cf_banned" value="'+esc(S.cfg.banned.join(', '))+'"><div class="fh">内容正文含这些词,质量检查会「提醒」(不拦截,由人决定)。目前 <b>'+S.contents.filter(c=>qcheck(qIn(c)).soft.some(x=>/绝对化/.test(x))).length+'</b> 条内容命中</div></div></div><button class="btn pri" data-act="cfgContent">保存</button></div>'
      +'<div class="card"><h3>硬规则(提交审核前必须满足,代码固定)</h3><div class="hint" style="line-height:2">政策类内容:必须有有效期和出处 · 话术:必须有关键词组 · 其余沿用现有「内容管理」的必填校验(标题、讲师、封面图、可见范围、对应素材)</div></div>';
   }
+  if(t==='评审灰度')b=typeof cfgReview==='function'?cfgReview():'';
+  if(t==='业务规则')b=typeof cfgBiz==='function'?cfgBiz():'';
   if(t==='数据源')b=srcBar('系统里所有「不是人手工录入」的数据都来自这里,只读。点「立即同步」模拟一次拉取。')
     +(typeof kpQh==='function'?'<div class="card" style="margin-bottom:14px"><h3>清河迁移清单 <span class="hint">原「知识点 → 清河迁移」，一次性任务，不占日常页签</span></h3>'+kpQh()+'</div>':'')
     +'<div class="tw"><table class="t"><tr><th>数据源</th><th>系统</th><th>提供什么</th><th>用在哪里</th><th>同步频率</th><th>状态</th></tr>'+DS.map(d=>'<tr><td><b>'+d[0]+'</b></td><td>'+d[1]+'</td><td>'+d[2]+'</td><td>'+d[3]+'</td><td>'+d[4]+'</td><td><span class="tag ok">已连接</span> <button class="link" data-act="dsSync" data-n="'+d[0]+'">立即同步</button></td></tr>').join('')+'</table></div>'
     +'<div class="card" style="margin-top:14px"><h3>人员主数据概况(人事系统)</h3><table class="t"><tr><th>区域</th><th>销售顾问</th><th>其中新人(入职 ≤ 90 天)</th><th>门店</th></tr>'+Object.keys(REG).map(r=>'<tr><td>'+r+'</td><td>'+REG[r].all+'</td><td>'+REG[r].nb+'</td><td>'+REG[r].stores.join('、')+'</td></tr>').join('')+'</table><div class="hint" style="margin-top:6px">「覆盖角色」的预估人数、新人判定都取自这张表;演示名单 '+PEOPLE.length+' 人是其中可在零售通扮演的学员。</div></div>';
   if(t==='标签管理')b='<div class="src">标签树由业务自主维护：可以是车上部位、政策口径、卖点或场景。改名不影响已挂载的知识点与内容。</div>'+pgTagManage();
-  return '<div class="ph"><h2>配置中心</h2></div>'+tabsH('config',tabs)+b;
+  return '<div class="ph"><h2>配置中心</h2></div>'
+   +'<div class="wb-tabs" style="margin-bottom:8px">'+CFG_GROUPS.map(g=>'<span class="'+(g===grp?'on':'')+'" data-act="tab" data-k="config" data-v="'+g[1][0]+'">'+g[0]+' '+g[1].length+'</span>').join('')+'</div>'
+   +tabsH('config',grp[1])+b;
 }
 A.tdmain=el=>{const d=S.cfg.typeDef[el.dataset.k];d.main=el.value;d.aux=d.aux.filter(x=>x!==el.value);toast('「'+el.dataset.k+'」默认主指标已改,新增项目时生效','ok');render()};
 A.tdaux=el=>{const d=S.cfg.typeDef[el.dataset.k];d.aux=el.checked?[...new Set([...d.aux,el.value])]:d.aux.filter(x=>x!==el.value)};

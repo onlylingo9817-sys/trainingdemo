@@ -102,6 +102,7 @@ function rxTodoList(){
   const out=[];
   try{const isCtrl=(typeof personOf==='function'&&(personOf(ME.mid)||{}).group==='对照批');
     if(!isCtrl)(packsOf(ME.mid)).filter(p=>p.status!=='已完成').forEach(p=>out.push({w:3,t:'学习包 · '+p.name,d:'截止 '+p.due,act:'rxGoPack',id:p.id,btn:'去完成'}))}catch(e){}
+  try{if(typeof rvRnTodo==='function')rvRnTodo().forEach(x=>out.push(x))}catch(e){}
   try{const mo=rxMisRows();if(mo.length)out.push({w:2,t:'错题本有 '+mo.length+' 个知识点待巩固',d:mo.filter(x=>x.recur).length+' 个复发',act:'rxGoMis',btn:'去看'})}catch(e){}
   try{const n=(S.notices||[]).filter(x=>(!x.mid||x.mid===ME.mid)&&!x.read).length;if(n)out.push({w:1,t:'你有 '+n+' 条新消息',d:'报名 / 分班 / 学习包 / 反馈处理',act:'rxGoMsg',btn:'查看'})}catch(e){}
   return out.sort((a,b)=>b.w-a.w).slice(0,5);

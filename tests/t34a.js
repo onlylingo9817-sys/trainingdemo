@@ -7,7 +7,7 @@ closeDlg();
 const names=[...new Set(S.lrn.map(l=>l.name).concat(PEOPLE.map(p=>p.name)))].filter(Boolean);
 const mids=[...new Set(S.lrn.map(l=>l.mid).concat(PEOPLE.map(p=>p.mid)))].filter(Boolean);
 A.roleSwitch({value:'boss'});
-const bossViews=[['overview','老板视图'],['overview','流程与规则'],['effect','效果看板'],['effect','就绪度'],['effect','错题集'],['effect','人员'],['effect','效果报告']];
+const bossViews=[['overview','老板视图'],['overview','流程与规则'],['effect','效果总览'],['effect','就绪度'],['effect','错题集'],['effect','人员'],['effect','效果报告']];
 let bossLeakName=[],bossLeakMid=[];
 bossViews.forEach(([p,t])=>{UI.page=p;UI.tab[p]=t;render();const x=tx();
   names.forEach(n=>{if(n&&x.includes(n))bossLeakName.push(p+'/'+t+':'+n)});
