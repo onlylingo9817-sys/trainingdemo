@@ -4,20 +4,20 @@ try{
 A.roleSwitch({value:'hq'});closeDlg();
 /* 1. 一套能力口径 */
 const abs=dimOf('Dab').values.map(v=>v.name);
-CK('全站能力只有 7 个业务项',abs.length===7&&abs.join('/')==='探需/产品讲解/试乘试驾/顾虑解除/促单成交/客户经营/带人辅导',abs.join('/'));
+CK('全站能力只有 7 个业务项',abs.length===7&&abs.join('/')==='探需/场景化讲车/试驾引导/顾虑解除/促单成交/客户经营/带人辅导',abs.join('/'));
 CK('知识点能力与画像同源',S.kps.every(k=>{const id=(k.dims.Dab||[])[0];return !id||!!dimVal('Dab',id)}));
 CK('没有旧六力残留',!JSON.stringify(S).match(/技术力|沟通力|业务力|服务力|领导力|执行力/));
 /* 2. 多车型 */
 CK('知识点支持多车型字段',S.kps.every(k=>Array.isArray(k.cars)&&k.cars.length>0));
-CK('多车型统计按车型分开',(()=>{const t=ptagByPath('内饰');const stats=kpCarsHost().map(c=>kpStatFor(t.id,c));return stats.length===13&&stats.some((x,i,a)=>i&&x.n!==a[0].n)})() ,kpCarsHost().map(c=>c+'='+kpStatFor(ptagByPath('内饰').id,c).n).join(' / '));
+CK('多车型统计按车型分开',(()=>{const d=S.kps.filter(k=>k.domain==='产品知识');return V23_CAR_LEAVES.length===12&&d.some(k=>k.cars.length>1)&&d.some(k=>k.cars.includes('通用车型'))})() ,V23_CAR_LEAVES.join('/'));
 /* 3. 知识点页:三件事 */
 UI.page='catalog';UI.tab.catalog='总览';render();const ov=tx();
-CK('总览第一屏是缺口而不是学员列表',/先做这三步/.test(ov)&&/车型 × 标签/.test(ov)&&ov.indexOf('车型 × 标签')<ov.indexOf('学员集中薄弱'),'矩阵位置 '+ov.indexOf('车型 × 标签')+' 薄弱位置 '+ov.indexOf('学员集中薄弱'));
+CK('总览第一屏是四指标与热力图',/覆盖度/.test(ov)&&/车型 × 卖点分类/.test(ov)&&/补学进度/.test(ov),'热力图='+/车型 × 卖点分类/.test(ov)+' 补学='+/补学进度/.test(ov));
 CK('总览矩阵每款车单独列',kpCarsHost().every(c=>document.querySelector('#main').innerText.includes(c)));
 CK('总览不再出现「车型 × 部位」',!/车型 × 部位|车上的部位/.test(ov));
 UI.tab.catalog='知识点库';render();const lib=tx();
-CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&/标签/.test(lib));
-CK('知识点库支持批量操作',/批量指定负责人|批量启用/.test(lib));
+CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&/卖点分类/.test(lib));
+CK('知识点库支持排序/导出',/排序/.test(lib)&&/导出/.test(lib));
 UI.tab.catalog='知识点库';render();A.kpOpenBatch();const batch=document.querySelector('#drw-root').innerText;
 CK('批量新建含 CSV 导入',/批量导入/.test(batch)&&/下载 CSV 模板/.test(batch));
 CK('批量新建含新车克隆',/新车型一键克隆/.test(batch));

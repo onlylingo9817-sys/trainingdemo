@@ -6,18 +6,18 @@ A.roleSwitch({value:'hq'});
 const readAll=()=>JSON.stringify(S.lrn.map(l=>v23Readiness(l.mid,l.tier).val));
 /* ============ 维度配置:新增 / 停用 / 合并 后,知识点与统计一致 ============ */
 UI.page='config';UI.tab.config='维度体系';render();
-CK('维度体系页渲染且列出 7 个维度',/维度列表/.test(tx())&&S.dims.length===7);
-const dsc=dimOf('Dscene');
-A.dmOpen({dataset:{id:'Dscene'}});$('#dm_new').value='自驾游';A.dmAdd({dataset:{d:'Dscene'}});
-CK('新增维度值',dimIdByName('Dscene','自驾游')!=null&&dsc.values.length===9,'场景值='+dsc.values.length);
-const dup=dsc.values.length;$('#dm_new').value='自驾游';A.dmAdd({dataset:{d:'Dscene'}});
+CK('维度体系页渲染且列出 5 个启用维度',/维度列表/.test(tx())&&S.dims.filter(d=>d.status!=='off').length===5);
+const dsc=dimOf('Dflow');
+A.dmOpen({dataset:{id:'Dflow'}});$('#dm_new').value='测试环节';A.dmAdd({dataset:{d:'Dflow'}});
+CK('新增维度值',dimIdByName('Dflow','测试环节')!=null&&dsc.values.length===7,'环节值='+dsc.values.length);
+const dup=dsc.values.length;$('#dm_new').value='测试环节';A.dmAdd({dataset:{d:'Dflow'}});
 CK('重复值被拦截',dsc.values.length===dup&&/已存在/.test(document.querySelector('#toast').innerText));
 /* 停用:已挂的知识点保留,统计不丢 */
-const v1=dsc.values.find(v=>v.name==='露营户外');const nUse0=S.kps.filter(k=>((k.dims||{}).Dscene||[]).includes(v1.id)).length;
-A.dmToggle({dataset:{d:'Dscene',v:v1.id}});
-const nUse1=S.kps.filter(k=>((k.dims||{}).Dscene||[]).includes(v1.id)).length;
+const v1=dsc.values.find(v=>v.name==='不直接对应');const nUse0=S.kps.filter(k=>((k.dims||{}).Dflow||[]).includes(v1.id)).length;
+A.dmToggle({dataset:{d:'Dflow',v:v1.id}});
+const nUse1=S.kps.filter(k=>((k.dims||{}).Dflow||[]).includes(v1.id)).length;
 CK('停用值:已挂知识点引用保留(不丢历史)',v1.status==='off'&&nUse0===nUse1&&nUse0>0,nUse0+' → '+nUse1);
-A.dmToggle({dataset:{d:'Dscene',v:v1.id}});
+A.dmToggle({dataset:{d:'Dflow',v:v1.id}});
 /* 合并:引用改写 + mergedTo 留痕;画像引用旧值时仍能解析到目标值 */
 const ab=dimOf('Dab');const pj=ab.values.find(v=>v.name==='探需'),zc=ab.values.find(v=>v.name==='顾虑解除');
 const kA=S.kps.filter(k=>((k.dims||{}).Dab||[]).includes(zc.id)).length;
@@ -40,7 +40,7 @@ CK('权重≠100 保存失败、不生成版本',S.cfgV.length===nvx&&/权重合
 p.items[0].weight=35;p.items[1].weight=30;p.items[2].weight=15;p.items[3].weight=20;A.pfSave();
 const after=readAll();
 CK('合法修改:生成配置版本并重算就绪度',S.cfgV.length===nvx+1&&after!==base,'版本 '+nvx+'→'+S.cfgV.length);
-CK('版本差异记录了画像项的权重变化',S.cfgV[S.cfgV.length-1].diff.some(d=>/产品讲解/.test(d[0])));
+CK('版本差异记录了画像项的权重变化',S.cfgV[S.cfgV.length-1].diff.some(d=>/产品知识/.test(d[0])));
 /* ============ 评价口径:校验 / 影响预估 / 保存 / 版本 ============ */
 A.reset();UI.page='config';UI.tab.config='评价口径';render();
 const w0=JSON.stringify(S.cfg.srcW);

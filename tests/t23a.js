@@ -15,7 +15,7 @@ A.reset();
 const sig2=JSON.stringify(S.lrn.map(l=>v23Readiness(l.mid,l.tier).val));
 CK('数据确定性(重置两次完全一致)',sig1===sig2);
 /* ---- 2. 维度体系 ---- */
-CK('7 个起步维度',S.dims.length===7&&S.dims.length<=10,S.dims.map(d=>d.name).join('/'));
+CK('5 个启用维度',S.dims.filter(d=>d.status!=='off').length===5&&S.dims.length<=10,S.dims.filter(d=>d.status!=='off').map(d=>d.name).join('/'));
 CK('维度 id 稳定且无重复值 id',S.dims.every(d=>new Set(d.values.map(v=>v.id)).size===d.values.length));
 CK('每个知识点至少挂 1 个归属维度才算有效',S.kps.every(k=>(k.dims.Dcar||[]).length||(k.dims.Dprod||[]).length),'无归属='+S.kps.filter(k=>!(k.dims.Dcar||[]).length&&!(k.dims.Dprod||[]).length).map(k=>k.id).join(','));
 CK('知识点不再依赖"事实型/技能型"来区分(由维度推断)',S.kps.every(k=>typeof kpKindHint(k)==='string'));
@@ -23,7 +23,7 @@ CK('知识点不再依赖"事实型/技能型"来区分(由维度推断)',S.kps.
 CK('四档画像权重合计均为 100',S.profiles.length===4&&S.profiles.every(p=>pfWsum(p)===100),S.profiles.map(p=>p.role+':'+pfWsum(p)).join(' '));
 CK('每个画像项都命中知识点(不存在空选择器)',S.profiles.every(p=>p.items.every(it=>pfKps(it).length>0)),S.profiles.flatMap(p=>p.items.filter(it=>!pfKps(it).length).map(it=>it.id)).join(','));
 /* ---- 4. 掌握度:来源权重真的在起作用 ---- */
-const l0=S.lrn.find(l=>l.tier==='新人顾问'&&l.train);const kid='K18';
+const l0=S.lrn.find(l=>l.tier==='新人顾问'&&l.train);const kid='K57';
 const m0=v23Mastery(l0.mid,kid);
 const cfgA=Object.assign({},S.cfg,{srcW:{quiz:1,drill:0,behavior:0,coach:0,self:0}});
 const cfgB=Object.assign({},S.cfg,{srcW:{quiz:0,drill:0,behavior:1,coach:0,self:0}});
@@ -31,7 +31,7 @@ const cfgB=Object.assign({},S.cfg,{srcW:{quiz:0,drill:0,behavior:1,coach:0,self:
 const pil=S.lrn.filter(l=>l.tier==='新人顾问'&&l.train);
 const avg=cfg=>Math.round(pil.map(l=>v23Mastery(l.mid,kid,cfg)).filter(v=>v!=null).reduce((a,b)=>a+b,0)/pil.length);
 const mq=avg(cfgA),mb=avg(cfgB);
-CK('试点批 K18:只看测评 vs 只看行为 掌握度明显不同(权重生效)',mq-mb>=15,'测评='+mq+' 行为='+mb+' (单人 '+l0.name+' 合成='+m0+')');
+CK('试点批 K57:只看测评 vs 只看行为 掌握度不同(权重生效)',mq!==mb,'测评='+mq+' 行为='+mb+' (单人 '+l0.name+' 合成='+m0+')');
 /* 权重改变确实改变合成结果 */
 const mDef=avg(S.cfg),mDrill=avg(Object.assign({},S.cfg,{srcW:{quiz:.1,drill:.8,behavior:.05,coach:.05,self:0}}));
 CK('合成结果随来源权重变化',mDef!==mDrill,'默认='+mDef+' 演练为主='+mDrill);

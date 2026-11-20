@@ -55,7 +55,7 @@ const WELCOME_HTML='<div style="line-height:1.9;font-size:13.5px"><p><b>这是�
  +'<p><b>两个端:</b>顶部切换「学堂后台」(培训部 / 区域老师用)和「零售通」(一线学员用)。右上角下拉可以换身份。</p>'
  +'<p style="color:#98a2b3;font-size:12.5px">体验完请点「看全部反馈 → 导出 CSV」发回给我们。刷新页面会丢失反馈。</p></div>';
 function welcome(){openDlg('欢迎来体验',WELCOME_HTML,'<button class="btn" data-act="close">先自己看看</button><button class="btn pri" data-act="welcomeGo">打开体验任务</button>')}
-function pageHelp(){const map={workbench:'先看这边：把待办按「紧急」处理完，点「去处理」会自动跳到对应对象。',catalog:'先看「总览」的车型 × 标签矩阵；补清单去「知识点库」，或用页头的「批量导入 / 新车克隆」。',kp:'这里看一个点的资料齐不齐；缺的项点「去补」会到内容中心。',content:'这里是做讲课材料的地方：话术、课程、题、演练；做完要挂知识点、审核定稿。',publish:'这里决定内容在零售通给谁看；只能上架已定稿的内容。',projects:'这里组织一场培训：选人、配学习任务、排线下班次。',effect:'这里回答「培训有没有用」：先看就绪度，再看错题和调优。',config:'这里改规则和标准；一线日常不用常来。'};return map[UI.page]||''}
+function pageHelp(){const map={workbench:'先看这边：把待办按「紧急」处理完，点「去处理」会自动跳到对应对象。',catalog:'先看「总览」的四指标和车型×卖点/能力热力图；补清单去「知识点库」，或用页头的「批量导入 / 新车克隆」。',kp:'这里看一个点的资料齐不齐；缺的项点「去补」会到内容中心。',content:'这里是做讲课材料的地方：话术、课程、题、演练；做完要挂知识点、审核定稿。',publish:'这里决定内容在零售通给谁看；只能上架已定稿的内容。',projects:'这里组织一场培训：选人、配学习任务、排线下班次。',effect:'这里回答「培训有没有用」：先看就绪度，再看错题和调优。',config:'这里改规则和标准；一线日常不用常来。'};return map[UI.page]||''}
 A.pageHelp=()=>{const h=pageHelp();openDlg('这页怎么用',h?'<div style="font-size:13.5px;line-height:1.8">'+esc(h)+'</div>':'<div class="hint">当前页没有额外说明。</div>','<button class="btn pri" data-act="close">知道了</button>')};
 A.welcomeGo=()=>{closeDlg();UI.gdOpen=true;gdRender()};
 A.welcome=()=>{welcome()};

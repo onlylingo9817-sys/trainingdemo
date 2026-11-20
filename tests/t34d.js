@@ -5,7 +5,7 @@ A.roleSwitch({value:'hq'});closeDlg();
 /* 1. 知识点不再保留题库/演练页签，旧链接落内容中心 */
 UI.page='catalog';UI.tab.catalog='总览';render();
 const tabs=[...document.querySelectorAll('#main .tab')].map(e=>e.innerText.trim().replace(/\s+\d+$/,''));
-CK('知识点页签只有总览/知识点库/候选',tabs.length===3&&tabs.join('/')==='总览/知识点库/候选',tabs.join('/'));
+CK('知识点页签只有总览/知识点库/候选/补学进度',tabs.length===4&&tabs.join('/')==='总览/知识点库/候选/补学进度',tabs.join('/'));
 UI.tab.catalog='题库';render();
 CK('旧题库链接落到内容中心并筛题',UI.page==='content'&&(UI.sel.caf||{}).k==='题',UI.page+'/'+(UI.sel.caf||{}).k);
 UI.page='catalog';UI.tab.catalog='演练';render();

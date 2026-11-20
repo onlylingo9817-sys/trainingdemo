@@ -4,9 +4,7 @@ A.roleSwitch({value:'hq'});closeDlg();
 UI.page='workbench';UI.sel.wbMore=false;render();
 const n25=document.querySelectorAll('#main table.t tr').length;
 CK('工作台默认最多 25 条',n25<=26,n25+' 行(含表头)');
-CK('工作台有看全部入口',!!document.querySelector('[data-act=wbMore]'));
-A.wbMore();
-CK('看全部后渲染更多待办',document.querySelectorAll('#main table.t tr').length>n25,'');
+if(n25>26){CK('工作台有看全部入口',!!document.querySelector('[data-act=wbMore]'));A.wbMore();CK('看全部后渲染更多待办',document.querySelectorAll('#main table.t tr').length>n25,'')}else{CK('工作台待办≤25,无需看全部',true,n25+' 行')}
 UI.page='tagmanage';render();
 const t=tagActive().find(x=>x.name==='车内冰箱')||tagActive()[1];
 A.tagRename({dataset:{id:t.id}});

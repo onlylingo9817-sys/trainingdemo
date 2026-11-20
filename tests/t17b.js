@@ -2,7 +2,7 @@ const L=m=>out.push(m);const tx=()=>document.querySelector('#main').innerText;
 try{
 A.roleSwitch({value:'hq'});
 // A. content -> 定稿 -> task (no publish) -> RN not visible
-A.cNew({dataset:{}});C.kind='话术';C.type='图文';C.title='未上架话术';C.items=['先问需求,再给方案'];C.kw='需求, 场景';C.cover='a.png';C.lecturer='王磊';C.chan=['汽车销售'];C.subject='探需';C.expire='';C.source='';C.cat='销售技巧';render();
+A.cNew({dataset:{}});C.kind='话术';C.type='图文';C.title='未上架话术';C.items=['先问需求,再给方案'];C.kw='需求, 场景';C.cover='a.png';C.lecturer='王磊';C.chan=['汽车销售'];C.subject='探需';C.expire='';C.source='';C.cat='销售技巧';C.kps=['K57'];C.kpRole={K57:'主讲解'};C.mainKp='K57';render();
 A.cSave({dataset:{s:'1'}});let c=S.contents[0];L('submit->'+c.st);
 A.cReview({dataset:{id:c.id}});A.cPass({dataset:{id:c.id}});L('pass->'+c.st+' pub '+pubOf(c));
 document.body.dataset.end='rn';ME=PEOPLE[0];R.page='school';R.cat=0;renderRN();L('RN sees unpublished '+document.querySelector('#rscr').innerText.includes('未上架话术'));document.body.dataset.end='pc';

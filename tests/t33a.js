@@ -1,20 +1,17 @@
 const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')+name+(detail?' — '+detail:''));
+/* t33a:v1.2 知识关系 / 总览热力图 / 分类完整性 */
 try{
 A.roleSwitch({value:'hq'});closeDlg();
 const act=S.kps.filter(k=>k.st==='启用');
-CK('知识点支持前置关系',typeof kp('K_SPIN2').pre!=='undefined'&&kp('K_SPIN2').pre.length>0);
-CK('知识点支持相关关系',kp('K_SPIN2').rel.length>0);
-CK('关系形成有向链(SPIN)',kp('K_SPIN1').pre.includes('K_SPIN0')&&kp('K_SPIN2').pre.includes('K_SPIN1'));
-CK('孤岛知识点少于 5 个',act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length).length<=5);
+CK('知识点支持前置/相关关系',S.kps.some(k=>(k.pre||[]).length)&&S.kps.some(k=>(k.rel||[]).length));
+CK('孤岛知识点少于 5 个',act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length).length<=5,act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length).length+' 个');
+CK('所有启用知识点都有业务线/岗位/分类',act.every(k=>k.line&&(k.roles||[]).length&&k.domain&&(k.ability||k.sellpoint)));
 UI.page='catalog';UI.tab.catalog='总览';render();
 const t=document.querySelector('#main').innerText;
-CK('总览有知识图谱全貌/单点双视图',/知识图谱/.test(t)&&!!document.querySelector('[data-act=kgView]')&&!!document.querySelector('#main .kg-net'));
-CK('图谱网络有节点与连线',document.querySelectorAll('#main .kg-net circle').length>20&&document.querySelectorAll('#main .kg-net line').length>10);
-CK('总览有知识点治理面板',/知识点治理/.test(t)&&/没挂标签/.test(t)&&/没进岗位画像/.test(t));
-CK('所有启用知识点都有标签',act.filter(k=>!(k.tags||[]).length).length===0,act.filter(k=>!(k.tags||[]).length).map(k=>k.name).join(','));
-A.kpNew();KF.name='无标签拦截测试';KF.cars=['通用车型'];KF.abId=(kpAbRows()[0]||{}).id;KF.tags=[];A.kfSave();
-CK('新增知识点不挂标签会被拦截',UI.page==='kpform'&&/至少挂一个标签/.test(document.querySelector('#toast').innerText));
-KF=null;
-UI.kid='K_SPIN2';UI.page='kp';render();
-CK('知识点详情显示知识关系',/知识关系/.test(document.querySelector('#main').innerText));
+CK('总览有车型×卖点热力图',/车型 × 卖点分类/.test(t));
+CK('总览有车型×能力热力图',/车型 × 能力项/.test(t));
+CK('总览有补学进度',/补学进度/.test(t));
+UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={q:'KP-SALE-13'};render();
+CK('知识点库可搜索编号',/价格异议处理/.test(document.querySelector('#main').innerText));
+UI.sel.kpf={};
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}

@@ -293,7 +293,7 @@ A.cPass=el=>{const c=content(el.dataset.id);
   c.st='已定稿';c.vers=c.vers.filter(x=>x.v!==c.ver);c.vers.push({v:c.ver,t:today,who:meShort(),note:v||'审核通过',snap:snapOf(c)});chist(c,'审核通过,已定稿(v'+c.ver+')',v);closeDlg();const t=c.topic&&topic(c.topic);if(t)thist(t,meShort(),'内容已定稿','「'+c.title+'」('+c.kind+')');notify('内容「'+c.title+'」审核通过,已定稿');toast('已定稿(v'+c.ver+')。可以做成学习任务,或去「零售通发布」上架','ok');render()};
 A.cReturn=el=>{const c=content(el.dataset.id);if(typeof rvBlocking==='function'&&rvBlocking('content',c.id)){closeDlg();return toast('评审灰度进行中,请先在评审卡里「撤回」再退回','err')}const v=($('#rvt').value||'').trim();if(!v)return toast('退回请填写审核意见','err');c.st='草稿';chist(c,'审核退回',v);closeDlg();notify('内容「'+c.title+'」审核退回:'+v);toast('已退回草稿','ok');render()};
 /* ---------- 状态流转:上架 ---------- */
-A.cPub=el=>{closeDlg();const c=content(el.dataset.id);if(!usableC(c))return toast('内容还没定稿,不能上架','err');
+A.cPub=el=>{closeDlg();const c=content(el.dataset.id);if(!usableC(c))return toast('内容还没定稿,不能上架','err');if(!(c.kps||[]).length)return toast('先挂至少 1 个知识点再上架；草稿可以暂不挂','err');
   const pv=c.pubVer||0;const upd=isPub(c);
   openDlg(upd?'更新上架到零售通':'上架到零售通',kpPubHint(c)+'<div class="tag '+(upd?'warn':'pri')+'" style="display:block;margin-bottom:12px;padding:6px 12px;white-space:normal">'+(upd?'当前零售通是 v'+pv+',将更新到 v'+c.ver+'。':'把 v'+c.ver+' 上架到零售通「学习专区」。')+'上架不影响学习任务,学员仍要经学习任务看到它。</div>'
    +'<div class="fgrid"><div class="fld"><label><b>*</b>内容分类</label><select id="pu_cat">'+CATS.map(x=>'<option '+(c.cat===x?'selected':'')+'>'+x+'</option>').join('')+'</select><div class="fh">发布后出现在学堂「学习专区」的这个分类下</div></div>'

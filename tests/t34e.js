@@ -16,14 +16,13 @@ CK('未来节点不出现记录按钮',(()=>{const nodes=[...document.querySelec
 A.coachVisitEdit({dataset:{id:x.id}});document.getElementById('cv_date').value='2026-11-25';A.coachVisitSave({dataset:{id:x.id}});
 CK('改到店日期后节点重新推算',coachSopDates(x).find(d=>d.stage==='入店当天 Day1').date==='2026-11-25');
 
-/* 2. 知识图谱聚焦视图 */
+/* 2. v1.2 总览：四指标 + 两张热力图 */
 UI.page='catalog';UI.tab.catalog='总览';render();
-CK('图谱默认全貌网络视图',!!document.querySelector('#main .kg-net')&&document.querySelectorAll('#main .kg-net circle').length>20);
-CK('图谱可按能力着色',document.querySelectorAll('#main .kg-net circle').length>20&&[...document.querySelectorAll('#main .kg-net circle')].map(c=>c.getAttribute('fill')).filter((v,i,a)=>a.indexOf(v)===i).length>=3);
-A.kgView({dataset:{v:'focus'}});CK('图谱可切单点并选择聚焦',!!document.querySelector('[data-wc=kgDim]')&&!!document.querySelector('[data-wc=kgSkill]'));
-CK('单点视图聚焦一个关键点',document.querySelectorAll('#main .kg-main .kg-card').length===1);
-CK('单点视图不依赖全量网络图',document.querySelectorAll('#main .kg-net').length===0);
-CK('图谱分前置/后续/相关三栏',/先学（前置）/.test(tx())&&/学完可接（后续）/.test(tx())&&/相关（无先后）/.test(tx()));
-const first=UI.sel.kgId||document.querySelector('[data-wc=kgSkill]').value;A.kgSkill({value:first});
-CK('切换聚焦点后仍只显示局部',document.querySelectorAll('#main .kg-main .kg-card').length===1);
+CK('总览有四指标',/覆盖度/.test(tx())&&/可授课率/.test(tx())&&/可考核率/.test(tx())&&/时效健康度/.test(tx()));
+CK('总览有车型×卖点热力图',/车型 × 卖点分类/.test(tx()));
+CK('总览有车型×能力热力图',/车型 × 能力项/.test(tx()));
+CK('总览有口径选择',!!document.querySelector('[data-act=kpV12OvSet]'));
+CK('总览有补学进度',/补学进度/.test(tx()));
+CK('总览无旧标签树',document.querySelectorAll('#main .tag-row').length===0);
+CK('总览无 undefined/NaN',!/undefined|NaN/.test(tx()));
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}

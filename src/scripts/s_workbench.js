@@ -20,7 +20,7 @@ function wbItems(){
   }else{
     add('备料',3,'缺讲解','<b>'+noExp.length+' 个知识点</b>还没有可用讲解','同一类问题合并;按车型 × 知识域看缺口,批量补讲解','去处理',ck+' data-p="catalog" data-tab="总览" data-ky="none"');
   }
-  const qNeed=act.filter(k=>{const h=kpHealth(k);return h.cells.q.s!=='ok'&&k.type==='事实型'});
+  const qNeed=act.filter(k=>{const h=kpHealth(k);return (typeof kpV12AnchorQn==='function'?kpV12AnchorQn(k):0)<3&&k.domain==='产品知识'});
   if(qNeed.length)add('备料',1,'缺测评题','<b>'+qNeed.length+' 个产品知识</b>测评题不够','题太少会影响诊断和掌握度；可批量进内容中心补题','去补题',ck+' data-p="content" data-tab="题" data-ky="none"');
   const weakTodo=act.filter(k=>{const w=kpWeak(k),tt=kpTested(k);return tt>=KP_WEAK_N&&w/tt>=KP_WEAK_R&&!kpTopicOf(k)});
   if(weakTodo.length)add('备料',2,'学员集中薄弱','<b>'+weakTodo.length+' 个知识点</b>讲解齐全但学员集中薄弱','通常是讲法或练习不够；可进知识点总览批量生成课题','去看',ck+' data-p="catalog" data-tab="总览" data-ky="none"');

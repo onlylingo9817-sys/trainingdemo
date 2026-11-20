@@ -501,18 +501,19 @@ function cfgDims(){
   const roleTxt={belong:['归类项','belong','决定归在哪个车型/知识域，参与完备率统计'],context:['筛选条件','context','用于筛选和推荐'],ability:['能力项','ability','带权重等级，进入岗位标准']};
   const nUse=(did,vid)=>S.kps.filter(k=>((k.dims||{})[did]||[]).includes(vid)).length;
   const nUseAny=did=>S.kps.filter(k=>((k.dims||{})[did]||[]).length).length;
-  const sel=f.id||S.dims[0].id;const d=dimOf(sel)||S.dims[0];
+  const activeDims=S.dims.filter(x=>x.status!=='off');
+  const sel=(f.id&&activeDims.some(x=>x.id===f.id))?f.id:(activeDims[0]||S.dims[0]).id;const d=dimOf(sel)||activeDims[0]||S.dims[0];
   const lim=10;
   const tpl=['产品','车型','场景','客户类型','竞品','销售阶段','能力'];
   return srcBar('这里是系统里可维护的分类方式。业务上只需要理解三件事：<b>车型和知识域</b>决定一个知识点归在哪、完备率怎么算；<b>场景、客户、竞品</b>用于筛选；<b>7 个能力项</b>用于岗位标准和效果诊断。改名不会影响已挂的知识点，合并会保留历史。')
    +'<div class="grid g4" style="margin-bottom:16px">'
-     +'<div class="rd-stat"><div class="l">维度数</div><div class="n">'+S.dims.length+'<small>/ '+lim+' 上限</small></div><div class="h">超过上限需先停用旧维度(防配置地狱)</div></div>'
+     +'<div class="rd-stat"><div class="l">启用维度</div><div class="n">'+activeDims.length+'<small>/ '+lim+' 上限</small></div><div class="h">v1.2 只保留 5 个；旧 4 个已停用</div></div>'
      +'<div class="rd-stat"><div class="l">归类项</div><div class="n">'+S.dims.filter(x=>x.role==='belong').length+'</div><div class="h">车型、知识域；决定完备率</div></div>'
      +'<div class="rd-stat"><div class="l">能力项</div><div class="n">'+S.dims.filter(x=>x.role==='ability').length+'</div><div class="h">探需 / 产品讲解 / 试乘试驾 / 顾虑 / 促单 / 客户 / 带人</div></div>'
      +'<div class="rd-stat"><div class="l">已归类的知识点</div><div class="n">'+S.kps.filter(k=>Object.keys(k.dims||{}).length).length+'<small>/ '+S.kps.length+'</small></div><div class="h">归类后才进入车型 × 标签矩阵</div></div></div>'
    +'<div class="card"><h3>维度列表 <span class="hint">起步模板 7 个维度,开箱即用</span></h3>'
    +'<div class="tw"><table class="t nw"><tr><th>维度</th><th>形态</th><th>角色</th><th>多选</th><th>必填对象</th><th>来源</th><th>值数量</th><th>被知识点引用</th><th>操作</th></tr>'
-   +S.dims.map(x=>{const rt=roleTxt[x.role];
+   +activeDims.map(x=>{const rt=roleTxt[x.role];
      return '<tr style="'+(x.id===sel?'background:#fff9f4':'')+'"><td><b>'+esc(x.name)+'</b><div class="hint">'+x.id+(x.note?' · '+esc(x.note):'')+'</div></td>'
       +'<td>'+(x.shape==='tree'?'树形(≤4 级)':'平铺')+'</td><td><span class="dm-role dm-tag '+x.role+'" style="margin:0;padding:1px 8px">'+rt[0]+'</span><div class="hint">'+rt[2]+'</div></td>'
       +'<td>'+(x.multi?'多选':'单选')+'</td><td>'+((x.requiredFor||[]).length?'知识点':'—')+'</td>'
