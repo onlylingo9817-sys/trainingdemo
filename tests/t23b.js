@@ -31,16 +31,16 @@ CK('合并:变更留痕',(S.dimLog||[]).some(x=>/合并/.test(x.act)));
 const oldRefProfiles=S.profiles.flatMap(p=>p.items.filter(it=>it.vals.includes(zc.id)));
 CK('合并后画像仍能解析旧值(不因维度整理丢证据)',oldRefProfiles.length>0&&oldRefProfiles.every(it=>pfKps(it).length>0),'引用旧值的画像项='+oldRefProfiles.length);
 /* ============ 画像:权重校验 + 就绪度重算 ============ */
-A.reset();UI.page='config';UI.tab.config='岗位画像';UI.sel.pff={tier:'新人顾问'};render();
-const p=pfOf('新人顾问');const base=readAll();
+A.reset();UI.page='config';UI.tab.config='岗位画像';UI.sel.pff={tier:'零售顾问'};render();
+const p=pfOf('零售顾问');const base=readAll();
 p.items[0].weight=60;render();
 CK('权重合计≠100:页面提示且保存被拦',/≠ 100/.test(tx()));
 const nvx=S.cfgV.length;A.pfSave();
 CK('权重≠100 保存失败、不生成版本',S.cfgV.length===nvx&&/权重合计需等于 100/.test(document.querySelector('#toast').innerText));
-p.items[0].weight=35;p.items[1].weight=30;p.items[2].weight=15;p.items[3].weight=20;A.pfSave();
+p.items[0].weight=45;p.items[1].weight=30;p.items[2].weight=25;A.pfSave();
 const after=readAll();
 CK('合法修改:生成配置版本并重算就绪度',S.cfgV.length===nvx+1&&after!==base,'版本 '+nvx+'→'+S.cfgV.length);
-CK('版本差异记录了画像项的权重变化',S.cfgV[S.cfgV.length-1].diff.some(d=>/产品知识/.test(d[0])));
+CK('版本差异记录了画像项的权重变化',S.cfgV[S.cfgV.length-1].diff.some(d=>/产品知识|探需|顾虑处理/.test(d[0])));
 /* ============ 评价口径:校验 / 影响预估 / 保存 / 版本 ============ */
 A.reset();UI.page='config';UI.tab.config='评价口径';render();
 const w0=JSON.stringify(S.cfg.srcW);

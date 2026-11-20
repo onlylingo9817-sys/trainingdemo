@@ -44,6 +44,9 @@ function v23QuadSvg(rows,opt){
 }
 const v23RdyColor=v=>v==null?'#c9ced6':v>=80?'#12a36b':v>=60?'#e8830c':'#e5484d';
 function v23RdyPill(v){const t=v==null?['—','']:v>=80?['就绪','ok']:v>=60?['接近','warn']:['有缺口','err'];return '<span class="tag '+t[1]+'">'+t[0]+'</span>'}
+/* 判定跟着岗位档的双级线走:目标达成率 ≥ 优秀线 → 优秀;≥ 及格线 → 达标;否则未达标 */
+function v23JudgeTag(ach,tier){const j=v23Judge(ach,tier);return '<span class="tag '+(j==='优秀'?'pri':j==='达标'?'ok':j==='未达标'?'err':'')+'">'+j+'</span>'}
+const v23ChampTag=mid=>{const c=typeof v23ChampOf==='function'?v23ChampOf(mid):null;return c?'<span class="tag warn" title="'+esc(V23_CHAMP_RULE)+'">当期销冠</span>':''};
 
 /* ---------- 效果 · 就绪度 ---------- */
 A.v23Stu=el=>{closeDlg();const p=personOf(el.dataset.mid);if(p&&(UI.role.type!=='region'||p.region===UI.role.region)){UI.page='person';UI.stuMid=el.dataset.mid}else{UI.page='people';if(p&&p.region!==UI.role.region)toast('只能查看本区域人员','err');else UI.page='student',UI.stuMid=el.dataset.mid}render();$('#main').scrollTop=0};
@@ -51,10 +54,10 @@ function pgRdy(){
   if(typeof isBoss==='function'&&isBoss())return pgRdyAgg();
   if(v23Empty())return '<div class="ph"><h2>就绪度</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('就绪度数据');
   const f=UI.sel.rdy||(UI.sel.rdy={scope:'全国',store:'',tier:''});
-  const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {l,rdy:r.val,ach:r.ach,items:r.items,pass:r.ach!=null&&r.ach>=S.cfg.pass}});
+  const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);const g=v23Goal(l.tier);return {l,rdy:r.val,ach:r.ach,items:r.items,pass:r.ach!=null&&r.ach>=g.pass,good:r.ach!=null&&r.ach>=g.good}});
   const scopeRows=all.filter(x=>f.scope==='全国'||x.l.region===f.scope).filter(x=>typeof personInScope!=='function'||personInScope(x.l.region));
   const kw=(f.q||'').trim().toLowerCase();
-  const rows=scopeRows.filter(x=>(!f.store||x.l.store===f.store)&&(!f.tier||x.l.tier===f.tier)&&(!kw||x.l.name.toLowerCase().includes(kw)||String(x.l.mid).includes(kw))&&(!f.verdict||(f.verdict==='已达标'?x.pass:f.verdict==='未达标'?(!x.pass&&x.rdy!=null):x.rdy==null)));
+  const rows=scopeRows.filter(x=>(!f.store||x.l.store===f.store)&&(!f.tier||x.l.tier===f.tier)&&(!kw||x.l.name.toLowerCase().includes(kw)||String(x.l.mid).includes(kw))&&(!f.verdict||(f.verdict==='优秀'?x.good:f.verdict==='已达标'?(x.pass&&!x.good):f.verdict==='未达标'?(!x.pass&&x.rdy!=null):x.rdy==null)));
   const q=v23Quadrant();
   const tested=rows.filter(x=>x.rdy!=null);
   const avg=tested.length?Math.round(tested.reduce((a,x)=>a+x.rdy,0)/tested.length):null;
@@ -65,13 +68,13 @@ function pgRdy(){
   const mx=Math.max(1,...bins);
   const hist='<div class="rd-hist">'+bins.map((n,i)=>'<div class="'+(i*10>=S.cfg.pass?'on':'')+'" style="height:'+Math.max(2,n/mx*88)+'px" title="'+i*10+'~'+(i*10+9)+' 分:'+n+' 人"><span>'+(n||'')+'</span></div>').join('')+'</div><div class="rd-hist-x">'+bins.map((_,i)=>'<div>'+(i*10)+'</div>').join('')+'</div>';
   /* 按画像项的下钻:全范围内每项平均 */
-  const p0=pfOf('新人顾问');
+  const p0=pfOf(V23_TIER[0]);
   const itemAvg=p0.items.map(it=>{const vs=scopeRows.map(x=>{const m=x.items.find(y=>y.item.id===it.id);return m&&m.mean!=null?m.mean:null}).filter(v=>v!=null);return {it,mean:vs.length?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length):null,n:vs.length}});
   const sel=(k,label,opts,cur)=>'<div class="fi2"><label>'+label+'</label><select data-wc="rdySet" data-k="'+k+'"><option value="">全部</option>'+opts.map(o=>'<option '+(cur===o?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
   const zero=!tested.length;
   const rdySorted=tested.slice().sort((a,b)=>(b.rdy||0)-(a.rdy||0));const rdyPg=lstPage('rdyPage',rdySorted,20);const testPaged=rdyPg.rows;
   return '<div class="ph"><h2>就绪度 <span class="hint" style="font-weight:400">按岗位画像加权算出的"这个人现在能不能上阵";证据来自测评 + 演练 + 实战行为 + 人工评价</span></h2><div>'+V23_SIM+'</div></div>'
-   +srcBar('就绪度 = Σ(画像项权重 × min(该项下知识点掌握度均值, 目标等级)) ÷ Σ权重。掌握度 = 各来源证据按<b>权重</b>合成,权重在「配置中心 → 评价口径」可调。画像四档:新人 / 进阶 / 销冠 / 店长。')
+   +srcBar('就绪度 = Σ(画像项权重 × min(该项下知识点掌握度均值, 目标等级)) ÷ Σ权重。掌握度 = 各来源证据按<b>权重</b>合成,权重在「配置中心 → 评价口径」可调。岗位画像三档:零售顾问 / 零售主管 / 零售店长;判定走各档的<b>及格线 / 优秀线</b>(配置中心 → 岗位画像可改)。「销冠」是按月滚动评定的动态身份,不定线。')
    +V23_CORR
    +v23DataNote()
    +(S.lrn.length?''
@@ -80,8 +83,8 @@ function pgRdy(){
      +'<select data-wc="rdySet" data-k="tier"><option value="">全部岗位</option>'+V23_TIER.map(t=>'<option '+(f.tier===t?'selected':'')+'>'+t+'</option>').join('')+'</select>'
      +'<span style="flex:1"></span><span class="hint">共 '+rows.length+' 人,有证据 '+tested.length+' 人'+(noEv?' · '+noEv+' 人无证据不计入':'')+'</span></div>'
    +'<div class="rd-hero">'
-     +'<div class="rd-stat"><div class="l">平均就绪度</div><div class="n" style="color:'+v23RdyColor(avg)+'">'+(avg==null?'—':avg)+'</div><div class="h">满分 100,过关线 '+S.cfg.pass+'</div><div class="rd-bar"><i style="width:'+(avg||0)+'%;background:'+v23RdyColor(avg)+'"></i></div></div>'
-     +'<div class="rd-stat"><div class="l">已达标人数</div><div class="n">'+passN+'<small>/ '+tested.length+'</small></div><div class="h">目标达成率 ≥ '+S.cfg.pass+'</div></div>'
+     +'<div class="rd-stat"><div class="l">平均就绪度</div><div class="n" style="color:'+v23RdyColor(avg)+'">'+(avg==null?'—':avg)+'</div><div class="h">满分 100,判定看各岗位及格线</div><div class="rd-bar"><i style="width:'+(avg||0)+'%;background:'+v23RdyColor(avg)+'"></i></div></div>'
+     +'<div class="rd-stat"><div class="l">达标人数</div><div class="n">'+passN+'<small>/ '+tested.length+'</small></div><div class="h">目标达成率 ≥ 本岗位及格线;其中优秀 '+tested.filter(x=>x.good).length+' 人</div></div>'
      +'<div class="rd-stat"><div class="l">就绪度 × 锁单相关</div><div class="n">'+(q.r==null?'—':q.r)+'</div><div class="h">Pearson r · 只说明相关,不是因果</div></div>'
      +'<div class="rd-stat"><div class="l">画像命中知识点</div><div class="n">'+[...new Set(rows.flatMap(x=>x.items.flatMap(i=>i.kps.map(k=>k.id))))].length+'</div><div class="h">'+V23_TIER.length+' 档画像合计</div></div>'
    +'</div>'
@@ -90,20 +93,20 @@ function pgRdy(){
      +'<div class="rd-quad">'+v23QuadSvg(q.rows.filter(r=>(f.scope==='全国'||r.region===f.scope)&&(typeof personInScope!=='function'||personInScope(r.region))))+'</div>'
      +'<div class="hint" style="margin-top:8px">橙 = 试点批,蓝 = 对照批。相关系数 r='+(q.r==null?'—':q.r)+',属于弱到中等相关;<b>存在明显离群点</b>(高就绪低业绩 / 低就绪高业绩),说明就绪度不能单独解释业绩。</div></div>'
      +'<div class="card"><h3>就绪度分布 <span class="hint">橙色 = 已达过关线</span></h3>'+hist
-     +'<div class="hint" style="margin-top:10px">按画像项看(新人档画像,全范围平均):</div>'
+     +'<div class="hint" style="margin-top:10px">按画像项看(零售顾问档画像,全范围平均):</div>'
      +itemAvg.map(x=>'<div class="rd-item"><div class="nm" title="'+esc(x.it.label)+'">'+esc(x.it.label)+'</div><div class="bw"><i style="width:'+(x.mean||0)+'%;background:'+v23RdyColor(x.mean)+'"></i><u style="left:'+x.it.target+'%"></u></div><div class="vv">'+(x.mean==null?'—':x.mean)+' / 目标 '+x.it.target+'</div><div class="wt">'+x.it.weight+'%</div></div>').join('')
      +'</div></div>'
    +'<div class="card"><h3>学员 × 就绪度 <span class="hint">点姓名进详情;这里与「学员详情 / 零售通 / 工作台」同一套数</span></h3>'
-   +'<div class="filg" style="margin-bottom:10px"><div class="fi2"><label>姓名 / MID</label><input data-wc="rdySet" data-k="q" value="'+esc(f.q||'')+'" placeholder="搜索姓名或 MID"></div><div class="fi2"><label>判定</label><select data-wc="rdySet" data-k="verdict"><option value="">全部</option>'+['已达标','未达标','无证据'].map(v=>'<option '+(f.verdict===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div><div class="fi2"><label>每页</label><select data-wc="rdySize">'+[20,50,100].map(n=>'<option '+(rdyPg.size===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div><div class="fi2" style="align-self:end">'+lstCsvBtn(['学员','MID','门店','岗位','批次','就绪度','目标达成','判定'],[['学员','MID','门店','岗位','批次','就绪度','目标达成','判定']].concat(testPaged.map(x=>[x.l.name,x.l.mid,x.l.store,x.l.tier,x.l.group,x.rdy,x.ach,x.pass?'已达标':'未达标'])),'就绪度')+'</div></div>'
+   +'<div class="filg" style="margin-bottom:10px"><div class="fi2"><label>姓名 / MID</label><input data-wc="rdySet" data-k="q" value="'+esc(f.q||'')+'" placeholder="搜索姓名或 MID"></div><div class="fi2"><label>判定</label><select data-wc="rdySet" data-k="verdict"><option value="">全部</option>'+['优秀','已达标','未达标','无证据'].map(v=>'<option '+(f.verdict===v?'selected':'')+'>'+v+'</option>').join('')+'</select></div><div class="fi2"><label>每页</label><select data-wc="rdySize">'+[20,50,100].map(n=>'<option '+(rdyPg.size===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div><div class="fi2" style="align-self:end">'+lstCsvBtn(['学员','MID','门店','岗位','动态身份','批次','就绪度','目标达成','判定'],[['学员','MID','门店','岗位','动态身份','批次','就绪度','目标达成','判定']].concat(testPaged.map(x=>[x.l.name,x.l.mid,x.l.store,x.l.tier,v23ChampOf(x.l.mid)?'当期销冠':'',x.l.group,x.rdy,x.ach,v23Judge(x.ach,x.l.tier)])),'就绪度')+'</div></div>'
    +'<div class="tw"><table class="t nw stk"><tr><th>学员</th><th>门店</th><th>岗位</th><th>批次</th><th>就绪度</th><th>目标达成</th><th>薄弱项</th><th>错题</th><th>近 4 周锁单</th><th>判定</th><th>操作</th></tr>'
    +testPaged.map(x=>{
      const weak=x.items.filter(i=>i.mean!=null&&i.mean<i.item.target).map(i=>i.item.label).slice(0,2);
      const mo=misOf(x.l.mid).filter(m=>m.status!=='closed').length;
      const lk=outSum(x.l.mid,V23_NWK-4,V23_NWK-1).锁单;
-     return '<tr><td><a class="link" data-act="v23Stu" data-mid="'+x.l.mid+'">'+esc(x.l.name)+'</a><div class="hint">'+x.l.mid+'</div></td><td>'+esc(x.l.store)+'</td><td>'+x.l.tier+'</td><td><span class="tag '+(x.l.group==='试点批'?'pri':'blue')+'">'+x.l.group+'</span></td>'
+     return '<tr><td><a class="link" data-act="v23Stu" data-mid="'+x.l.mid+'">'+esc(x.l.name)+'</a> '+v23ChampTag(x.l.mid)+'<div class="hint">'+x.l.mid+'</div></td><td>'+esc(x.l.store)+'</td><td>'+x.l.tier+'</td><td><span class="tag '+(x.l.group==='试点批'?'pri':'blue')+'">'+x.l.group+'</span></td>'
       +'<td><b style="color:'+v23RdyColor(x.rdy)+'">'+(x.rdy==null?'—':x.rdy)+'</b></td><td>'+(x.ach==null?'—':x.ach+'%')+'</td>'
       +'<td style="white-space:normal;min-width:170px">'+(weak.length?weak.map(w=>'<span class="tag warn" style="margin:0 4px 4px 0">'+esc(w)+'</span>').join(''):'<span class="tag ok">无</span>')+'</td>'
-      +'<td>'+(mo?'<b style="color:#c8323a">'+mo+'</b>':'<span class="hint">0</span>')+'</td><td>'+lk+' 台</td><td>'+v23RdyPill(x.rdy)+'</td>'
+      +'<td>'+(mo?'<b style="color:#c8323a">'+mo+'</b>':'<span class="hint">0</span>')+'</td><td>'+lk+' 台</td><td>'+v23JudgeTag(x.ach,x.l.tier)+'</td>'
       +'<td><a class="link" data-act="v23Stu" data-mid="'+x.l.mid+'">详情</a></td></tr>'}).join('')+'</table></div>'+lstPager('rdyPage',rdyPg)+'</div>')
    :'')
 }
@@ -135,7 +138,7 @@ function pgStudent(){
   const mk=q=>packsOf(l.mid).length;
   const pks=packsOf(l.mid);
   return crumb('<a data-act="go" data-p="effect" data-t="就绪度">就绪度</a> / '+esc(l.name))
-   +'<div class="ph"><h2>'+esc(l.name)+' <span class="hint" style="font-weight:400">'+esc(l.store)+' · '+l.tier+' · 入职 '+l.hire+' 天</span></h2><div>'+V23_SIM+'</div></div>'
+   +'<div class="ph"><h2>'+esc(l.name)+' '+v23ChampTag(l.mid)+' <span class="hint" style="font-weight:400">'+esc(l.store)+' · '+l.tier+' · 入职 '+l.hire+' 天</span></h2><div>'+V23_SIM+'</div></div>'
    +'<div class="card"><div class="stu-hero"><div class="stu-av">'+esc(l.name.slice(0,1))+'</div>'
     +'<div style="flex:1"><div class="stu-kv">'
     +'<div>就绪度<b style="color:'+v23RdyColor(r.val)+'">'+(r.val==null?'—':r.val)+'</b></div>'
@@ -144,7 +147,7 @@ function pgStudent(){
     +'<div>批次<b style="font-size:13px">'+l.group+(l.train?' · 已参训':'')+'</b></div>'
     +'<div>未关闭错题<b style="color:'+(mo.filter(m=>m.status!=='closed').length?'#c8323a':'')+'">'+mo.filter(m=>m.status!=='closed').length+'</b></div>'
     +'<div>学习包<b style="font-size:13px">'+pks.length+' 个</b></div>'
-    +'</div></div>'+v23RdyPill(r.val)+'</div></div>'
+    +'</div><div class="hint" style="margin-top:6px">判定按「'+l.tier+'」档:及格线 '+v23Goal(l.tier).pass+' · 优秀线 '+v23Goal(l.tier).good+'(目标达成率)'+(v23ChampOf(l.mid)?';当期销冠(' + v23ChampPeriod() + ' 期),按月滚动评定,可进可出':'')+'</div></div>'+v23JudgeTag(r.ach,l.tier)+'</div></div>'
    +'<div class="rd-grid"><div class="card"><h3>画像雷达 <span class="hint">实线 = 当前,虚线 = 目标等级</span></h3>'
      +'<div class="rd-radar">'+v23Radar(radarItems)+'<div class="rd-legend">'+r.items.map(i=>'<div><i style="background:'+v23RdyColor(i.mean)+'"></i>'+esc(i.item.label)+' <span class="hint">'+i.item.weight+'% · '+(i.mean==null?'无证据':Math.round(i.mean))+'/'+i.item.target+'</span></div>').join('')+'</div></div></div>'
      +'<div class="card"><h3>业务结果(周度漏斗)</h3>'
@@ -254,10 +257,11 @@ A.misFix=el=>{const kid=el.dataset.kp;UI.page='content';UI.tab.content='全部�
 A.misPack=el=>{A.misPackDo(el.dataset.kp,null)};
 A.misPackOne=el=>{const m=S.mis.find(x=>x.id===el.dataset.id);A.misPackDo(m.kp,m.mid)};
 A.misPackDo=(kid,mid)=>{
-  const tpl=S.packTpl.find(t=>t.id==='PT2');
+  const tpl=S.packTpl.find(t=>t.id==='PT2'&&t.on!==false)||S.packTpl.find(t=>t.on!==false);
+  if(!tpl)return toast('没有可用的学习包模板(都停用了),去「配置中心 → 学习包模板」启用或新建','err');
   const n=mid?1:misRows({kp:kid}).filter(m=>m.status!=='closed').length||1;
-  S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:'PT2',mid:mid||'',kp:kid,name:'错题复发包 · '+((kp(kid)||{}).name||''),steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:mid?1:n});
-  toast('已按模板「错题复发包」指派:步骤 '+tpl.steps.map(s=>s[0]).join(' → ')+',截止 '+addDays(today,tpl.dueDays)+(mid?'':' · 覆盖 '+n+' 人'),'ok');render()};
+  S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id,mid:mid||'',kp:kid,name:tpl.name+' · '+((kp(kid)||{}).name||''),steps:tpl.steps.map(s=>({t:s[0],need:s[1],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:mid?1:n});
+  toast('已按模板「'+tpl.name+'」指派:步骤 '+tpl.steps.map(s=>s[0]).join(' → ')+',截止 '+addDays(today,tpl.dueDays)+(mid?'':' · 覆盖 '+n+' 人'),'ok');render()};
 
 /* ---------- 效果 · 调优 ---------- */
 /* 诊断树:每层 = 判定规则 + 当前读数 + 建议杠杆,读数全部现算 */
@@ -282,7 +286,7 @@ function v23Diag(){
     read:[['低正确率题(<40%)',lowQ.length+' 道'],['点踩偏高的内容',dislike.length+' 条'],['最高频错题的知识点',misTop?((kp(misTop.kp)||{}).name||'')+'('+misTop.people.size+' 人)':'—']],
     ok:cBad?'warn':'ok',verdict:cBad?'需处理':'正常',
     lever:'改话术、改题、补演练 → 回流工作台',go:['effect','错题集'],fix:cBad?'去错题集看高频错题':'null'});
-  /* ③ 练习与实战脱节:测评+演练过关,但「顾虑解除」实战行为出现率没起来(只看新人顾问) */
+  /* ③ 练习与实战脱节:测评+演练过关,但「顾虑解除」实战行为出现率没起来(只看新人:入职 ≤90 天) */
   const W=v23Wins();
   const a3k=v23A3Kps();
   const testScore=(mid,kid)=>{const q=((S.ev.q[mid]||{})[kid]||{}).score,d=((S.ev.dr[mid]||{})[kid]||{}).score;const a=[q,d].filter(v=>v!=null);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
@@ -384,9 +388,9 @@ A.tnFix=()=>{
   const before=S.lrn.map(l=>({mid:l.mid,name:l.name,v:(v23Readiness(l.mid,l.tier)||{}).val}));
   const cfg2=Object.assign({},S.cfg,{srcW:newW});
   const after=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier,cfg2);return {mid:l.mid,name:l.name,v:r.val,ach:r.ach}});
-  let up=0,down=0,flip=0;const p=S.cfg.pass;
+  let up=0,down=0,flip=0;
   before.forEach((b,i)=>{const a=after[i];if(b.v!=null&&a.v!=null){if(a.v>b.v)up++;else if(a.v<b.v)down++;
-    const bp=v23Readiness(b.mid,(lrnOf(b.mid)||{}).tier).ach>=p,ap=a.ach!=null&&a.ach>=p;if(bp&&!ap)flip++}});
+    const bt=(lrnOf(b.mid)||{}).tier,bp=v23Readiness(b.mid,bt).ach>=v23Goal(bt).pass,ap=a.ach!=null&&a.ach>=v23Goal(bt).pass;if(bp&&!ap)flip++}});
   const body='<div class="hint" style="line-height:1.9">诊断命中「第 ③ 层 练习与实战脱节」。建议同时调整三处:<br>'
    +'① <b>来源权重</b>:演练 .25 → .40、实战行为 .30 → .20、测评 .35 → .30<br>'
    +'② <b>学习包模板</b>:新增「顾虑解除专项」(学 → 演练 ×2 → 练题 → 复测)<br>'
@@ -433,6 +437,7 @@ A.tnRollbackTo=el=>{
   if(typeof canConfigure==='function'&&!canConfigure())return toast('仅总部培训部可调整评价口径','err');const v=S.cfgV.find(x=>x.ver===+el.dataset.v);if(!v)return;
   const cur={ver:Math.max(...S.cfgV.map(x=>x.ver)),srcW:Object.assign({},S.cfg.srcW)};
   S.cfg.srcW=Object.assign({},v.raw.srcW);S.cfg.win=v.raw.win;S.cfg.decay=v.raw.decay;S.cfg.behWin=v.raw.behWin;S.cfg.behN=v.raw.behN;S.cfg.pass=v.raw.pass;S.cfg.obsWeeks=v.raw.obsWeeks;S.cfg.smallN=v.raw.smallN;S.cfg.corrTh=v.raw.corrTh;
+  if(v.raw.tierGoal)S.cfg.tierGoal=JSON.parse(JSON.stringify(v.raw.tierGoal));
   S.cfgV.filter(x=>x.status==='观察中').forEach(x=>x.status='已回滚');
   const nv=Math.max(...S.cfgV.map(x=>x.ver))+1;
   S.cfgV.push({ver:nv,ts:today+' '+new Date().toTimeString().slice(0,5),by:UI.role.n.split(' · ')[0]+' '+UI.role.name,status:'已生效',
@@ -557,7 +562,7 @@ function cfgProfile(){
   const abVals=dimOf('Dab').values.filter(v=>v.lv===2||!dimKids('Dab',v.id).length);
   const nPeople=S.lrn.filter(l=>l.tier===tier).length;
   const hit=(it)=>pfKps(it);
-  return srcBar('岗位标准回答：这个岗位最该会什么、各占多少分。这里只用 7 个业务能力项（探需 / 产品讲解 / 试乘试驾 / 顾虑解除 / 促单成交 / 客户经营 / 带人辅导），与知识点库同一套，不允许另起名字。改权重会立刻影响这个岗位所有人的就绪度，保存前会给出影响人数。权重合计必须 = 100。')
+  return srcBar('岗位标准回答：这个岗位最该会什么、各占多少分。这里用 4 个业务能力项（探需 / 场景化讲车 / 顾虑解除 / 带人辅导）+ 产品知识（按知识域）；与知识点库同一套，不允许另起名字。改权重会立刻影响这个岗位所有人的就绪度，保存前会给出影响人数。权重合计必须 = 100。<b>销冠不是岗位档</b>，是按月滚动评定的动态身份（见页底），不定目标线。')
    +'<div class="fil"><span class="hint">岗位档</span>'+V23_TIER.map(t=>'<span class="'+(tier===t?'tag pri':'tag')+'" style="cursor:pointer;padding:3px 12px" data-act="pfTier" data-v="'+t+'">'+t+' · '+S.lrn.filter(l=>l.tier===t).length+' 人</span>').join('')+'</div>'
    +'<div class="card"><h3>'+tier+' 画像 <span class="pf-sum '+(ok?'ok':'err')+'">权重合计 '+ws+(ok?' ✓':' ≠ 100,无法保存')+'</span></h3>'
    +'<div class="hint" style="margin-bottom:8px">'+esc(p.note||'')+'</div>'
@@ -568,32 +573,52 @@ function cfgProfile(){
       +'<div><input type="number" min="0" max="100" value="'+it.target+'" data-wc="pfEdit" data-i="'+i+'" data-k="target"></div>'
       +'<div><span class="tag '+(ks.length?'ok':'err')+'">'+ks.length+' 个知识点</span></div></div>'}).join('')
    +'<div class="hint" style="margin-top:10px">预览:当前 '+nPeople+' 位「'+tier+'」。改权重 / 目标会<b>立刻影响</b>他们的就绪度(保存时给影响预估并生成配置版本)。</div>'
+   +'<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e6eb"><b style="font-size:13px">等级带(目标达成率判定)</b><div class="fgrid" style="margin-top:8px">'
+     +'<div class="fld"><label>及格线</label><input type="number" min="1" max="100" value="'+v23Goal(tier).pass+'" data-wc="pfGoal" data-k="pass"><div class="fh">目标达成率 ≥ 及格线 → 达标</div></div>'
+     +'<div class="fld"><label>优秀线</label><input type="number" min="1" max="100" value="'+v23Goal(tier).good+'" data-wc="pfGoal" data-k="good"><div class="fh">≥ 优秀线 → 优秀(评审 / 带教候选池)</div></div></div>'
+     +'<div class="hint">等级带只挂在<b>岗位档</b>上:岗级越高线越高;销冠是动态身份,不另设线。</div></div>'
    +'<div style="margin-top:12px"><button class="btn pri '+(ok?'':'dis')+'" '+(ok?'':'disabled')+' data-act="pfSave">保存并生成配置版本</button> <button class="btn" data-act="pfReset">还原起步值</button></div></div>'
    +'<div class="card"><h3>命中知识点预览</h3><div class="tw"><table class="t nw"><tr><th>画像项</th><th>权重</th><th>命中知识点</th></tr>'
-   +p.items.map(it=>'<tr><td>'+esc(it.label)+'</td><td>'+it.weight+'%</td><td style="white-space:normal;min-width:260px">'+(hit(it).map(k=>'<a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>').join('、')||'<span class="tag err">没有命中,该项无证据</span>')+'</td></tr>').join('')+'</table></div></div>';
+   +p.items.map(it=>'<tr><td>'+esc(it.label)+'</td><td>'+it.weight+'%</td><td style="white-space:normal;min-width:260px">'+(hit(it).map(k=>'<a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>').join('、')||'<span class="tag err">没有命中,该项无证据</span>')+'</td></tr>').join('')+'</table></div></div>'
+   +pfChampCard();
 }
+/* 销冠 = 动态身份卡:不定线、按月滚动,名单供评审团与带教派单使用 */
+function pfChampCard(){
+  const ch=v23Champions();
+  return '<div class="card" style="border-color:#f3dc9b;background:#fffdf6"><h3>销冠(动态身份) <span class="hint">不是岗位档,不参与定线</span></h3>'
+   +'<div class="hint" style="margin-bottom:8px">评定口径:'+esc(V23_CHAMP_RULE)+'。本期('+v23ChampPeriod()+'):</div>'
+   +(ch.length?'<div class="rvx-pick">'+ch.map(c=>'<label><span><b>'+esc(c.name)+'</b> <small>'+esc(c.store)+' · '+esc(c.tier)+' · 近 4 周锁单 '+c.lock+' 台 · 达成 '+(c.ach==null?'—':c.ach+'%')+'</small></span></label>').join('')+'</div>':'<div class="hint">本期各区域暂无满足口径的销冠。</div>')
+   +'<div class="hint" style="margin-top:8px">用途:评审团默认成员(评审灰度)、「我卡住了」/ 新人带教的优先派单。名单每月滚动,可进可出;身份不影响本人的目标线。</div></div>';
+}
+A.pfGoal=el=>{const f=UI.sel.pff||{};const tier=f.tier||V23_TIER[0];const v=+el.value;
+  if(!(v>=1&&v<=100))return toast('等级线需在 1–100','err');
+  S.cfg.tierGoal[tier][el.dataset.k]=v;render()};
 A.pfTier=el=>{(UI.sel.pff||(UI.sel.pff={})).tier=el.dataset.v;render()};
 A.pfEdit=el=>{const f=UI.sel.pff||{};const tier=f.tier||V23_TIER[0];const p=pfOf(tier);const it=p.items[+el.dataset.i];const v=+el.value;
   if(!(v>=0&&v<=100))return toast('请填 0–100','err');it[el.dataset.k]=v;render()};
 A.pfReset=()=>{const f=UI.sel.pff||{};const tier=f.tier||V23_TIER[0];const seed=V23_PROFILE_SEED.find(x=>x.role===tier);const p=pfOf(tier);
-  p.items=JSON.parse(JSON.stringify(seed.items));p.items.forEach(it=>{it.vals=it.vals.map(n=>dimIdByName(it.dim,n)).filter(Boolean)});toast('已还原起步值','ok');render()};
+  p.items=JSON.parse(JSON.stringify(seed.items));p.items.forEach(it=>{it.vals=it.vals.map(n=>dimIdByName(it.dim,n)).filter(Boolean)});
+  S.cfg.tierGoal[tier]=JSON.parse(JSON.stringify(V23_TIER_GOAL_SEED[tier]));toast('已还原起步值','ok');render()};
 /* 画像编辑是"草稿态":改动直接落在 S.profiles(便于预览命中),基线 PF_BASE 保存时才更新。
    这样「影响预估」能拿保存前的基线 vs 当前草稿比较,而不是自己跟自己比。 */
-let PF_BASE=null;
-const pfBaseOf=tier=>{if(!PF_BASE)PF_BASE=JSON.parse(JSON.stringify(S.profiles));return PF_BASE.find(p=>p.role===tier)};
+let PF_BASE=null,PF_BASE_GOAL=null;
+const pfBaseOf=tier=>{if(!PF_BASE){PF_BASE=JSON.parse(JSON.stringify(S.profiles));PF_BASE_GOAL=JSON.parse(JSON.stringify(S.cfg.tierGoal||{}))}return PF_BASE.find(p=>p.role===tier)};
 function pfReadinessWith(l,prof){const cur=S.profiles;S.profiles=PF_BASE?PF_BASE.map(p=>p.role===prof.role?prof:p):cur;const r=v23Readiness(l.mid,l.tier);S.profiles=cur;return r}
 A.pfSave=()=>{const f=UI.sel.pff||{};const tier=f.tier||V23_TIER[0];const p=pfOf(tier);if(pfWsum(p)!==100)return toast('权重合计需等于 100','err');
+  const gNow=S.cfg.tierGoal[tier];if(!(gNow.pass<gNow.good))return toast('及格线需低于优秀线','err');
   const base=pfBaseOf(tier);
   const people=S.lrn.filter(l=>l.tier===tier);
   const before=people.map(l=>pfReadinessWith(l,base).val);
   const after=people.map(l=>v23Readiness(l.mid,l.tier).val);
   const chg=after.filter((a,i)=>a!==before[i]).length;
   const wdiff=p.items.map((it,i)=>[it.label,base.items[i]?base.items[i].weight+'/'+base.items[i].target:'—',it.weight+'/'+it.target]).filter(x=>x[1]!==x[2]);
-  if(!wdiff.length)return toast('没有改动','');
+  const gBase=(PF_BASE_GOAL||{})[tier]||gNow;
+  const gdiff=(gBase.pass!==gNow.pass||gBase.good!==gNow.good)?[['等级带(及格/优秀)',gBase.pass+'/'+gBase.good,gNow.pass+'/'+gNow.good]]:[];
+  if(!wdiff.length&&!gdiff.length)return toast('没有改动','');
   const nv=Math.max(...S.cfgV.map(v=>v.ver))+1;
   S.cfgV.filter(v=>v.status==='观察中').forEach(v=>v.status='已生效');
-  S.cfgV.push({ver:nv,ts:today+' '+new Date().toTimeString().slice(0,5),by:UI.role.n.split(' · ')[0]+' '+UI.role.name,status:'观察中',note:'调整「'+tier+'」画像权重 / 目标等级(影响 '+chg+' 人的就绪度)',diff:wdiff.map(x=>['画像 '+tier+' · '+x[0]+'(权重/目标)',x[1],x[2]]),snap:cfgFlat(S.cfg),raw:JSON.parse(JSON.stringify(S.cfg)),profile:JSON.parse(JSON.stringify(S.profiles))});
-  PF_BASE=JSON.parse(JSON.stringify(S.profiles));
+  S.cfgV.push({ver:nv,ts:today+' '+new Date().toTimeString().slice(0,5),by:UI.role.n.split(' · ')[0]+' '+UI.role.name,status:'观察中',note:'调整「'+tier+'」画像权重 / 目标等级 / 等级带(影响 '+chg+' 人的就绪度)',diff:wdiff.map(x=>['画像 '+tier+' · '+x[0]+'(权重/目标)',x[1],x[2]]).concat(gdiff.map(x=>['画像 '+tier+' · '+x[0],x[1],x[2]])),snap:cfgFlat(S.cfg),raw:JSON.parse(JSON.stringify(S.cfg)),profile:JSON.parse(JSON.stringify(S.profiles))});
+  PF_BASE=JSON.parse(JSON.stringify(S.profiles));PF_BASE_GOAL=JSON.parse(JSON.stringify(S.cfg.tierGoal));
   v23RefreshAll();
   toast('已保存,生成配置版本 v'+nv+';'+chg+' 人的就绪度发生变化','ok');render()};
 
@@ -642,8 +667,8 @@ function ceDiff(n){const o=S.cfg;const d=[];const push=(l,a,b)=>{if(String(a)!==
 A.ceEst=()=>{const n=ceRead();const er=ceCheck(n);if(er)return toast(er,'err');const d=ceDiff(n);
   if(!d.length){$('#ce_est').innerHTML='<div class="hint">没有改动。</div>';return}
   const cfg2=Object.assign({},S.cfg,n);
-  const bef=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {mid:l.mid,v:r.val,ok:r.ach!=null&&r.ach>=S.cfg.pass}});
-  const aft=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier,cfg2);return {mid:l.mid,v:r.val,ok:r.ach!=null&&r.ach>=n.pass}});
+  const bef=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {mid:l.mid,v:r.val,ok:r.ach!=null&&r.ach>=v23Goal(l.tier).pass}});
+  const aft=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier,cfg2);return {mid:l.mid,v:r.val,ok:r.ach!=null&&r.ach>=v23Goal(l.tier).pass}});
   let up=0,dn=0,a2b=0,b2a=0,sum=0,cnt=0;
   bef.forEach((b,i)=>{const a=aft[i];if(b.v==null||a.v==null)return;if(a.v>b.v)up++;else if(a.v<b.v)dn++;if(b.ok&&!a.ok)a2b++;if(!b.ok&&a.ok)b2a++;sum+=a.v-b.v;cnt++});
   $('#ce_est').innerHTML='<div class="card" style="background:#fafbfc;margin:0"><h3 style="font-size:14px">影响预估 <span class="hint">共 '+d.length+' 项改动,用新值重算 '+cnt+' 人</span></h3>'
@@ -664,12 +689,13 @@ function cfgPack(){
   if(!(S.packTpl&&S.packTpl.length))return srcBar('学习包 = 任务化下发的一组步骤。')+v23EmptyCta('学习包模板');
   const T=S.packTpl;
   const stC={学:'blue',练题:'ok',演练:'pri',复测:'warn'};
-  return srcBar('学习包 = 任务化下发的一组步骤(<b>学 → 练题 → 演练 → 复测</b>)。触发条件命中后按模板给学员下发;下发走「学习项目 → 节点」。模板的触发、步骤、频次、截止都可调。')
-   +'<div class="card"><h3>模板 <span class="hint">'+T.length+' 个</span></h3>'
-   +'<div class="tw"><table class="t nw"><tr><th>模板</th><th>触发条件</th><th>步骤</th><th>次数</th><th>截止(天)</th><th>下发对象</th><th>通过规则</th><th>已下发</th></tr>'
-   +T.map(t=>'<tr><td><b>'+esc(t.name)+'</b>'+(t.v2?' <span class="tag warn">v2 新增</span>':'')+'<div class="hint">'+t.id+'</div></td><td>'+esc(t.trigger)+'</td>'
+  return srcBar('学习包 = 任务化下发的一组步骤(<b>学 → 练题 → 演练 → 复测</b>)。触发条件命中后按模板给学员下发;下发走「学习项目 → 节点」。模板的触发、步骤、频次、截止都可调;<b>改模板不影响已下发的学习包</b>(实例在创建时拷贝了步骤)。')
+   +'<div class="card"><h3>模板 <span class="hint">'+T.length+' 个</span> <button class="btn sm pri" data-act="pkTplNew" style="margin-left:8px">+ 新建模板</button></h3>'
+   +'<div class="tw"><table class="t nw"><tr><th>模板</th><th>触发条件</th><th>步骤</th><th>次数</th><th>截止(天)</th><th>下发对象</th><th>通过规则</th><th>已下发</th><th>操作</th></tr>'
+   +T.map(t=>'<tr style="'+(t.on===false?'opacity:.5':'')+'"><td><b>'+esc(t.name)+'</b>'+(t.v2?' <span class="tag warn">v2 新增</span>':'')+(t.on===false?' <span class="tag">已停用</span>':'')+'<div class="hint">'+t.id+'</div></td><td>'+esc(t.trigger)+'</td>'
      +'<td>'+t.steps.map(s=>'<span class="tag '+(stC[s[0]]||'')+'">'+s[0]+(s[1]>1?' ×'+s[1]:'')+'</span>').join('<span class="hint"> → </span>')+'</td>'
-     +'<td>'+t.count+'</td><td>'+t.dueDays+'</td><td style="white-space:normal;min-width:180px">'+esc(t.audience)+'</td><td>'+esc(t.passRule)+'</td><td>'+S.packs.filter(p=>p.tpl===t.id).length+' 个</td></tr>').join('')
+     +'<td>'+t.count+'</td><td>'+t.dueDays+'</td><td style="white-space:normal;min-width:180px">'+esc(t.audience)+'</td><td>'+esc(t.passRule)+'</td><td>'+S.packs.filter(p=>p.tpl===t.id).length+' 个</td>'
+     +'<td style="white-space:nowrap"><a class="link" data-act="pkTplEdit" data-id="'+t.id+'">编辑</a> <a class="link" data-act="pkTplToggle" data-id="'+t.id+'">'+(t.on===false?'启用':'停用')+'</a></td></tr>').join('')
    +'</table></div></div>'
    +'<div class="card"><h3>已下发的学习包 <span class="hint">共 '+S.packs.length+' 个</span></h3>'
    +'<div class="tw"><table class="t nw"><tr><th>学习包</th><th>学员 / 范围</th><th>知识点</th><th>步骤进度</th><th>截止</th><th>状态</th></tr>'
@@ -677,6 +703,49 @@ function cfgPack(){
      +'<td>'+p.steps.map(s=>'<span class="tag '+(s.done?'ok':'')+'">'+s.t+(s.done?' ✓':'')+'</span>').join('')+'</td><td>'+p.due+'</td><td><span class="tag '+(p.status==='已完成'?'ok':p.status==='逾期'?'err':'warn')+'">'+p.status+'</span></td></tr>'}).join('')
    +'</table></div></div>';
 }
+
+/* ---------- 学习包模板:新建 / 编辑(草稿态在 PK_DRAFT,步骤为 [类型, 量]) ---------- */
+let PK_DRAFT=null;
+const PK_TRIG=['诊断缺口','错题复发','新内容上线','画像缺口','手工指派'];
+function pkCap(){ /* 重绘弹窗 / 保存前把当前输入收回草稿 */
+  if(!PK_DRAFT||!document.getElementById('pk_name'))return;
+  const d=PK_DRAFT;const g=id=>document.getElementById(id);
+  d.name=g('pk_name').value;d.trigger=g('pk_trig').value;d.audience=g('pk_aud').value;d.passRule=g('pk_rule').value;
+  d.count=+g('pk_count').value||d.count;d.dueDays=+g('pk_due').value||d.dueDays;
+  document.querySelectorAll('#dlg [data-pks]').forEach(el=>{const s=d.steps[+el.dataset.pks];if(!s)return;if(el.dataset.k==='t')s[0]=el.value;else s[1]=+el.value||s[1]});
+}
+function pkTplDlg(){
+  const d=PK_DRAFT;const used=d.id?S.packs.filter(p=>p.tpl===d.id).length:0;
+  const unit=t=>t==='学'?'条内容':t==='练题'?'道题':t==='演练'?'场':'次';
+  openDlg(d.id?'编辑模板「'+esc(d.name)+'」':'新建学习包模板',
+   '<div class="f"><label>模板名称 *</label><input id="pk_name" value="'+esc(d.name)+'" placeholder="如:顾虑解除专项"></div>'
+  +'<div class="f"><label>触发条件</label><select id="pk_trig">'+PK_TRIG.map(t=>'<option '+(d.trigger===t?'selected':'')+'>'+t+'</option>').join('')+'</select><div class="fh">触发条件命中后按模板下发;也可以从错题集 / 人员就绪度手工指派</div></div>'
+  +'<div class="f"><label>步骤 * <span class="hint">按顺序执行;「复测」在前置完成后按 3 / 7 / 14 天间隔自动开放</span></label>'
+   +d.steps.map((s,i)=>'<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><select data-pks="'+i+'" data-k="t" style="width:90px">'+['学','练题','演练','复测'].map(t=>'<option '+(s[0]===t?'selected':'')+'>'+t+'</option>').join('')+'</select><input type="number" min="1" max="20" data-pks="'+i+'" data-k="n" value="'+s[1]+'" style="width:64px"><span class="hint">'+unit(s[0])+'</span>'+(d.steps.length>1?'<a class="link" data-act="pkStepDel" data-i="'+i+'">删除</a>':'')+'</div>').join('')
+   +'<div><button class="btn sm" data-act="pkStepAdd">+ 加一步</button></div></div>'
+  +'<div class="f" style="display:flex;gap:14px"><div style="flex:1"><label>频次(轮次)</label><input type="number" id="pk_count" min="1" max="10" value="'+d.count+'" style="width:100%"></div><div style="flex:1"><label>截止(天)</label><input type="number" id="pk_due" min="1" max="60" value="'+d.dueDays+'" style="width:100%"></div></div>'
+  +'<div class="f"><label>下发对象</label><input id="pk_aud" value="'+esc(d.audience)+'" placeholder="如:有复发错题的知识点命中人群"></div>'
+  +'<div class="f"><label>通过规则</label><input id="pk_rule" value="'+esc(d.passRule)+'" placeholder="如:复测 ≥ 过关线"></div>'
+  +(d.id?'<label style="display:flex;gap:6px;align-items:center;margin-top:4px;cursor:pointer"><input type="checkbox" id="pk_on" '+(d.on!==false?'checked':'')+'> 启用(停用后,新建项目和指派时都选不到它)</label>':'')
+  +(used?'<div class="hint" style="margin-top:8px">已有 '+used+' 个学习包在用这个模板;实例在创建时已拷贝步骤,改模板不影响进行中的包。</div>':''),
+   '<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pkTplSave">保存模板</button>',1);
+}
+A.pkTplNew=()=>{PK_DRAFT={id:null,name:'',trigger:'手工指派',steps:[['学',1],['练题',3]],count:1,dueDays:7,audience:'',passRule:'复测 ≥ 过关线',on:true};pkTplDlg()};
+A.pkTplEdit=el=>{const t=S.packTpl.find(x=>x.id===el.dataset.id);if(!t)return;PK_DRAFT=JSON.parse(JSON.stringify(t));pkTplDlg()};
+A.pkStepAdd=()=>{pkCap();PK_DRAFT.steps.push(['学',1]);pkTplDlg()};
+A.pkStepDel=el=>{pkCap();PK_DRAFT.steps.splice(+el.dataset.i,1);pkTplDlg()};
+A.pkTplToggle=el=>{const t=S.packTpl.find(x=>x.id===el.dataset.id);if(!t)return;t.on=t.on===false?true:false;toast(t.on===false?'已停用「'+t.name+'」,新建项目 / 指派时不再出现':'已启用「'+t.name+'」','ok');render()};
+A.pkTplSave=()=>{pkCap();const d=PK_DRAFT;if(!d)return;
+  d.name=(d.name||'').trim();if(!d.name)return toast('请填写模板名称','err');
+  if(S.packTpl.some(x=>x.name===d.name&&x.id!==d.id))return toast('已有同名模板','err');
+  if(!d.steps.length)return toast('至少保留一个步骤','err');
+  if(d.steps.some(s=>!(+s[1]>=1)))return toast('每个步骤的量需 ≥ 1','err');
+  if(!(+d.dueDays>=1&&+d.dueDays<=60))return toast('截止天数需 1–60','err');
+  if(!(+d.count>=1))d.count=1;
+  const onEl=document.getElementById('pk_on');if(onEl)d.on=onEl.checked;
+  if(d.id){const i=S.packTpl.findIndex(x=>x.id===d.id);S.packTpl[i]=Object.assign({},S.packTpl[i],d);toast('模板「'+d.name+'」已保存;进行中的学习包不受影响','ok')}
+  else{const nx=Math.max(0,...S.packTpl.map(t=>+(String(t.id).replace(/\D/g,''))||0))+1;d.id='PT'+nx;S.packTpl.push(Object.assign({},d));toast('已新建模板「'+d.name+'」,可在学习项目节点或指派时选用','ok')}
+  PK_DRAFT=null;closeDlg();render()};
 
 /* ---------- 零售通:就绪度卡 / 学习包入口(与后台同源) ---------- */
 function rdyCard(mid){
@@ -687,7 +756,7 @@ function rdyCard(mid){
   const isCtrl=(function(){try{return (typeof personOf==='function'&&(personOf(mid)||{}).group==='对照批')}catch(e){return false}})();
   const pk=isCtrl?[]:packsOf(l.mid).filter(p=>p.status!=='已完成');
   const weak=r.items.filter(i=>i.mean!=null&&i.mean<i.item.target).sort((a,b)=>(b.item.weight*(1-a.mean/a.item.target))-(a.item.weight*(1-b.mean/b.item.target)));
-  return '<div class="r-rdy"><div class="r-rdy-h"><div><div style="font-size:12px;color:#999">我的就绪度 · '+l.tier+'画像</div><div class="r-rdy-n" style="color:'+v23RdyColor(r.val)+'">'+(r.val==null?'—':r.val)+'<small style="font-size:12px;color:#999;font-weight:400"> / 100</small></div></div>'
+  return '<div class="r-rdy"><div class="r-rdy-h"><div><div style="font-size:12px;color:#999">我的就绪度 · '+l.tier+'画像'+(v23ChampOf(mid)?' <span class="tag warn" style="font-size:10px">当期销冠</span>':'')+'</div><div class="r-rdy-n" style="color:'+v23RdyColor(r.val)+'">'+(r.val==null?'—':r.val)+'<small style="font-size:12px;color:#999;font-weight:400"> / 100</small></div></div>'
     +'<div style="text-align:right;font-size:11px;color:#999">目标达成 <b style="color:#333;font-size:14px">'+(r.ach==null?'—':r.ach+'%')+'</b><br><span style="color:#bbb">模拟数据</span></div></div>'
     +'<div class="r-rdy-bar"><i style="width:'+(r.val||0)+'%"></i></div>'
     +'<div style="font-size:12px;color:#666;line-height:1.7">'+(weak.length?'最该先补:<b>'+esc(weak[0].item.label)+'</b>(权重 '+weak[0].item.weight+'%,当前 '+Math.round(weak[0].mean)+' / 目标 '+weak[0].item.target+')':'各项都达到目标等级 🎉')+'</div>'
@@ -704,6 +773,9 @@ function packAdvance(p,type,evidence){
   if(!st)return false;
   if(evidence&&st.ts===evidence)return false;
   st.done=true;st.ts=evidence||today;
+  /* 复测按步独立开放:完成前置步骤后,下一个「复测」步骤间隔 3/7/14 天开放(第 1/2/3 次复测) */
+  const steps=p.steps||[];const nx=steps.slice(steps.indexOf(st)+1).find(s=>!s.done&&s.t==='复测');
+  if(nx&&!nx.openAt){const ri=steps.filter(s=>s.t==='复测').indexOf(nx);nx.openAt=addDays(today,[3,7,14][Math.min(Math.max(ri,0),2)])}
   if((p.steps||[]).every(s=>s.done)){p.status='已完成';p.doneTs=today;if(typeof notify==='function')notify('学习包「'+p.name+'」已完成')}
   return true;
 }
@@ -764,7 +836,7 @@ function personReady(p){
 function personMisOpen(p){try{return misOf(p.mid).filter(m=>m.status!=='closed').length}catch(e){return 0}}
 function personPacks(p){try{return packsOf(p.mid).filter(x=>x.status!=='已完成').length}catch(e){return 0}}
 function pplCareCfg(){S.cfg.care=S.cfg.care||{ratio:0.7,maxPacks:2,misRecur:true};return S.cfg.care}
-function personNeedCare(p){const c=pplCareCfg();const v=personReady(p);const rec=c.misRecur&&personMisOpen(p)>0&&misOf(p.mid).some(m=>m.status==='recurred');return (v!=null&&v<S.cfg.pass*c.ratio)||rec||personPacks(p)>c.maxPacks}
+function personNeedCare(p){const c=pplCareCfg();const v=personReady(p);const rec=c.misRecur&&personMisOpen(p)>0&&misOf(p.mid).some(m=>m.status==='recurred');return (v!=null&&v<v23Goal(p.tier).pass*c.ratio)||rec||personPacks(p)>c.maxPacks}
 
 /* ---------- 人员列表 ---------- */
 function pplFilter(){
@@ -832,7 +904,7 @@ function pgPeople(){
       +'<td><a class="link" data-act="pplOpen" data-mid="'+p.mid+'">查看</a>'+(p.group==='对照批'?'':' · <a class="link" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</a>')+'</td></tr>'}).join(''):'<tr><td colspan="9" class="empty">没有符合条件的人员。换个筛选，或清除筛选。</td></tr>')+'</table></div>'+lstPager('pplPage',pg)+pplBatch;
   return head+sum+fil+list;
 }
-function pplWeakItems(p){try{const r=v23Readiness(p.mid,p.tier);return r.items.filter(i=>i.mean!=null&&i.mean<i.item.target).map(i=>i.item.label).slice(0,2)}catch(e){return []}}
+function pplWeakItems(p){try{const r=v23Readiness(p.mid,p.tier);return r.items.filter(i=>i.mean!=null&&i.mean<i.item.target).map(i=>((i.item.vals||[])[0]||'')+' · '+i.item.label).slice(0,2)}catch(e){return []}}
 function pplLearnProgress(p){try{const ps=visibleP().filter(x=>eligible(x,p));if(!ps.length)return '<span class="hint">未参与项目</span>';let tot=0,don=0;ps.forEach(x=>{const t=tasksOf(x);tot+=t.length;const d=((S.learn[x.id]||{})[p.mid])||[];don+=d.filter(id=>t.some(n=>n.id===id)).length});return ps.length+' 个项目<div class="hint">任务 '+don+'/'+tot+'</div>'}catch(e){return '<span class="hint">—</span>'}}
 function pplStoreTable(){
   const f=pplFilter();const stores=[...new Set(personScope().filter(p=>!f.region||p.region===f.region).map(p=>p.store))].filter(Boolean);
@@ -858,7 +930,7 @@ A.pplPack=el=>{const p=personOf(el.dataset.mid);if(!p)return;
   { const g=typeof bizCtrlGate==='function'?bizCtrlGate(p):{ok:p.group!=='对照批'}; if(!g.ok)return toast(g.msg||'对照批人员不建议单独干预','warn');
     if(g.needWhy&&!el.dataset.why){return openDlg('干预对照批人员:'+p.name,'<div class="hint" style="margin-bottom:8px">「'+esc(p.name)+'」是对照批。干预会让本次效果对照失真;系统会在相关项目的效果页标记「对照已被干预」。</div><div class="f"><label><b>*</b>原因</label><div class="in"><input type="text" id="ctrlWhy" style="min-width:320px" placeholder="如:该学员连续 3 周异常,门店要求补救"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplPackCtrlOk" data-mid="'+p.mid+'">确认干预</button>')}
     if(g.mark)bizCtrlMark(p,'指派补练包',el.dataset.why||'');}
-  const k=S.kps.find(k=>k.st==='启用'&&kpMounted(k).length);if(!k)return toast('没有可指派的知识点','err');const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});toast('已给 '+p.name+' 指派补练包','ok');render()};
+  const k=S.kps.find(k=>k.st==='启用'&&kpMounted(k).length);if(!k)return toast('没有可指派的知识点','err');const tpl=(S.packTpl||[]).find(t=>t.on!==false)||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],need:s[1],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});toast('已给 '+p.name+' 指派补练包','ok');render()};
 
 /* ---------- 人员详情 ---------- */
 /* 人的维度效果:这个人参加的多个项目,在各自关联知识点上,项目开始前 vs 结束后的实战行为率变化。
@@ -905,7 +977,7 @@ function pgPerson(){
    +'<div>'+(p.group==='对照批'&&(typeof bizCtrlMode!=='function'||bizCtrlMode()==='block')?'<span class="tag">对照批 · 不建议单独干预</span> <button class="btn sm" disabled title="对照批人员不参与干预,避免破坏效果评估(配置中心 → 业务规则 可调整)">指派学习包</button> <button class="btn sm" disabled title="同上">加入项目</button> ':(p.group==='对照批'?'<span class="tag warn">对照批 · 干预会被标记</span> ':'')+'<button class="btn sm" data-act="pplPack" data-mid="'+p.mid+'">指派学习包</button> ')+'<button class="btn sm" data-act="pplBack">返回列表</button></div></div>'
    +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅为相关性，不作因果结论。</span></div>';
   const hero='<div class="grid g4" style="margin-bottom:14px">'
-   +'<div class="stat"><div class="l">就绪度</div><div class="n" style="color:'+(v==null?'':v23RdyColor(v))+'">'+(v==null?'—':v)+'</div><div class="hint">'+(p.hasEvidence?'过关线 '+S.cfg.pass:'无证据，不兜底造数')+'</div></div>'
+   +'<div class="stat"><div class="l">就绪度</div><div class="n" style="color:'+(v==null?'':v23RdyColor(v))+'">'+(v==null?'—':v)+'</div><div class="hint">'+(p.hasEvidence?(p.tier?'及格线 '+v23Goal(p.tier).pass+' · 优秀线 '+v23Goal(p.tier).good:'未分档'):'无证据，不兜底造数')+'</div></div>'
    +'<div class="stat"><div class="l">未关闭错题</div><div class="n" style="color:'+(mo?'#c8323a':'')+'">'+mo+'</div><div class="hint">含关闭后复发</div></div>'
    +'<div class="stat"><div class="l">进行中学习包</div><div class="n">'+pk+'</div><div class="hint">指派补练后在这里看</div></div>'
    +'<div class="stat"><div class="l">参与项目</div><div class="n">'+projs.length+'</div><div class="hint">按覆盖范围判定</div></div></div>';
@@ -939,8 +1011,8 @@ function pplBulkTargets(){
 A.pplBulkPack=()=>{const t=pplBulkTargets();if(!t.list.length)return toast('先勾选人员','err');
   const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return toast('没有可指派的知识点','err');
   openDlg('批量指派学习包','<div>将为 <b>'+t.ok.length+'</b> 人指派补练包（知识点：'+esc(k.name)+'）。'+(t.skip.length?'<div class="hint" style="color:#b54708;margin-top:6px">跳过 '+t.skip.length+' 位对照批人员：'+t.skip.map(p=>esc(p.name)).join('、')+'（避免破坏效果对照）</div>':'')+'</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplBulkPackOk">确认指派</button>')};
-A.pplBulkPackOk=()=>{const t=pplBulkTargets();const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return;const tpl=(S.packTpl||[])[0]||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};let n=0;
-  t.ok.forEach(p=>{if(p.group==='对照批'&&typeof bizCtrlMark==='function')bizCtrlMark(p,'批量指派补练包','批量操作(配置允许)');S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});n++});
+A.pplBulkPackOk=()=>{const t=pplBulkTargets();const k=S.kps.find(x=>x.st==='启用'&&kpMounted(x).length);if(!k)return;const tpl=(S.packTpl||[]).find(t=>t.on!==false)||{steps:[['学',2],['练题',5],['演练',1],['复测',1]],dueDays:7};let n=0;
+  t.ok.forEach(p=>{if(p.group==='对照批'&&typeof bizCtrlMark==='function')bizCtrlMark(p,'批量指派补练包','批量操作(配置允许)');S.packs.unshift({id:'PK'+(S.packs.length+1),tpl:tpl.id||'PT1',mid:p.mid,mids:[p.mid],kp:k.id,name:'补练包 · '+k.name,steps:tpl.steps.map(s=>({t:s[0],need:s[1],done:false})),due:addDays(today,tpl.dueDays),status:'进行中',ts:today,audience:1});n++});
   A.lstSelClear({dataset:{k:'pplPage'}});closeDlg();toast('已指派 '+n+' 人'+(t.skip.length?'，跳过 '+t.skip.length+' 位对照批':''),'ok');render()};
 A.pplBulkProj=()=>{const t=pplBulkTargets();if(!t.ok.length)return toast(t.skip.length?'勾选的都是对照批人员，已跳过':'先勾选人员','err');
   const ps=visibleP().filter(p=>p.status!=='已结项'&&p.status!=='已下线');
@@ -958,12 +1030,12 @@ A.pplBulkCoachOk=()=>{const t=pplBulkTargets();const trig=(($('#bc_trig')||{}).v
 
 /* ---------- 需关注口径配置 ---------- */
 A.pplCareSave=()=>{const c=pplCareCfg();const r=+($('#care_ratio')||{}).value;const m=+($('#care_packs')||{}).value;if(!(r>0&&r<=1))return toast('比例需在 0~1 之间','err');if(!(m>=0))return toast('学习包阈值需 ≥0','err');c.ratio=r;c.maxPacks=m;c.misRecur=!!($('#care_rec')||{}).checked;closeDlg();toast('已保存需关注口径','ok');render()};
-A.pplCareDlg=()=>{const c=pplCareCfg();openDlg('需关注口径','<div class="hint" style="margin-bottom:10px">满足任一条即算“需关注”。改动只影响页面统计与筛选，不改任何业务数据。</div><div class="f"><label>就绪度低于过关线的比例</label><div class="in"><input id="care_ratio" type="number" step="0.05" min="0.1" max="1" value="'+c.ratio+'" style="width:120px"> × 过关线 '+S.cfg.pass+'</div></div><div class="f"><label>进行中学习包超过</label><div class="in"><input id="care_packs" type="number" min="0" value="'+c.maxPacks+'" style="width:120px"> 个</div></div><div class="f"><label><input type="checkbox" id="care_rec" '+(c.misRecur?'checked':'')+'> 关闭后复发的错题算需关注</label></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplCareSave">保存</button>')};
+A.pplCareDlg=()=>{const c=pplCareCfg();openDlg('需关注口径','<div class="hint" style="margin-bottom:10px">满足任一条即算“需关注”。改动只影响页面统计与筛选，不改任何业务数据。</div><div class="f"><label>就绪度低于本岗位及格线的比例</label><div class="in"><input id="care_ratio" type="number" step="0.05" min="0.1" max="1" value="'+c.ratio+'" style="width:120px"> × 各岗位及格线(顾问 '+v23Goal('零售顾问').pass+' / 主管 '+v23Goal('零售主管').pass+' / 店长 '+v23Goal('零售店长').pass+')</div></div><div class="f"><label>进行中学习包超过</label><div class="in"><input id="care_packs" type="number" min="0" value="'+c.maxPacks+'" style="width:120px"> 个</div></div><div class="f"><label><input type="checkbox" id="care_rec" '+(c.misRecur?'checked':'')+'> 关闭后复发的错题算需关注</label></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="pplCareSave">保存</button>')};
 
 /* 老板身份：只给群体聚合，不输出姓名/MID */
 function pgRdyAgg(){
   if(v23Empty())return '<div class="ph"><h2>就绪度</h2><div>'+V23_SIM+'</div></div>'+v23EmptyCta('就绪度数据');
-  const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {l,rdy:r.val,ach:r.ach,pass:r.ach!=null&&r.ach>=S.cfg.pass}});
+  const all=S.lrn.map(l=>{const r=v23Readiness(l.mid,l.tier);return {l,rdy:r.val,ach:r.ach,pass:r.ach!=null&&r.ach>=v23Goal(l.tier).pass}});
   const tested=all.filter(x=>x.rdy!=null);
   const avg=tested.length?Math.round(tested.reduce((s,x)=>s+x.rdy,0)/tested.length):null;
   const by={};tested.forEach(x=>{const k=x.l.tier||'未分档';(by[k]=by[k]||[]).push(x)});
@@ -972,8 +1044,8 @@ function pgRdyAgg(){
    +'<div class="ai-guide"><b>用途声明</b><span>仅用于培训选样与辅导，不用于绩效考核或 PIP 判定；业务结果仅相关，不作因果。</span></div>'
    +'<div class="grid g3" style="margin-bottom:14px">'
    +'<div class="stat"><div class="l">有证据人数</div><div class="n">'+tested.length+'</div><div class="hint">共 '+all.length+' 人</div></div>'
-   +'<div class="stat"><div class="l">平均就绪度</div><div class="n" style="color:'+v23RdyColor(avg)+'">'+(avg==null?'—':avg)+'</div><div class="hint">过关线 '+S.cfg.pass+'</div></div>'
-   +'<div class="stat"><div class="l">达标人数</div><div class="n">'+tested.filter(x=>x.pass).length+' / '+tested.length+'</div><div class="hint">目标达成率</div></div></div>'
+   +'<div class="stat"><div class="l">平均就绪度</div><div class="n" style="color:'+v23RdyColor(avg)+'">'+(avg==null?'—':avg)+'</div><div class="hint">判定看各岗位及格线</div></div>'
+   +'<div class="stat"><div class="l">达标人数</div><div class="n">'+tested.filter(x=>x.pass).length+' / '+tested.length+'</div><div class="hint">目标达成率 ≥ 本岗位及格线</div></div></div>'
    +'<div class="card"><h3>按岗位档</h3><table class="t"><tr><th>岗位档</th><th>人数</th><th>平均就绪度</th><th>达标人数</th></tr>'
    +Object.keys(by).map(k=>{const a=by[k];const v=Math.round(a.reduce((s,x)=>s+x.rdy,0)/a.length);return '<tr><td>'+esc(k)+'</td><td>'+a.length+'</td><td>'+v+'</td><td>'+a.filter(x=>x.pass).length+'</td></tr>'}).join('')+'</table></div>'
    +'<div class="card"><h3>按区域</h3><table class="t"><tr><th>区域</th><th>有证据</th><th>平均就绪度</th><th>达标人数</th></tr>'

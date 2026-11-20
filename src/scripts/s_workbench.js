@@ -41,17 +41,21 @@ function wbItems(){
     v23Diag().filter(x=>x.ok==='bad').forEach(x=>add('效果',3,'效果诊断','<b>第 '+x.no+' 层 · '+esc(x.ttl)+'</b>',esc(x.sym)+' · '+esc(x.read[0][0])+' '+esc(String(x.read[0][1])),(typeof canConfigure==='function'&&!canConfigure()?'看人员就绪度': '去调优'),ck+(typeof canConfigure==='function'&&!canConfigure()?' data-p="effect" data-tab="人员就绪度" data-ky="none"':' data-p="effect" data-tab="调优与结项" data-ky="none"')));
     const rec=S.mis.filter(m=>m.status==='recurred');
     if(rec.length)add('效果',2,'错题复发','<b>'+rec.length+' 条错题关闭后复发</b>','复发率 '+v23RecurRate()+'% · 涉及 '+new Set(rec.map(m=>m.kp)).size+' 个知识点','去错题集',ck+' data-p="effect" data-tab="错题集" data-ky="none"');
-    const gaps=S.lrn.filter(l=>{const r=v23Readiness(l.mid,l.tier);return r.ach!=null&&r.ach<S.cfg.pass*0.7});
+    const gaps=S.lrn.filter(l=>{const r=v23Readiness(l.mid,l.tier);return r.ach!=null&&r.ach<v23Goal(l.tier).pass*0.7});
     if(gaps.length)add('效果',2,'画像缺口','<b>'+gaps.length+' 人</b>目标达成率明显低于过关线','按画像项看缺口,可指派学习包','去就绪度',ck+' data-p="effect" data-tab="人员就绪度" data-ky="none"');
     const cv=S.cfgV.find(v=>v.status==='观察中');const od=cv&&v23ObsDue(cv);
     if(cv&&od)add('效果',od.left<=0?3:1,'配置观察期','<b>配置版本 v'+cv.ver+'</b> '+(od.left<=0?'观察期已满,该对比效果了':'观察中,还剩 '+od.left+' 天'),'观察期 '+S.cfg.obsWeeks+' 周,满期后对比生效前后','去对比',ck+' data-p="effect" data-tab="调优与结项" data-ky="none"');
   }
   /* —— 实施:报名审批 —— */
   const pa=pendingFor();if(pa.length)add('实施',2,'待审批','<b>'+pa.length+' 条报名</b>待审批','先到先得;名额满进候补','去审批',ck+' data-p="approvals" data-ky="none"');
+  /* 派人 / 暂缓状态(S.wbSt,按内容 key 挂钩;数量变化不丢状态) */
+  const wst=S.wbSt||{};
+  it.forEach(x=>{x.key=wbKey(x);const s=wst[x.key]||{};x.asg=s.asg||'';x.sn=s.sn||''});
   return it.sort((a,b)=>b.sev-a.sev)}
 const WB_SEV={3:['紧急','err'],2:['建议','warn'],1:['可选','']};
 function pgWorkbench(){
   const it=wbItems();const f=UI.sel.wbf||'';const rows=it.filter(x=>!f||x.g===f);
+  const snz=rows.filter(x=>x.sn&&x.sn>today);const view=UI.sel.wbSnz?snz:rows.filter(x=>!(x.sn&&x.sn>today));
   const cnt=g=>it.filter(x=>x.g===g).length;
   const st=kpStats();const act=S.kps.filter(k=>k.st==='启用');const hs=act.map(kpHealth);
   const cover=act.length?Math.round(hs.filter(h=>h.cells.exp.s==='ok').length/act.length*100):0;
@@ -60,18 +64,27 @@ function pgWorkbench(){
   const flow='<div class="wb-flow">'+[['发现问题','课题池',S.topics.filter(t=>t.flow==='新发现').length+' 个新课题','topics'],['准备内容','知识点 · 内容',st.err+' 个缺口 · '+S.contents.filter(c=>c.st==='草稿'||c.st==='审核中').length+' 条在途','catalog'],['上架','上架到零售通',S.contents.filter(isPub).length+' 条已上架','publish'],['组织培训','学习项目',S.projects.length+' 个项目','projects'],['看效果','效果追踪',S.projects.filter(p=>p.eff).length+' 个已出效果','effect']].map((x,i)=>(i?'<i>→</i>':'')+'<div class="wb-n kp-click" data-act="go" data-p="'+x[3]+'"><small>'+x[0]+'</small><b>'+x[1]+'</b><span>'+x[2]+'</span></div>').join('')+'</div>';
   return '<div class="ph"><h2>工作台 <span class="hint" style="font-weight:400">今天该处理什么:所有待办都汇在这里,点「去处理」直接落到对应对象</span></h2></div>'
    +flow
-   +'<div class="grid g4" style="margin-bottom:16px">'+num('待办总数',it.length,'紧急 '+it.filter(x=>x.sev===3).length+' · 建议 '+it.filter(x=>x.sev===2).length,'data-act="wbF" data-v=""')
+   +'<div class="grid g4" style="margin-bottom:16px">'+num('待办总数',it.filter(x=>!(x.sn&&x.sn>today)).length,'紧急 '+it.filter(x=>x.sev===3).length+' · 建议 '+it.filter(x=>x.sev===2).length+(snz.length?' · 暂缓 '+snz.length:''),'data-act="wbF" data-v=""')
    +num('讲解覆盖率',cover+'%','启用的知识点里有可用讲解','data-act="go" data-p="catalog"')
    +num('未挂载内容',st.un,'进不了完备度检查','data-act="wbUnmounted"')
    +num('学员集中薄弱',kpWeakList().length,'已测 ≥3 人且 ≥50% 未过关','data-act="go" data-p="catalog" data-t="总览"')+'</div>'
    +(typeof aiWorkbenchCard==='function'?aiWorkbenchCard():'')
-   +'<div class="card"><h3>待办 <span class="hint">按紧急程度排序;「紧急」= 学员现在就受影响</span></h3><div class="wb-tabs"><span class="'+(f?'':'on')+'" data-act="wbF" data-v="">全部 '+it.length+'</span>'+WB_GROUPS.map(g=>'<span class="'+(f===g[0]?'on':'')+'" data-act="wbF" data-v="'+g[0]+'">'+g[1]+' '+cnt(g[0])+'</span>').join('')+'</div>'
-   +(rows.length?'<table class="t"><tr><th style="width:64px">优先</th><th style="width:96px">类型</th><th>对象</th><th>为什么</th><th style="width:96px"></th></tr>'+rows.slice(0,UI.sel.wbMore?999:25).map(x=>'<tr><td><span class="tag '+WB_SEV[x.sev][1]+'">'+WB_SEV[x.sev][0]+'</span></td><td><span class="tag" style="white-space:nowrap">'+x.tag+'</span></td><td style="white-space:normal;min-width:200px">'+x.title+'</td><td class="hint" style="white-space:normal">'+x.desc+'</td><td>'+(x.raw?x.raw:'<button class="btn sm pri" '+x.attrs+'>'+x.act+'</button>')+'</td></tr>').join('')+'</table>'+(rows.length>25&&!UI.sel.wbMore?'<div style="margin-top:8px"><button class="btn sm" data-act="wbMore">看全部 '+rows.length+' 条</button> <span class="hint">先显示优先级最高的 25 条;也可以按上方分组收敛</span></div>':(!UI.sel.wbMore?'':'<div class="hint" style="margin-top:6px">已显示全部 '+rows.length+' 条</div>')):'<div class="chk ok"><b>✓</b><span>这一类没有待办</span></div>')+'</div>'}
+   +'<div class="card"><h3>待办 <span class="hint">按紧急程度排序;「紧急」= 学员现在就受影响</span></h3><div class="wb-tabs"><span class="'+(f||UI.sel.wbSnz?'':'on')+'" data-act="wbF" data-v="">全部 '+it.filter(x=>!(x.sn&&x.sn>today)).length+'</span>'+WB_GROUPS.map(g=>'<span class="'+(f===g[0]&&!UI.sel.wbSnz?'on':'')+'" data-act="wbF" data-v="'+g[0]+'">'+g[1]+' '+cnt(g[0])+'</span>').join('')+(snz.length||UI.sel.wbSnz?'<span class="'+(UI.sel.wbSnz?'on':'')+'" data-act="wbSnzT">已暂缓 '+snz.length+'</span>':'')+'</div>'
+   +(view.length?'<table class="t"><tr><th style="width:64px">优先</th><th style="width:96px">类型</th><th>对象</th><th>为什么</th><th style="width:110px"></th></tr>'+view.slice(0,UI.sel.wbMore?999:25).map(x=>'<tr><td><span class="tag '+WB_SEV[x.sev][1]+'">'+WB_SEV[x.sev][0]+'</span></td><td><span class="tag" style="white-space:nowrap">'+x.tag+'</span></td><td style="white-space:normal;min-width:200px">'+x.title+(x.asg?'<div style="margin-top:3px"><span class="tag blue">已派给 '+esc(x.asg)+'</span></div>':'')+(x.sn&&x.sn>today?'<div style="margin-top:3px"><span class="tag warn">暂缓到 '+x.sn+'</span></div>':'')+'</td><td class="hint" style="white-space:normal">'+x.desc+'</td><td>'+(x.raw?x.raw:'<button class="btn sm pri" '+x.attrs+'>'+x.act+'</button>')+'<div style="margin-top:4px;white-space:nowrap"><a class="link" data-act="wbAssign" data-k="'+esc(x.key)+'">派人</a> '+(x.sn&&x.sn>today?'<a class="link" data-act="wbUnsnooze" data-k="'+esc(x.key)+'">恢复</a>':'<a class="link" data-act="wbSnooze" data-k="'+esc(x.key)+'">暂缓</a>')+'</div></td></tr>').join('')+'</table>'+(view.length>25&&!UI.sel.wbMore?'<div style="margin-top:8px"><button class="btn sm" data-act="wbMore">看全部 '+view.length+' 条</button> <span class="hint">先显示优先级最高的 25 条;也可以按上方分组收敛</span></div>':(!UI.sel.wbMore?'':'<div class="hint" style="margin-top:6px">已显示全部 '+view.length+' 条</div>')):(UI.sel.wbSnz?'<div class="chk"><b>·</b><span>没有暂缓中的待办</span></div>':'<div class="chk ok"><b>✓</b><span>这一类没有待办</span></div>'))+'</div>'}
 A.wbMore=()=>{UI.sel.wbMore=true;render()};
-A.wbF=el=>{UI.sel.wbf=el.dataset.v;render()};
+A.wbF=el=>{UI.sel.wbf=el.dataset.v;UI.sel.wbSnz=false;render()};
 A.wbGo=el=>{const d=el.dataset;closeDlg();UI.page=d.p;if(d.tab)UI.tab[d.p]=d.tab;if(d.ky==='tid')UI.tid=d.id;if(d.ky==='kid')UI.kid=d.id;render();$('#main').scrollTop=0};
 A.wbCand=el=>{UI.page='catalog';UI.tab.catalog='候选';render()};
-A.wbUnmounted=()=>{UI.page='content';UI.tab.content='内容';UI.sel.cq={kp:'未挂载'};render()};
+A.wbUnmounted=()=>{UI.page='content';UI.tab.content='全部内容';UI.sel.caf={kp:'未挂载'};UI.sel.cadv=false;render()};
+/* —— 待办派人 / 暂缓(S.wbSt[key]={asg,sn};key 按"分组|类型|去数字标题"生成,条数变化不丢状态)—— */
+const wbKey=x=>x.g+'|'+x.tag+'|'+String(x.title).replace(/<[^>]*>/g,'').replace(/\d+/g,'');
+function wbState(k,create){S.wbSt=S.wbSt||{};if(create&&!S.wbSt[k])S.wbSt[k]={};return S.wbSt[k]||null}
+A.wbAssign=el=>{const k=el.dataset.k;const cur=(wbState(k)||{}).asg||'';openDlg('把这条待办派给谁','<div class="f"><label>负责人</label><div class="in"><select id="wb_asg" style="width:100%"><option value="">（取消指派）</option>'+kpOwners().map(n=>'<option '+(cur===n?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></div><div class="hint">派人是在这里做分工标记,Demo 里不会真的给对方发通知。</div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="wbAssignOk" data-k="'+esc(k)+'">确定</button>')};
+A.wbAssignOk=el=>{const k=el.dataset.k;const v=(($('#wb_asg')||{}).value||'');const s=wbState(k,true);if(v){s.asg=v;toast('已派给 '+v,'ok')}else{delete s.asg;toast('已取消指派','ok')}closeDlg();render()};
+A.wbSnooze=el=>{const k=el.dataset.k;openDlg('暂缓这条待办','<div class="f"><label>暂缓多久</label><div class="in"><select id="wb_sn" style="width:100%"><option value="3">3 天</option><option value="7" selected>7 天</option><option value="14">14 天</option></select></div><div class="hint">暂缓期间收起到「已暂缓」,到期自动回到列表。按演示日期 '+today+' 起算。</div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="wbSnoozeOk" data-k="'+esc(k)+'">暂缓</button>')};
+A.wbSnoozeOk=el=>{const s=wbState(el.dataset.k,true);s.sn=addDays(today,+(($('#wb_sn')||{}).value||7));closeDlg();toast('已暂缓到 '+s.sn,'ok');render()};
+A.wbUnsnooze=el=>{const s=wbState(el.dataset.k);if(s)delete s.sn;toast('已恢复','ok');render()};
+A.wbSnzT=()=>{UI.sel.wbSnz=!UI.sel.wbSnz;render()};
 /* ================= 内容中心:四种性质统一入口(话术 / 课程 / 题 / 演练)=================
    话术、课程 = 原来的内容(S.contents);题 = S.qs;演练 = S.drills。
    数据结构不变(各有各的编辑页),但在内容中心里用同一张"全部内容"列表、同一套状态(草稿 / 已定稿 / 已停用)、同一套"挂知识点"呈现。 */
@@ -106,7 +119,7 @@ function cAllList(){
 A.cafK=el=>{const q=UI.sel.caf||(UI.sel.caf={});if(el.dataset.v)q.k=el.dataset.v;else delete q.k;render()};
 A.cafset=el=>{const q=UI.sel.caf||(UI.sel.caf={});if(el.value)q[el.dataset.k]=el.value;else delete q[el.dataset.k];render()};
 A.cafkw=el=>{(UI.sel.caf||(UI.sel.caf={})).q=el.value.trim();render()};
-A.cafAdv=()=>{UI.tab.content='话术与课程(高级)';render()};
+/* A.cafAdv 唯一定义在 k_content.js(带 caf→cq 条件互带);这里曾有同名旧定义会覆盖它,已移除 */
 A.cNewAny=el=>{const k=el.dataset.v;if(k==='题')return A.qNew();if(k==='演练')return A.drNew();A.cNew({dataset:{}});C.kind=k;if(k==='课程')C.type='图文';render()};
 
 /* ================= 链路条:每个对象都显示"上一步 / 下一步",每一段都能点 =================

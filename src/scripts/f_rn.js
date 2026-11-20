@@ -45,10 +45,17 @@ function renderRN(){
   if(typeof gdTrack==='function')gdTrack();
 }
 const rnav=(t,back)=>'<div class="nav">'+(back?'<span class="bk" data-act="rback">‹</span>':'')+t+'</div>';
-const mentorOf=mid=>{const me=pp(mid);return PEOPLE.find(x=>x.mid!==mid&&x.store===me.store&&x.hire>=365)||PEOPLE.find(x=>x.hire>=365)};
+/* 带教派单:优先当期销冠(同店 → 同区域),没有再回落到同店资深同事(人事师徒关系) */
+const mentorOf=mid=>{const me=pp(mid);
+  if(typeof v23Champions==='function'&&S.lrn&&S.lrn.length){const ch=v23Champions().filter(c=>c.mid!==mid);
+    const sameStore=ch.find(c=>c.store===me.store);if(sameStore)return {mid:sameStore.mid,name:sameStore.name,store:sameStore.store,region:sameStore.region,hire:(lrnOf(sameStore.mid)||{}).hire||0,champ:1};
+    const sameRg=ch.find(c=>c.region===me.region);if(sameRg)return {mid:sameRg.mid,name:sameRg.name,store:sameRg.store,region:sameRg.region,hire:(lrnOf(sameRg.mid)||{}).hire||0,champ:1};
+  }
+  return PEOPLE.find(x=>x.mid!==mid&&x.store===me.store&&x.hire>=365)||PEOPLE.find(x=>x.hire>=365)};
 /* ---- 任务数据:模块 → 步骤 ---- */
 function modulesOf(p){const ms=[];p.nodes.forEach(n=>{let m=ms.find(x=>x.mi===n.mi);if(!m){m={mi:n.mi,name:n.module,steps:[]};ms.push(m)}m.steps.push(n)});return ms}
-const stepDone=(p,n)=>n.offline?offStep(p.id).step>=5:myDone(p).includes(n.id);
+const stepDone=(p,n)=>n.offline?offStep(p.id).step>=5:n.rel==='学习包'?packNodeDone(p,n):myDone(p).includes(n.id);
+function packNodeDone(p,n){if(typeof packEnsure!=='function')return false;const pk=S.packs.find(x=>x.proj===p.id&&x.nodeId===n.id&&(x.mid===ME.mid||(x.mids||[]).includes(ME.mid)));return !!(pk&&pk.status==='已完成')}
 const examFails=(p,n)=>((S.exam||{})[p.id+':'+ME.mid+':'+n.id])||0;
 const examLeft=(p,n)=>(+n.cfg.tries||0)+1-examFails(p,n);
 function stepLocked(p,m,i){const n=m.steps[i];if(n.offline||stepDone(p,n))return false;
@@ -60,8 +67,9 @@ function stepStatus(p,m,i){const n=m.steps[i];
   if(stepDone(p,n))return {txt:n.t==='考试'?'已通过':n.t==='练习'?'重新练习':'去复习',k:'done'};
   if(stepLocked(p,m,i))return {txt:'待解锁',k:'lock'};
   if(n.t==='考试'&&examLeft(p,n)<=0)return {txt:'未通过',k:'fail'};
+  if(n.rel==='学习包')return {txt:'去完成学习包',k:'go'};
   return {txt:{学习:'去学习',练习:'去练习',考试:'去考试',检核:'去检核',情景演练:'去演练',报名任务:'去报名'}[n.t],k:'go'}}
-function tagOf(n){if(n.offline)return '线下班次';if(n.t==='学习'){const c=n.contentId&&content(n.contentId);return c?c.type:'课程'}return {练习:'练习',考试:'考试',检核:'检核',情景演练:'演练',报名任务:'报名'}[n.t]||n.t}
+function tagOf(n){if(n.offline)return '线下班次';if(n.rel==='学习包')return '学习包';if(n.t==='学习'){const c=n.contentId&&content(n.contentId);return c?c.type:'课程'}return {练习:'练习',考试:'考试',检核:'检核',情景演练:'演练',报名任务:'报名'}[n.t]||n.t}
 function progOf(p){const total=p.nodes.length;const done=p.nodes.filter(n=>stepDone(p,n)).length;return {total,done,pend:total-done,pct:total?Math.round(done/total*100):0}}
 function leftDays(p){if(p.finishType===2)return Math.max(0,Math.round((new Date(p.finishTime)-D0)/864e5));return +p.finishDays||0}
 const deadlineTxt=p=>p.finishType===2?'截止 '+p.finishTime:'下发后 '+p.finishDays+' 天内完成';
@@ -125,7 +133,7 @@ function rDetail(){
    +'<div style="height:8px;background:#F8F9FF"></div>'
    +'<div class="dsec"><div class="dsec-t"><i>▤</i>学习任务</div><div class="dsec-s">完成所有任务后,解锁激励提现能力</div></div>'
    +'<div class="sts2"><div><b>'+g.pend+'</b><span>待完成任务</span></div><div><b>'+g.done+'</b><span>已完成任务</span></div><div><b>'+g.pct+'%</b><span>完成进度</span></div><div><b>'+leftDays(p)+'天</b><span>剩余时间</span></div></div>'
-   +'<div class="goalrow"><span>培训目标 <em>新增</em></span><b>'+p.metric+' '+p.base+'% → '+p.target+'%</b></div>'
+   +(p.metric!=null?'<div class="goalrow"><span>培训目标 <em>新增</em></span><b>'+p.metric+' '+p.base+'% → '+p.target+'%</b></div>':'')
    +(g.pend===0?'<div class="okbar">🎉 恭喜你,已完成所有任务</div>':'')+warn
    +'<div style="padding:4px 12px 10px">'+pend.map(m=>'<div style="margin-bottom:10px">'+modCard(m)+'</div>').join('')+'</div>'
    +(done.length?'<div class="dn"><div class="dn-h" data-act="rDoneTog">已完成任务 <span>'+done.length+' 个模块 '+(open?'▴':'▾')+'</span></div>'+(open?'<div style="padding:0 12px 10px">'+done.map(m=>'<div style="margin-bottom:10px">'+modCard(m)+'</div>').join('')+'</div>':'')+'</div>':'')
@@ -152,6 +160,12 @@ A.rTask=el=>{const p=proj(el.dataset.pid);const n=p.nodes.find(x=>x.id===el.data
   if(n.offline){rgo('offDetail',p.id);return}
   const s=stepStatus(p,m,i);if(s.k==='lock')return toast('该任务尚未解锁:'+(n.t==='考试'?'需先完成本模块的学习任务':'需先完成上一个任务'),'err');
   if(s.k==='fail')return toast('考试机会已用完,请联系区域老师','err');
+  if(n.rel==='学习包'){
+    if(stepDone(p,n))return toast('学习包已完成,可在「学习中心」回顾','ok');
+    if(typeof packEnsure!=='function')return toast('学习包功能未启用','err');
+    const pk=packEnsure(p,n,ME.mid);
+    if(!pk)return toast('没有可用的学习包模板','err');
+    R.packId=pk.id;R.page='pack';return renderRN()}
   R.sheet={pid:p.id,nid:n.id};renderRN()};
 A.rSheetClose=()=>{R.sheet=null;R.fb=null;renderRN()};
 A.rFbReason=el=>{R.fb.reason=el.dataset.v;renderRN()};
@@ -199,7 +213,7 @@ function rOff(){
         body+='<div class="sec"><h5>培训成绩</h5><div class="rkv"><span>线上考试</span><span>'+(r.online==null?'-':r.online)+'</span></div><div class="rkv"><span>线下评分</span><span>'+(r.offline==null?'-':r.offline)+'</span></div><div class="rkv"><span>总评</span><span><b>'+(f==null?'-':f)+'</b></span></div><div class="rkv"><span>通过状态</span><span>'+(r.st==='已结业'||r.st==='通过'?'<span class="pill g">通过</span>':'<span class="pill r">未通过</span>')+(r.st==='已结业'?' <span class="pill g">已结业</span>':'')+'</span></div></div>';
         if(r.st==='已结业'){
           const mt=mentorOf(ME.mid);const ev=((S.evals||{})[p.id]||{})[ME.mid];
-          body+='<div class="sec"><h5>项目目标进度</h5><div class="rkv"><span>'+p.metric+'</span><span>基线 '+p.base+'% → 目标 '+p.target+'%</span></div><div style="font-size:12px;color:#999;margin-top:6px">'+(p.cur==null?'观察期结束后统计,结果会在这里更新':'当前 '+p.cur+'%')+'</div></div><div class="sec"><h5>后续安排</h5><div class="rkv"><span>带教师傅</span><span>'+(mt?esc(mt.name)+'('+esc(mt.store)+')':'待分配')+'</span></div><div class="rkv"><span>首月目标</span><span>'+p.metric+' 达到 '+p.target+'%</span></div><div style="font-size:11px;color:#bbb;margin-top:6px">带教师傅来自人事系统师徒关系</div></div>';
+          body+='<div class="sec"><h5>项目目标进度</h5><div class="rkv"><span>'+p.metric+'</span><span>基线 '+p.base+'% → 目标 '+p.target+'%</span></div><div style="font-size:12px;color:#999;margin-top:6px">'+(p.cur==null?'观察期结束后统计,结果会在这里更新':'当前 '+p.cur+'%')+'</div></div><div class="sec"><h5>后续安排</h5><div class="rkv"><span>带教师傅</span><span>'+(mt?esc(mt.name)+'('+esc(mt.store)+')'+(mt.champ?' <span class="tag warn" style="font-size:10px">当期销冠</span>':''):'待分配')+'</span></div><div class="rkv"><span>首月目标</span><span>'+p.metric+' 达到 '+p.target+'%</span></div><div style="font-size:11px;color:#bbb;margin-top:6px">'+(mt&&mt.champ?'带教优先派给当期销冠(按月滚动评定),无在期销冠时回落到人事系统师徒关系':'带教师傅来自人事系统师徒关系')+'</div></div>';
           body+='<div class="sec"><h5>课后评价</h5>'+(ev?'<div style="font-size:13px;color:#666">已评价:内容有用度 '+ev.content+' 星 · 讲师 '+ev.teacher+' 星,谢谢你的反馈</div>':'<div class="rv"><span>内容有用度</span>'+[1,2,3,4,5].map(i=>'<i class="st '+((R.rv&&R.rv.c>=i)?'on':'')+'" data-act="rStar" data-k="c" data-v="'+i+'">★</i>').join('')+'</div><div class="rv"><span>讲师</span>'+[1,2,3,4,5].map(i=>'<i class="st '+((R.rv&&R.rv.t>=i)?'on':'')+'" data-act="rStar" data-k="t" data-v="'+i+'">★</i>').join('')+'</div><button class="rb" style="width:100%;margin-top:8px" data-act="rEval" data-pid="'+p.id+'">提交评价</button>')+'</div>';
         }else if(r.st==='未通过')body+='<div class="sec"><div style="font-size:13px;color:#666">未通过,可联系区域老师安排补考(最多 '+(o.retake==null?1:o.retake)+' 次)。</div></div>';
       }else if(s.step===4)body+='<div class="sec"><div style="font-size:13px;color:#666">已签到,线下成绩录入后会在这里显示。</div></div>';

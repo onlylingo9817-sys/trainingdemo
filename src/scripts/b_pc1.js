@@ -213,4 +213,4 @@ function pgRules(){
 }
 /* E2 演示日期切换（默认保持 2026-11-09，改后刷新派生数据） */
 A.demoDate=()=>{openDlg('演示日期','<div class="hint" style="margin-bottom:8px">所有「今天 / 到期 / 入职天数」都基于这个日期。默认 2026-11-09，改大会让到期和逾期变多。</div><div class="f"><label>日期</label><div class="in"><input type="date" id="dd_val" value="'+esc(today)+'"></div></div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="demoDateOk">应用</button>')};
-A.demoDateOk=()=>{const v=(($('#dd_val')||{}).value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return toast('日期格式不对','err');try{window.__DEMO_TODAY=v}catch(e){};closeDlg();toast('演示日期已设为 '+v+'，刷新页面后生效','ok')};
+A.demoDateOk=()=>{const v=(($('#dd_val')||{}).value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return toast('日期格式不对','err');window.__DEMO_TODAY=v;today=v;D0=new Date(v+'T00:00:00');closeDlg();toast('演示日期已设为 '+v+'，到期 / 逾期 / 倒计时已按新日期重算','ok');render()};

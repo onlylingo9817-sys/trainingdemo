@@ -9,8 +9,8 @@ function openDlg(title,body,btns,wide){
   $('#mask').classList.add('show');
 }
 function closeDlg(){$('#mask').classList.remove('show')}
-const today='2026-11-09';
-const D0=new Date('2026-11-09T00:00:00');
+let today=(window.__DEMO_TODAY||'2026-11-09');
+let D0=new Date(today+'T00:00:00');
 const fmt=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const addDays=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return fmt(d)};
 function hsh(s){let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%9973;return h}

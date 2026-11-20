@@ -1,0 +1,391 @@
+pageType: content
+background:
+  type: solid
+  color: "$paper"
+elements:
+  # ---------- 标题区 ----------
+  - elementId: title
+    elementType: text
+    bounds: [64, 38, 720, 42]
+    content:
+      fontSize: 32
+      bold: true
+      color: "$ink"
+      wrap: false
+      text: 知识点：培训全链路的枢纽
+  - elementId: subtitle
+    elementType: text
+    bounds: [64, 88, 820, 22]
+    content:
+      fontSize: 14
+      color: "$sub"
+      wrap: false
+      text: 一名顾问「要会讲、要会做」的最小单元 —— 只有两类：产品知识（会讲）/ 销售动作（会做）
+  - elementId: badge
+    elementType: shape
+    bounds: [1052, 44, 164, 30]
+    shapeName: roundRect
+    adjustments: [50000]
+    fill: {type: solid, color: "#FBEADB"}
+  - elementId: badge-t
+    elementType: text
+    bounds: [1052, 44, 164, 28]
+    content:
+      fontSize: 12
+      color: "$primary"
+      align: [center, middle]
+      wrap: false
+      text: 培训全链路闭环 · 示意图
+
+  # ---------- 中心辐射线（压在节点和枢纽下面） ----------
+  - elementId: sp1
+    elementType: line
+    bounds: [639, 250, 2, 62]
+    viewBox: [2, 62]
+    points: "1,62 1,0"
+    border: {style: solid, width: 1.5, color: "$spoke"}
+  - elementId: sp2
+    elementType: line
+    bounds: [700, 346, 140, 20]
+    viewBox: [140, 20]
+    points: "0,19 140,1"
+    border: {style: solid, width: 1.5, color: "$spoke"}
+  - elementId: sp3
+    elementType: line
+    bounds: [705, 480, 65, 68]
+    viewBox: [65, 68]
+    points: "0,0 65,68"
+    border: {style: solid, width: 1.5, color: "$spoke"}
+  - elementId: sp4
+    elementType: line
+    bounds: [510, 480, 65, 68]
+    viewBox: [65, 68]
+    points: "65,0 0,68"
+    border: {style: solid, width: 1.5, color: "$spoke"}
+  - elementId: sp5
+    elementType: line
+    bounds: [440, 346, 140, 20]
+    viewBox: [140, 20]
+    points: "140,19 0,1"
+    border: {style: solid, width: 1.5, color: "$spoke"}
+
+  # ---------- 环形箭头（顺时针闭环） ----------
+  - elementId: a1
+    elementType: line
+    bounds: [745, 190, 160, 110]
+    viewBox: [160, 110]
+    points: "0,5 110,15 160,110"
+    curve: smooth
+    arrow: [null, stealth]
+    border: {style: solid, width: 2.5, color: "$primary"}
+  - elementId: a2
+    elementType: line
+    bounds: [900, 395, 85, 150]
+    viewBox: [85, 150]
+    points: "85,5 80,80 0,150"
+    curve: smooth
+    arrow: [null, stealth]
+    border: {style: solid, width: 2.5, color: "$primary"}
+  - elementId: a3
+    elementType: line
+    bounds: [549, 603, 182, 14]
+    viewBox: [182, 14]
+    points: "182,3 91,14 0,3"
+    curve: smooth
+    arrow: [null, stealth]
+    border: {style: solid, width: 2.5, color: "$primary"}
+  - elementId: a4
+    elementType: line
+    bounds: [295, 395, 80, 150]
+    viewBox: [80, 150]
+    points: "0,150 0,80 80,5"
+    curve: smooth
+    arrow: [null, stealth]
+    border: {style: solid, width: 2.5, color: "$primary"}
+  - elementId: a5
+    elementType: line
+    bounds: [375, 190, 160, 110]
+    viewBox: [160, 110]
+    points: "0,110 50,15 160,5"
+    curve: smooth
+    arrow: [null, stealth]
+    border: {style: solid, width: 2.5, color: "$primary"}
+  - elementId: a5-label
+    elementType: text
+    bounds: [396, 214, 120, 18]
+    content:
+      fontSize: 11
+      color: "#B05A2A"
+      wrap: false
+      text: 诊断 · 调优 · 回滚
+
+  # ---------- 中心枢纽 ----------
+  - elementId: halo
+    elementType: shape
+    bounds: [508, 288, 264, 264]
+    shapeName: ellipse
+    fill: {type: solid, color: "$halo"}
+  - elementId: hub
+    elementType: shape
+    bounds: [532, 312, 216, 216]
+    shapeName: ellipse
+    fill:
+      type: gradient
+      gradientType: linear
+      angle: 135
+      stops:
+        - {position: 0, color: "#F07A2E"}
+        - {position: 1, color: "$primaryDeep"}
+    shadow: {blur: 18, color: "#E85D2440", offset: [0, 6]}
+  - elementId: hub-icon
+    elementType: icon
+    bounds: [614, 342, 52, 52]
+    iconName: "fas:bullseye"
+    fill: {type: solid, color: "#FFFFFF"}
+  - elementId: hub-name
+    elementType: text
+    bounds: [532, 402, 216, 38]
+    content:
+      fontSize: 26
+      bold: true
+      color: "#FFFFFF"
+      align: [center, middle]
+      wrap: false
+      text: 知识点
+  - elementId: hub-sub
+    elementType: text
+    bounds: [540, 444, 200, 36]
+    content:
+      fontSize: 11
+      color: "#FFE3CF"
+      align: [center, top]
+      lineHeight: 1.4
+      text: |
+        <p>探需提问 · 价格异议处理</p>
+        <p>6.6kW 外放电</p>
+
+  # ---------- 节点 1 发现问题 ----------
+  - elementId: n1
+    elementType: shape
+    bounds: [535, 164, 210, 82]
+    shapeName: roundRect
+    adjustments: [12000]
+    fill: {type: solid, color: "#FFFFFF"}
+    border: {style: solid, width: 1.25, color: "$nodeBd"}
+    shadow: {blur: 10, color: "#7A5A3A14", offset: [0, 3]}
+  - elementId: n1-chip
+    elementType: shape
+    bounds: [549, 178, 22, 22]
+    shapeName: ellipse
+    fill: {type: solid, color: "$primary"}
+  - elementId: n1-num
+    elementType: text
+    bounds: [549, 178, 22, 22]
+    content: {fontSize: 12, bold: true, color: "#FFFFFF", align: [center, middle], wrap: false, text: "1"}
+  - elementId: n1-icon
+    elementType: icon
+    bounds: [581, 177, 24, 24]
+    iconName: "fas:magnifying-glass-chart"
+    fill: {type: solid, color: "$primary"}
+  - elementId: n1-name
+    elementType: text
+    bounds: [613, 177, 122, 24]
+    content:
+      style: "$nodename"
+      align: [left, middle]
+      wrap: false
+      text: 发现问题
+  - elementId: n1-desc
+    elementType: text
+    bounds: [549, 208, 184, 32]
+    content:
+      style: "$nodedesc"
+      align: [left, top]
+      text: |
+        <p>完备率热力图找缺口</p>
+        <p>课题池 · AI 检查</p>
+
+  # ---------- 节点 2 准备内容 ----------
+  - elementId: n2
+    elementType: shape
+    bounds: [847, 309, 210, 82]
+    shapeName: roundRect
+    adjustments: [12000]
+    fill: {type: solid, color: "#FFFFFF"}
+    border: {style: solid, width: 1.25, color: "$nodeBd"}
+    shadow: {blur: 10, color: "#7A5A3A14", offset: [0, 3]}
+  - elementId: n2-chip
+    elementType: shape
+    bounds: [861, 323, 22, 22]
+    shapeName: ellipse
+    fill: {type: solid, color: "$primary"}
+  - elementId: n2-num
+    elementType: text
+    bounds: [861, 323, 22, 22]
+    content: {fontSize: 12, bold: true, color: "#FFFFFF", align: [center, middle], wrap: false, text: "2"}
+  - elementId: n2-icon
+    elementType: icon
+    bounds: [893, 322, 24, 24]
+    iconName: "fas:pen-to-square"
+    fill: {type: solid, color: "$primary"}
+  - elementId: n2-name
+    elementType: text
+    bounds: [925, 322, 122, 24]
+    content:
+      style: "$nodename"
+      align: [left, middle]
+      wrap: false
+      text: 准备内容
+  - elementId: n2-desc
+    elementType: text
+    bounds: [861, 353, 184, 32]
+    content:
+      style: "$nodedesc"
+      align: [left, top]
+      text: |
+        <p>话术 · 题 · 演练挂到点上</p>
+        <p>内容中心</p>
+
+  # ---------- 节点 3 上架到零售通 ----------
+  - elementId: n3
+    elementType: shape
+    bounds: [731, 555, 210, 82]
+    shapeName: roundRect
+    adjustments: [12000]
+    fill: {type: solid, color: "#FFFFFF"}
+    border: {style: solid, width: 1.25, color: "$nodeBd"}
+    shadow: {blur: 10, color: "#7A5A3A14", offset: [0, 3]}
+  - elementId: n3-chip
+    elementType: shape
+    bounds: [745, 569, 22, 22]
+    shapeName: ellipse
+    fill: {type: solid, color: "$primary"}
+  - elementId: n3-num
+    elementType: text
+    bounds: [745, 569, 22, 22]
+    content: {fontSize: 12, bold: true, color: "#FFFFFF", align: [center, middle], wrap: false, text: "3"}
+  - elementId: n3-icon
+    elementType: icon
+    bounds: [777, 568, 24, 24]
+    iconName: "fas:cloud-arrow-up"
+    fill: {type: solid, color: "$primary"}
+  - elementId: n3-name
+    elementType: text
+    bounds: [809, 568, 126, 24]
+    content:
+      style: "$nodename"
+      align: [left, middle]
+      wrap: false
+      text: 上架到零售通
+  - elementId: n3-desc
+    elementType: text
+    bounds: [745, 599, 184, 32]
+    content:
+      style: "$nodedesc"
+      align: [left, top]
+      text: |
+        <p>按知识点归入学堂专区</p>
+        <p>发布上架</p>
+
+  # ---------- 节点 4 组织培训 ----------
+  - elementId: n4
+    elementType: shape
+    bounds: [339, 555, 210, 82]
+    shapeName: roundRect
+    adjustments: [12000]
+    fill: {type: solid, color: "#FFFFFF"}
+    border: {style: solid, width: 1.25, color: "$nodeBd"}
+    shadow: {blur: 10, color: "#7A5A3A14", offset: [0, 3]}
+  - elementId: n4-chip
+    elementType: shape
+    bounds: [353, 569, 22, 22]
+    shapeName: ellipse
+    fill: {type: solid, color: "$primary"}
+  - elementId: n4-num
+    elementType: text
+    bounds: [353, 569, 22, 22]
+    content: {fontSize: 12, bold: true, color: "#FFFFFF", align: [center, middle], wrap: false, text: "4"}
+  - elementId: n4-icon
+    elementType: icon
+    bounds: [385, 568, 24, 24]
+    iconName: "fas:chalkboard-user"
+    fill: {type: solid, color: "$primary"}
+  - elementId: n4-name
+    elementType: text
+    bounds: [417, 568, 122, 24]
+    content:
+      style: "$nodename"
+      align: [left, middle]
+      wrap: false
+      text: 组织培训
+  - elementId: n4-desc
+    elementType: text
+    bounds: [353, 599, 184, 32]
+    content:
+      style: "$nodedesc"
+      align: [left, top]
+      text: |
+        <p>学习包围绕知识点学练测</p>
+        <p>学习项目</p>
+
+  # ---------- 节点 5 看效果 ----------
+  - elementId: n5
+    elementType: shape
+    bounds: [223, 309, 210, 82]
+    shapeName: roundRect
+    adjustments: [12000]
+    fill: {type: solid, color: "#FFFFFF"}
+    border: {style: solid, width: 1.25, color: "$nodeBd"}
+    shadow: {blur: 10, color: "#7A5A3A14", offset: [0, 3]}
+  - elementId: n5-chip
+    elementType: shape
+    bounds: [237, 323, 22, 22]
+    shapeName: ellipse
+    fill: {type: solid, color: "$primary"}
+  - elementId: n5-num
+    elementType: text
+    bounds: [237, 323, 22, 22]
+    content: {fontSize: 12, bold: true, color: "#FFFFFF", align: [center, middle], wrap: false, text: "5"}
+  - elementId: n5-icon
+    elementType: icon
+    bounds: [269, 322, 24, 24]
+    iconName: "fas:chart-line"
+    fill: {type: solid, color: "$primary"}
+  - elementId: n5-name
+    elementType: text
+    bounds: [301, 322, 122, 24]
+    content:
+      style: "$nodename"
+      align: [left, middle]
+      wrap: false
+      text: 看效果
+  - elementId: n5-desc
+    elementType: text
+    bounds: [237, 353, 184, 32]
+    content:
+      style: "$nodedesc"
+      align: [left, top]
+      text: |
+        <p>掌握度 · 错题按点回收</p>
+        <p>效果追踪</p>
+
+  # ---------- 底部收口 ----------
+  - elementId: takeaway
+    elementType: text
+    bounds: [140, 664, 1000, 26]
+    content:
+      fontSize: 14
+      color: "$ink"
+      align: [center, middle]
+      wrap: false
+      text: |
+        <p>发现问题是它 · 补内容是它 · 培训是它 · 看效果还是它 —— <strong>内容、测评、演练、学习包、掌握度，都挂在这一个点上</strong></p>
+  - elementId: src
+    elementType: text
+    bounds: [1020, 692, 196, 14]
+    content:
+      fontSize: 10
+      color: "#B7ADA0"
+      align: [right, middle]
+      wrap: false
+      text: 培训全链路闭环 Demo · 数据为模拟

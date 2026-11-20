@@ -7,14 +7,15 @@
    投票 v: pass 能用 / fix 要改 / deny 不行 */
 const RV_DIMS=['准确(口径、数字没错)','能说出口(销冠愿意这样讲)','风险(合规、禁说词、夸大)'];
 const RV_VOTE={pass:['能用','ok'],fix:['要改','warn'],deny:['不行','err']};
-const rvCfg=()=>{const c=S.cfg;if(!c.rvw)c.rvw={on:true,days:3,onTimeout:'提醒发起人',ruleMode:'suggest',rules:{policy:true,compete:true,champion:true,firstUse:true},defaultJury:['2023204','2024105','2023203']};if(!c.rvw.ruleMode)c.rvw.ruleMode='suggest';return c.rvw};
+const rvCfg=()=>{const c=S.cfg;if(!c.rvw)c.rvw={on:true,days:3,onTimeout:'提醒发起人',ruleMode:'suggest',rules:{policy:true,compete:true,champion:true,firstUse:true},defaultJury:null};if(!c.rvw.ruleMode)c.rvw.ruleMode='suggest';return c.rvw};
 const rvList=()=>S.rvw||(S.rvw=[]);
 const rvSeq=r=>+String(r.id).replace(/\D/g,'');
 const rvOf=(kind,oid)=>rvList().filter(r=>r.kind===kind&&r.oid===oid).sort((a,b)=>rvSeq(b)-rvSeq(a))[0];
 const rvActive=(kind,oid)=>{const r=rvOf(kind,oid);return r&&r.st==='评审中'?r:null};
 /* 只关心「会阻塞流程」的评审(先评审后定稿 / 入库);异步评审不阻塞任何操作 */
 const rvBlocking=(kind,oid)=>{const r=rvOf(kind,oid);return r&&r.st==='评审中'&&r.mode!=='async'?r:null};
-const rvChampions=()=>PEOPLE.filter(x=>x.hire>450);
+/* 销冠 = 动态身份:取当期滚动评定名单(v23),不是静态岗位档;名单随每月评定可进可出 */
+const rvChampions=()=>typeof v23Champions==='function'?v23Champions().map(c=>({mid:c.mid,name:c.name,region:c.region,store:c.store,hire:(lrnOf(c.mid)||{}).hire||0})):[];
 const rvLog=(r,who,msg)=>{r.log.unshift({t:today+' '+new Date().toTimeString().slice(0,5),who,msg})};
 const rvJuryHas=(r,mid)=>r.jury.some(j=>j.mid===mid);
 /* 评审团成员:销冠(手机端)或总部同事(PC 端,mid 以 hq: 开头) */
@@ -118,8 +119,10 @@ function rvSweep(){
 
 /* ---- 发起评审(内容):审核人在审核弹窗里点「发起评审灰度」,或规则命中时通过被拦截 ---- */
 function rvJuryDefault(){
-  const cfg=rvCfg();const ms=cfg.defaultJury||[];
-  const ch=ms.map(m=>PEOPLE.find(x=>x.mid===m)).filter(Boolean).map(x=>({mid:x.mid,name:x.name,role:'销冠 · '+x.region,must:false,ch:'rn'}));
+  const cfg=rvCfg();const pool=rvChampions();
+  /* defaultJury = null 表示「当期销冠全部默认入团」;手动勾选过的按勾选名单(已滚出名单的自然失效) */
+  const ms=cfg.defaultJury===null?pool.map(x=>x.mid):(cfg.defaultJury||[]);
+  const ch=pool.filter(x=>ms.includes(x.mid)).map(x=>({mid:x.mid,name:x.name,role:'销冠 · '+x.region,must:false,ch:'rn'}));
   const hq=rvHqPeople().map((x,i)=>Object.assign({must:i===0},x));
   return hq.concat(ch);
 }
@@ -341,7 +344,7 @@ function cfgReview(){
    +'<div class="card"><h3>3 · 默认评审团与期限</h3>'
    +'<div class="hint" style="margin-bottom:6px">总部成员在 PC 投票(刘翔默认「必须点」),销冠在零售通手机端投票;发起评审时可临时调整。</div>'
    +'<div style="margin-bottom:8px"><b>总部</b>:'+rvHqPeople().map((x,i)=>esc(x.name)+'('+esc(x.role)+(i===0?',默认必须点':'')+')').join('、')+'</div>'
-   +'<div style="margin-bottom:12px"><b>销冠</b>(入职 > 450 天,共 '+pool.length+' 人,勾选默认入团):<div class="rvx-pick" style="margin-top:6px">'+pool.map(x=>'<label><input type="checkbox" data-wc="rvCfgJury" data-m="'+x.mid+'" '+(c.defaultJury.includes(x.mid)?'checked':'')+'><span>'+esc(x.name)+' <small>'+esc(x.region)+'</small></span></label>').join('')+'</div></div>'
+   +'<div style="margin-bottom:12px"><b>销冠</b>(当期滚动评定,共 '+pool.length+' 人,勾选默认入团;评定口径:'+esc(typeof V23_CHAMP_RULE==='string'?V23_CHAMP_RULE:'')+'):<div class="rvx-pick" style="margin-top:6px">'+pool.map(x=>'<label><input type="checkbox" data-wc="rvCfgJury" data-m="'+x.mid+'" '+(c.defaultJury===null||c.defaultJury.includes(x.mid)?'checked':'')+'><span>'+esc(x.name)+' <small>'+esc(x.region)+' · '+esc(x.store)+'</small></span></label>').join('')+'</div></div>'
    +'<div class="fgrid"><div class="fld"><label>默认评审期限(天)</label><input type="number" min="1" id="rvCfgDays" value="'+c.days+'" style="width:110px"><div class="fh">发起评审时可单独改</div></div>'
    +'<div class="fld"><label>到期未决策</label><select data-wc="rvCfgTimeout">'+['提醒发起人','已投票过半且无反对则推进'].map(o=>'<option '+(c.onTimeout===o?'selected':'')+'>'+o+'</option>').join('')+'</select><div class="fh">必须点没通过时永远不会自动推进,只提醒</div></div></div>'
    +'<div style="margin-top:10px"><button class="btn pri" data-act="rvCfgSave">保存期限</button></div></div>'
@@ -350,7 +353,7 @@ function cfgReview(){
 A.rvCfgOn=el=>{rvCfg().on=el.checked;toast(el.checked?'已启用评审规则':'已关闭自动拦截(仍可手动发起)','ok');render()};
 A.rvCfgRule=el=>{rvCfg().rules[el.dataset.k]=el.checked;render()};
 A.rvCfgTimeout=el=>{rvCfg().onTimeout=el.value;toast('已保存','ok')};
-A.rvCfgJury=el=>{const c=rvCfg();const m=el.dataset.m;c.defaultJury=c.defaultJury.filter(x=>x!==m);if(el.checked)c.defaultJury.push(m);render()};
+A.rvCfgJury=el=>{const c=rvCfg();const m=el.dataset.m;if(c.defaultJury===null)c.defaultJury=rvChampions().map(x=>x.mid);c.defaultJury=c.defaultJury.filter(x=>x!==m);if(el.checked)c.defaultJury.push(m);render()};
 A.rvCfgSave=()=>{const d=+($('#rvCfgDays')||{}).value;if(!(d>0))return toast('期限请填正整数','err');rvCfg().days=Math.round(d);toast('已保存','ok');render()};
 
 A.rvForce=el=>{const r=rvList().find(x=>x.id===el.dataset.id);if(!r||r.st!=='评审中')return;if(!rvCanManage(r))return toast('只有发起人或总部能处理这张评审单','err');

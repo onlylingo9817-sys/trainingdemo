@@ -17,7 +17,7 @@ CK('采纳后设置主讲解/提及语义',r.kpRole[kid]==='主讲解',JSON.stri
 const tid=r.aiTags[0].id;A.ciAiTag({dataset:{i:String(b.items.indexOf(r)),v:tid}});
 CK('采纳推荐标签写入当前条目',(r.tags||[]).includes(tid),(r.tags||[]).join(','));
 const k2=r.aiKp[1]&&r.aiKp[1].id;
-if(k2){A.ciAiIgnoreKp({dataset:{i:String(b.items.indexOf(r)),k:k2}});CK('忽略知识点建议不改写入且标记忽略',!(r.kps||[]).includes(k2)&&(r.aiIgnored.kp||[]).includes(k2));}
+if(k2){A.ciAiIgnoreKp({dataset:{i:String(b.items.indexOf(r)),k:k2}});CK('忽略先弹原因选择',!!document.querySelector('#ai_ig_rs'));A.ciAiIgnoreKp({dataset:{i:String(b.items.indexOf(r)),k:k2,rs:'1'}});CK('忽略知识点建议不改写入且标记忽略',!(r.kps||[]).includes(k2)&&(r.aiIgnored.kp||[]).includes(k2));CK('忽略原因写进留痕',(S.aiLog||[]).some(x=>/忽略/.test(x.type)&&x.accepted===0&&x.reason),JSON.stringify((S.aiLog||[])[0]||{}));}
 /* 导入保存字段完整 */
 A.ciConfirm({dataset:{id:b.id}});const c=S.contents.find(x=>x.batch===b.id&&x.title===r.title);
 CK('导入保存时落 kps/mainKp/kpRole/tags',!!c&&(c.kps||[]).includes(kid)&&c.mainKp===kid&&c.kpRole[kid]==='主讲解'&&(c.tags||[]).includes(tid),c?JSON.stringify({kps:c.kps,main:c.mainKp,tags:c.tags}):'未找到内容');

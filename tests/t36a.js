@@ -38,14 +38,15 @@ r=mk('N17');const cc=content('N17');
 rvVote(r,'hq:liuxiang','pass','','刘翔');
 CK('只有必须点通过时仍在评审中',r.st==='评审中');
 const sg=r.jury.filter(j=>j.ch==='rn');
-rvVote(r,sg[0].mid,'pass','','x');rvVote(r,sg[1].mid,'pass','','x');
+const need=Math.floor(r.jury.length/2)+1;
+sg.slice(0,need-1).forEach(j=>rvVote(r,j.mid,'pass','','x'));
 CK('必须点通过且过半能用 → 定稿',r.st==='已通过'&&cc.st==='已定稿',r.st+'/'+cc.st);
 CK('定稿后写入当前版本快照',cc.vers.some(v=>v.v===cc.ver&&/评审灰度/.test(v.note)));
 CK('评审通过后审核再点通过不再重复拦截',!rvNeedsGate(cc));
 /* 5. 非必须点多数「不行」→ 提前判不通过 */
 A.reset();A.roleSwitch({value:'hq'});closeDlg();gateOn();
 r=mk('N17');
-rvVote(r,'hq:zhoulei','deny','口径不对','周磊');rvVote(r,'hq:lixm','deny','口径不对','李晓梅');rvVote(r,r.jury.find(j=>j.ch==='rn').mid,'deny','不像我们会说的','x');
+rvVote(r,'hq:zhoulei','deny','口径不对','周磊');rvVote(r,'hq:lixm','deny','口径不对','李晓梅');r.jury.filter(j=>j.ch==='rn').slice(0,2).forEach(j=>rvVote(r,j.mid,'deny','不像我们会说的','x'));
 CK('通过票不可能过半时提前判定不通过',r.st==='未通过',r.st+' '+r.res);
 /* 6. 催办 / 撤回 / 超期 */
 A.reset();A.roleSwitch({value:'hq'});closeDlg();gateOn();
@@ -78,13 +79,14 @@ rvStartDlg('kp',x.id);A.rvStartOk({dataset:{k:'kp',id:x.id}});const rk=rvActive(
 CK('候选发起评审后状态为评审中',x.st==='评审中'&&!!rk);
 A.kpCandOk({dataset:{id:x.id}});CK('评审中不能确认新增',S.kps.length===nK&&x.st==='评审中');
 A.kpCandNo({dataset:{id:x.id}});CK('评审中不能忽略',x.st==='评审中');
-rvVote(rk,'hq:liuxiang','pass','','刘翔');rvVote(rk,rk.jury.filter(j=>j.ch==='rn')[0].mid,'pass','','x');rvVote(rk,rk.jury.filter(j=>j.ch==='rn')[1].mid,'pass','','x');
+rvVote(rk,'hq:liuxiang','pass','','刘翔');{const need=Math.floor(rk.jury.length/2)+1;rk.jury.filter(j=>j.ch==='rn').slice(0,need-1).forEach(j=>rvVote(rk,j.mid,'pass','','x'))}
 CK('评审通过后候选回到待确认且标记已评审',x.st==='待确认'&&x.rvPass===true);
 A.kpCandOk({dataset:{id:x.id}});CK('评审通过后可确认新增入库',S.kps.length===nK+1&&x.st==='已新增');
 /* 9. 零售通手机端:销冠评审卡 */
 A.reset();A.roleSwitch({value:'hq'});closeDlg();gateOn();
 r=mk('N17');document.body.dataset.end='rn';
-const champ=PEOPLE.find(p=>p.mid===r.jury.find(j=>j.ch==='rn').mid);
+const champJ=r.jury.find(j=>j.ch==='rn');
+const champ=PEOPLE.find(p=>p.mid===champJ.mid)||lrnOf(champJ.mid)||{mid:champJ.mid,name:champJ.name};
 const other=PEOPLE.find(p=>!r.jury.some(j=>j.mid===p.mid));
 ME=other;R.page='school';R.stack=[];renderRN();
 CK('不在评审团的学员看不到评审待办',!/去评审/.test(document.querySelector('#rscr').innerHTML));
@@ -123,7 +125,7 @@ CK('四种身份遍历所有页面无异常',errs.length===0,errs.slice(0,3).joi
 
 /* 14. 复核发现的缺陷回归 */
 const fresh=()=>{A.reset();A.roleSwitch({value:'hq'});closeDlg();gateOn()};
-const pass3=r=>{rvVote(r,'hq:liuxiang','pass','','x');const g=r.jury.filter(j=>j.ch==='rn');rvVote(r,g[0].mid,'pass','','x');rvVote(r,g[1].mid,'pass','','x')};
+const pass3=r=>{rvVote(r,'hq:liuxiang','pass','','x');const g=r.jury.filter(j=>j.ch==='rn');const need=Math.floor(r.jury.length/2)+1;g.slice(0,need-1).forEach(j=>rvVote(r,j.mid,'pass','','x'))};
 fresh();let q1=mk('N17');A.rvWithdraw({dataset:{id:q1.id}});let q2=mk('N17');
 CK('同日撤回后重发:最新一张为进行中且单号递增',rvActive('content','N17')&&rvActive('content','N17').id===q2.id&&q1.id!==q2.id,q1.id+','+q2.id);
 A.rvStartOk({dataset:{k:'content',id:'N17'}});

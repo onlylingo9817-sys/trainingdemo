@@ -18,7 +18,7 @@ const V23_CORR='<div class="src" style="background:#fff8ef"><b>口径说明</b><
 const V23_PRE=V23_NWK-3;                               // v2 生效前最后一周(含)的下一周下标 = 9
 function v23End(){return S.v2seen?V23_NWK-1:V23_PRE-1} // 当前可见的最后一周下标
 function v23Wins(){const e=v23End();return {end:e,cur:[Math.max(0,e-3),e],prev:[Math.max(0,e-7),Math.max(0,e-4)]}}
-const v23NewL=grp=>S.lrn.filter(l=>l.group===grp&&l.tier==='新人顾问');
+const v23NewL=grp=>S.lrn.filter(l=>l.group===grp&&v23IsNewL(l));
 
 /* ---------- 0c. 真实作答 → 证据流 ----------
    学员在零售通真实答题 / 演练时,v22 只写 S.ansLog。v23 的掌握度读证据流(S.ev),所以必须把作答折算进去,
@@ -209,32 +209,26 @@ function v23IsConcern(k){
   const ids=dimDesc('Dab',root.id);
   return ((k.dims||{}).Dab||[]).some(v=>ids.includes(v));
 }
-/* ---------- 3. 岗位画像(四档,理想数据,业务可改) ---------- */
-const V23_TIER=['新人顾问','进阶顾问','销冠','店长'];
+/* ---------- 3. 岗位画像(三档静态职级,理想数据,业务可改) ----------
+   岗位档只有静态职级:零售顾问 / 零售主管 / 零售店长。
+   「销冠」不是岗位档,而是按月滚动评定的动态身份(见 6b),只读不写线:
+   目标线跟岗位走,不跟身份走。 */
+const V23_TIER=['零售顾问','零售主管','零售店长'];
+/* 岗位双级线:就绪度目标达成率的「及格线 / 优秀线」,按岗位档各配各的(配置中心可改) */
+const V23_TIER_GOAL_SEED={'零售顾问':{pass:70,good:85},'零售主管':{pass:80,good:90},'零售店长':{pass:85,good:95}};
 const V23_PROFILE_SEED=[
- {id:'PF1',role:'新人顾问',note:'先把产品讲清楚，再学会问需求、处理常见顾虑。权重为业务待确认草案',
-  items:[{id:'PF1-1',dim:'Dab',vals:['产品讲解'],weight:40,target:80,label:'产品讲解'},
-         {id:'PF1-2',dim:'Dab',vals:['探需'],weight:25,target:70,label:'探需'},
-         {id:'PF1-3',dim:'Dab',vals:['试乘试驾'],weight:15,target:70,label:'试乘试驾'},
-         {id:'PF1-4',dim:'Dab',vals:['顾虑解除'],weight:20,target:60,label:'顾虑解除'}]},
- {id:'PF2',role:'进阶顾问',note:'从会讲产品，到会问、会应对、能推进。权重为业务待确认草案',
-  items:[{id:'PF2-1',dim:'Dab',vals:['探需'],weight:25,target:85,label:'探需'},
-         {id:'PF2-2',dim:'Dab',vals:['产品讲解'],weight:25,target:85,label:'产品讲解'},
-         {id:'PF2-3',dim:'Dab',vals:['试乘试驾'],weight:15,target:80,label:'试乘试驾'},
-         {id:'PF2-4',dim:'Dab',vals:['顾虑解除'],weight:20,target:75,label:'顾虑解除'},
-         {id:'PF2-5',dim:'Dab',vals:['促单成交'],weight:15,target:70,label:'促单成交'}]},
- {id:'PF3',role:'销冠',note:'复杂异议和竞品对比能稳定处理，打法可复制。权重为业务待确认草案',
-  items:[{id:'PF3-1',dim:'Dab',vals:['探需'],weight:20,target:90,label:'探需'},
-         {id:'PF3-2',dim:'Dab',vals:['产品讲解'],weight:15,target:90,label:'产品讲解'},
-         {id:'PF3-3',dim:'Dab',vals:['试乘试驾'],weight:10,target:85,label:'试乘试驾'},
-         {id:'PF3-4',dim:'Dab',vals:['顾虑解除'],weight:30,target:90,label:'复杂异议与竞品'},
-         {id:'PF3-5',dim:'Dab',vals:['促单成交'],weight:20,target:85,label:'促单成交'},
-         {id:'PF3-6',dim:'Dab',vals:['客户经营'],weight:5,target:80,label:'客户经营'}]},
- {id:'PF4',role:'店长',note:'带人辅导为主，同时能判断探需和异议处理是否到位。权重为业务待确认草案',
-  items:[{id:'PF4-1',dim:'Dab',vals:['带人辅导'],weight:50,target:85,label:'带人辅导'},
-         {id:'PF4-2',dim:'Dab',vals:['探需'],weight:20,target:75,label:'判断探需'},
-         {id:'PF4-3',dim:'Dab',vals:['顾虑解除'],weight:15,target:70,label:'判断讲法'},
-         {id:'PF4-4',dim:'Dab',vals:['客户经营'],weight:15,target:70,label:'客户经营'}]}
+ {id:'PF1',role:'零售顾问',note:'先把产品讲清楚，再学会问需求、处理常见顾虑',
+  items:[{id:'PF1-1',dim:'Ddomain',vals:['产品知识'],weight:40,target:85,label:'产品知识'},
+         {id:'PF1-2',dim:'Dab',vals:['探需'],weight:30,target:75,label:'探需'},
+         {id:'PF1-3',dim:'Dab',vals:['顾虑解除'],weight:30,target:70,label:'顾虑处理'}]},
+ {id:'PF2',role:'零售主管',note:'复杂异议和竞品对比能稳定处理，打法可复制、能带新人',
+  items:[{id:'PF2-1',dim:'Dab',vals:['顾虑解除'],weight:40,target:90,label:'复杂异议与竞品'},
+         {id:'PF2-2',dim:'Ddomain',vals:['产品知识'],weight:30,target:88,label:'产品知识'},
+         {id:'PF2-3',dim:'Dab',vals:['探需'],weight:30,target:85,label:'探需'}]},
+ {id:'PF3',role:'零售店长',note:'带人辅导为主，同时能判断讲法和异议处理是否到位',
+  items:[{id:'PF3-1',dim:'Dab',vals:['带人辅导'],weight:50,target:85,label:'带人辅导'},
+         {id:'PF3-2',dim:'Dab',vals:['探需'],weight:25,target:75,label:'判断探需'},
+         {id:'PF3-3',dim:'Dab',vals:['顾虑解除'],weight:25,target:70,label:'判断讲法'}]}
 ];
 function v23Profiles(){
   S.profiles=JSON.parse(JSON.stringify(V23_PROFILE_SEED));
@@ -266,7 +260,9 @@ const V23_BASE=[
  ['2023204','黄磊','广州天河店','华南',650],['2024116','谢天','广州天河店','华南',20],
  ['2024108','王诗琪','成都春熙路店','西南',35]
 ];
-const v23Tier=hire=>hire<=90?'新人顾问':hire<=450?'进阶顾问':'销冠';
+/* 岗位档 = 静态职级(入职天数推导);「新人」是状态标记(≤90 天),不是岗位档 */
+const v23Tier=hire=>hire<=300?'零售顾问':'零售主管';
+const v23IsNewL=l=>l.hire<=90;
 function v23Learners(){
   S.lrn=[];let seq=0;
   V23_BASE.forEach(a=>S.lrn.push({mid:a[0],name:a[1],store:a[2],region:a[3],hire:a[4],tier:v23Tier(a[4]),group:hsh(a[0])%5<3?'试点批':'对照批'}));
@@ -286,18 +282,19 @@ function v23Learners(){
   /* 每店一个店长(tier 覆盖) */
   Object.keys(mgr).forEach(st=>{
     let x=S.lrn.find(l=>l.mid===mgrMid[st]);
-    if(!x){x={mid:mgrMid[st],name:mgr[st],store:st,region:(V23_STORES.find(s=>s.name===st)||{}).region,hire:1000,tier:'店长',group:hsh(mgrMid[st])%5<3?'试点批':'对照批'};S.lrn.push(x)}
-    x.tier='店长';x.hire=Math.max(x.hire,900);
+    if(!x){x={mid:mgrMid[st],name:mgr[st],store:st,region:(V23_STORES.find(s=>s.name===st)||{}).region,hire:1000,tier:'零售店长',group:hsh(mgrMid[st])%5<3?'试点批':'对照批'};S.lrn.push(x)}
+    x.tier='零售店长';x.hire=Math.max(x.hire,900);
   });
-  /* 新人训试点:试点批里的新人参加,对照批新人未参加 */
-  S.lrn.forEach(l=>{l.train=l.tier==='新人顾问'&&l.group==='试点批'});
+  /* 新人训试点:试点批里的新人(入职 ≤90 天)参加,对照批新人未参加 */
+  S.lrn.forEach(l=>{l.train=v23IsNewL(l)&&l.group==='试点批'});
   return S.lrn;
 }
 const lrnOf=mid=>S.lrn.find(x=>x.mid===mid);
 const v23Stores=()=>[...new Set(S.lrn.map(x=>x.store))];
 function v23Q(mid){/* 每个学员的潜在能力 0-1,决定掌握度 / 行为率 / 锁单,再叠噪声 */}
 function v23Latent(l){
-  const base={'新人顾问':.68,'进阶顾问':.80,'销冠':.90,'店长':.82}[l.tier]||.7;
+  /* 顾问随入职天数爬坡(新人低、资深高,拉开组内差距);主管 / 店长各自基准,保证档间也有区分度 */
+  const base=l.tier==='零售顾问'?.58+Math.min(l.hire,450)/450*.28:{'零售主管':.88,'零售店长':.80}[l.tier]||.7;
   return Math.min(.97,Math.max(.25,base+(hsh(l.mid+'q')%36-18)/100));
 }
 
@@ -368,8 +365,9 @@ function v23Outcome(){
     const outLier=(hsh(l.mid+'x')%11===0)?(hsh(l.mid+'y')%2?2.1:0.25):1;
     /* 锁单与"潜在能力"挂钩(其中一部分被就绪度捕获,另一部分是噪声与门店/客流等外因),相关中等偏弱 */
     const store=({'北京望京店':1.15,'北京亦庄店':.95,'上海徐汇店':1.1,'上海浦东店':.9,'广州天河店':1.0,'成都春熙路店':.85})[l.store]||1;   /* 门店客流差异:与个人能力无关的外因 */
-    /* 岗位基准:销冠 > 进阶 > 店长(带团队、自己的单少) > 新人;再叠加能力、门店客流、噪声 */
-    const tierK={'新人顾问':0.8,'进阶顾问':1.15,'销冠':1.55,'店长':0.85}[l.tier]||1;
+    /* 岗位基准:主管 > 顾问 > 店长(带团队、自己的单少);再叠加能力、门店客流、噪声。
+       销冠不再是岗位档、不锁业绩系数——销冠由产出的锁单滚动评出(见 6b),避免循环定义 */
+    const tierK={'零售顾问':0.9,'零售主管':1.45,'零售店长':0.8}[l.tier]||1;
     const lock=Math.max(0,Math.round((0.3+q*2.9+((hsh(l.mid+w+'l')%34)-17)/10)*tierK*store*outLier));
     const f=(k)=>Math.max(lock,Math.round(lock*k+((hsh(l.mid+w+k)%9)-4)/2));
     return {w,邀约:f(19),到店:f(8.5),试驾:f(3.6),报价:f(2.2),锁单:lock};
@@ -378,6 +376,29 @@ function v23Outcome(){
   return S.out;
 }
 const outSum=(mid,a,b)=>{const L=(S.out[mid]||[]).filter(x=>x.w>=a&&x.w<=b);return L.reduce((s,x)=>({邀约:s.邀约+x.邀约,到店:s.到店+x.到店,试驾:s.试驾+x.试驾,报价:s.报价+x.报价,锁单:s.锁单+x.锁单}),{邀约:0,到店:0,试驾:0,报价:0,锁单:0})};
+
+/* ---------- 6b. 销冠:动态身份,按月滚动评定 ----------
+   销冠不是岗位档,不定目标线;它是叠加在岗位档上的动态身份,可进可出。
+   评定口径:每区域近 4 周锁单第 1 名,且就绪度目标达成率达本岗位及格线;店长不参与(带团队,个人单少)。
+   用途:评审团默认成员、带教优先派单;名单随每月评定滚动,可进可出。 */
+const V23_CHAMP_RULE='每月滚动:每区域近 4 周锁单第 1 名 + 目标达成率达本岗位及格线;店长不参与,可进可出';
+const v23ChampPeriod=()=>today.slice(0,7);
+function v23Champions(){
+  if(!(S.lrn&&S.lrn.length&&S.out))return [];
+  const w=v23Wins();const out=[];
+  [...new Set(S.lrn.map(l=>l.region))].forEach(rg=>{
+    const cand=S.lrn.filter(l=>l.region===rg&&l.tier!=='零售店长').map(l=>{
+      const lock=outSum(l.mid,w.cur[0],w.cur[1]).锁单;
+      const r=v23Readiness(l.mid,l.tier);
+      return {l,lock,ach:r.ach,pass:r.ach!=null&&r.ach>=v23Goal(l.tier).pass};
+    }).filter(x=>x.lock>0);
+    cand.sort((a,b)=>b.lock-a.lock||(b.ach||0)-(a.ach||0)||(a.l.mid<b.l.mid?-1:1));
+    const win=cand.find(x=>x.pass);   /* 第一名未过本岗位及格线 → 该区域本期空缺(宁缺毋滥) */
+    if(win)out.push({mid:win.l.mid,name:win.l.name,store:win.l.store,region:rg,tier:win.l.tier,lock:win.lock,ach:win.ach});
+  });
+  return out;
+}
+const v23ChampOf=mid=>v23Champions().find(c=>c.mid===mid)||null;
 
 /* ---------- 7. 错题表(可累积、可统计复发) ---------- */
 const V23_MIS_TYPE=['知识错','表达错','思路错','遗漏'];
@@ -484,9 +505,11 @@ function v23Readiness(mid,tier,cfg){
   const ach=sw?Math.round(ws.reduce((a,x)=>a+x.item.weight*Math.min(1,(x.mean/x.item.target)),0)/sw*100):null;
   return {val,ach,items,tier:p.role,profile:p};
 }
-/* 达标记号:就绪度 / 目标达成率 ≥ 门槛 */
+/* 达标 / 优秀判定:就绪度目标达成率 ≥ 本岗位档的及格线 / 优秀线(分档双级线) */
+const v23Goal=t=>((S.cfg.tierGoal||{})[t])||{pass:S.cfg.pass,good:Math.min(100,S.cfg.pass+15)};
+const v23Judge=(ach,tier)=>ach==null?'无证据':ach>=v23Goal(tier).good?'优秀':ach>=v23Goal(tier).pass?'达标':'未达标';
 const v23RdyPass=()=>S.cfg.pass;
-const v23Ready=l=>{const r=v23Readiness(l.mid,l.tier);return r.ach!=null&&r.ach>=v23RdyPass()};
+const v23Ready=l=>{const r=v23Readiness(l.mid,l.tier);return r.ach!=null&&r.ach>=v23Goal(l.tier).pass};
 
 /* ---------- 9. 一致性刷新:把派生值写回 S.mastery(全站同源) ---------- */
 function v23RefreshAll(){
@@ -534,7 +557,10 @@ const V23_CFG_KEYS=[['srcW','来源权重'],['win','掌握度:最近 N 次'],['d
 function cfgFlat(c){
   return {'来源权重 测评':c.srcW.quiz,'来源权重 演练':c.srcW.drill,'来源权重 实战行为':c.srcW.behavior,'来源权重 人工评价':c.srcW.coach,'来源权重 自评':c.srcW.self,
    '掌握度 最近 N 次':c.win,'掌握度 时间衰减':c.decay,'证据少收缩 A':c.shrinkA,'证据少收缩 B':c.shrinkB,'复测间隔(天)':c.retestDays,
-   '行为窗口(周)':c.behWin,'行为最小样本':c.behN,'弱点最少人数':c.weakN,'弱点未过关占比':c.weakR,'观察期(周)':c.obsWeeks,'小样本门槛':c.smallN,'相关性阈值':c.corrTh,'过关线':c.pass};
+   '行为窗口(周)':c.behWin,'行为最小样本':c.behN,'弱点最少人数':c.weakN,'弱点未过关占比':c.weakR,'观察期(周)':c.obsWeeks,'小样本门槛':c.smallN,'相关性阈值':c.corrTh,'过关线':c.pass,
+   '及格线 顾问':(c.tierGoal||{})['零售顾问']?(c.tierGoal['零售顾问'].pass):'—','优秀线 顾问':(c.tierGoal||{})['零售顾问']?(c.tierGoal['零售顾问'].good):'—',
+   '及格线 主管':(c.tierGoal||{})['零售主管']?(c.tierGoal['零售主管'].pass):'—','优秀线 主管':(c.tierGoal||{})['零售主管']?(c.tierGoal['零售主管'].good):'—',
+   '及格线 店长':(c.tierGoal||{})['零售店长']?(c.tierGoal['零售店长'].pass):'—','优秀线 店长':(c.tierGoal||{})['零售店长']?(c.tierGoal['零售店长'].good):'—'};
 }
 function v23CfgVersions(){
   const base=JSON.parse(JSON.stringify(S.cfg));
@@ -582,11 +608,12 @@ function v23A3Rate(grp,a,b){
 function v23Seed(){
   /* 理想态数据依赖 v22 的知识点 / 题 / 内容底座;底座为空时不生成半截数据 */
   if(!S.kps||!S.kps.length||!S.qs||!S.qs.length)return S;
-  if(typeof PF_BASE!=='undefined')PF_BASE=null;
+  if(typeof PF_BASE!=='undefined'){PF_BASE=null;if(typeof PF_BASE_GOAL!=='undefined')PF_BASE_GOAL=null}
+  if(!S.cfg.tierGoal)S.cfg.tierGoal=JSON.parse(JSON.stringify(V23_TIER_GOAL_SEED));
   v23Dims();v23KpDims();if(typeof v23TaxSeed==='function')v23TaxSeed();v23Profiles();v23Learners();v23Evidence();v23Outcome();v23Mistakes();v23Packs();v23CfgVersions();
   v23RefreshAll();
   S.trial={projId:(S.projects[2]||{}).id||'',name:'新人训第10期',start:addDays(today,-35),end:addDays(today,4),
     pilot:S.lrn.filter(l=>l.group==='试点批').length,ctrl:S.lrn.filter(l=>l.group==='对照批').length,
-    pilotN:S.lrn.filter(l=>l.train).length,ctrlN:S.lrn.filter(l=>l.group==='对照批'&&l.tier==='新人顾问').length};
+    pilotN:S.lrn.filter(l=>l.train).length,ctrlN:S.lrn.filter(l=>l.group==='对照批'&&v23IsNewL(l)).length};
   return S;
 }

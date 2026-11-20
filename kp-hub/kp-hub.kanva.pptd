@@ -1,0 +1,24 @@
+version: v2
+title: 知识点 · 培训全链路的枢纽
+size: [1280, 720]
+theme:
+  colors:
+    primary: "#E85D24"
+    primaryDeep: "#D9480F"
+    ink: "#26221E"
+    sub: "#7A736A"
+    paper: "#FDF9F3"
+    spoke: "#E3D5C2"
+    nodeBd: "#EAD9C2"
+    halo: "#F7E3D3"
+  textStyles:
+    nodename:
+      fontSize: 16
+      color: "$ink"
+      bold: true
+    nodedesc:
+      fontSize: 11
+      color: "$sub"
+      lineHeight: 1.35
+pages:
+  - pages/1_hub.page

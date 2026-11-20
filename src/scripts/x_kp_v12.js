@@ -149,32 +149,7 @@ V23_DIM_SEED.push(
   {id:'Dstage',name:'销售阶段（已停用）',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:[],status:'off',note:'v1.2 并入 Dflow'}
 );
 
-V23_PROFILE_SEED.length=0;
-V23_PROFILE_SEED.push(
-  {id:'PF1',role:'新人顾问',note:'先讲清产品，再学问需求和顾虑；权重为草案',items:[
-    {id:'PF1-1',dim:'Ddomain',vals:['产品知识'],weight:40,target:80,label:'产品知识'},
-    {id:'PF1-2',dim:'Dab',vals:['探需'],weight:25,target:70,label:'探需'},
-    {id:'PF1-3',dim:'Dab',vals:['试驾引导'],weight:15,target:70,label:'试驾引导'},
-    {id:'PF1-4',dim:'Dab',vals:['顾虑解除'],weight:20,target:60,label:'顾虑解除'}]},
-  {id:'PF2',role:'进阶顾问',note:'从会讲产品，到会问、会应对、能推进',items:[
-    {id:'PF2-1',dim:'Dab',vals:['探需'],weight:25,target:85,label:'探需'},
-    {id:'PF2-2',dim:'Ddomain',vals:['产品知识'],weight:25,target:85,label:'产品知识'},
-    {id:'PF2-3',dim:'Dab',vals:['试驾引导'],weight:15,target:80,label:'试驾引导'},
-    {id:'PF2-4',dim:'Dab',vals:['顾虑解除'],weight:20,target:75,label:'顾虑解除'},
-    {id:'PF2-5',dim:'Dab',vals:['促单成交'],weight:15,target:70,label:'促单成交'}]},
-  {id:'PF3',role:'销冠',note:'复杂异议和竞品对比能稳定处理，打法可复制',items:[
-    {id:'PF3-1',dim:'Dab',vals:['探需'],weight:20,target:90,label:'探需'},
-    {id:'PF3-2',dim:'Ddomain',vals:['产品知识'],weight:15,target:90,label:'产品知识'},
-    {id:'PF3-3',dim:'Dab',vals:['试驾引导'],weight:10,target:85,label:'试驾引导'},
-    {id:'PF3-4',dim:'Dab',vals:['顾虑解除'],weight:30,target:90,label:'复杂异议与竞品'},
-    {id:'PF3-5',dim:'Dab',vals:['促单成交'],weight:20,target:85,label:'促单成交'},
-    {id:'PF3-6',dim:'Dab',vals:['客户经营'],weight:5,target:80,label:'客户经营'}]},
-  {id:'PF4',role:'店长',note:'带人辅导为主，同时能判断探需和异议处理是否到位',items:[
-    {id:'PF4-1',dim:'Dab',vals:['带人辅导'],weight:50,target:85,label:'带人辅导'},
-    {id:'PF4-2',dim:'Dab',vals:['探需'],weight:20,target:75,label:'判断探需'},
-    {id:'PF4-3',dim:'Dab',vals:['顾虑解除'],weight:15,target:70,label:'判断讲法'},
-    {id:'PF4-4',dim:'Dab',vals:['客户经营'],weight:15,target:70,label:'客户经营'}]}
-);
+/* 岗位画像：由 v23_data.js 的 3 档种子提供（产品知识按 Ddomain 计入；能力项仍 7 项） */
 
 /* ---------- 工具 ---------- */
 function kpV12BatchRank(b){return {'B1-30天':1,'B2-90天':2,'B3-后续':3}[b]||3}

@@ -7,13 +7,12 @@ const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const entry = Object.prototype.hasOwnProperty.call(process.env, 'SHOT') ? process.env.SHOT : path.join(root, 'tests', 'shot.py');
-const page = process.env.TEST_HTML ? path.resolve(root, process.env.TEST_HTML) : path.join(root, 'src', 'index.html');
 const testsDir = path.join(root, 'tests');
 const desired = process.argv.slice(2);
 const DEFAULT_ORDER = [
   't17a', 't17b', 't18a', 't18b', 't192', 't193',
   't19a', 't19b', 't20a', 't20b', 't20c', 't21a',
-  't22a', 't23a', 't23b', 't23c', 't24a', 't24b', 't24c', 't24d', 't25a', 't25b', 't25c', 't25d', 't26a', 't27a', 't27b', 't27c', 't27d', 't27e', 't27f', 't27g', 't27h', 't27i', 't27j', 't27k', 't27l', 't27m', 't27n', 't27o', 't27p', 't27q', 't27r', 't28a', 't28b', 't28c', 't28d', 't28e', 't29a', 't29b', 't29c', 't29e', 't30a', 't30b', 't31a', 't31b', 't32a', 't33a', 't33b', 't34a', 't34b', 't34c', 't34d', 't34e', 't35a', 't36a', 't37a', 't38a', 't39a', 't40a'
+  't22a', 't23a', 't23b', 't23c', 't24a', 't24b', 't24c', 't24d', 't25a', 't25b', 't25c', 't25d', 't26a', 't27a', 't27b', 't27c', 't27d', 't27e', 't27f', 't27g', 't27h', 't27i', 't27j', 't27k', 't27l', 't27m', 't27n', 't27o', 't27p', 't27q', 't27r', 't28a', 't28b', 't28c', 't28d', 't28e', 't29a', 't29b', 't29c', 't29e', 't30a', 't30b', 't31a', 't31b', 't32a', 't33a', 't33b', 't34a', 't34b', 't34c', 't34d', 't34e', 't35a', 't36a', 't36b', 't36c', 't36d', 't37a', 't37b', 't38a', 't39a', 't39b', 't39c', 't40a', 't41a', 't42a'
 ];
 const available = new Set(fs.readdirSync(testsDir)
   .filter(name => /^t\d+[a-z]?\.js$/.test(name))
@@ -32,7 +31,7 @@ const outDir = path.join(root, 'test-results');
 fs.mkdirSync(outDir, { recursive: true });
 
 let failed = 0;
-console.log(`运行 ${tests.length} 组测试，页面: ${path.relative(root, page)}\n`);
+console.log(`运行 ${tests.length} 组测试，页面: src/index.html\n`);
 
 for (const name of tests) {
   const script = path.join(testsDir, `${name}.js`);
@@ -42,7 +41,7 @@ for (const name of tests) {
     continue;
   }
   const started = Date.now();
-  const run = spawnSync(python, [entry, 'probe', page, '--js', fs.readFileSync(script, 'utf8')], {
+  const run = spawnSync(python, [entry, 'probe', path.join(root, 'src', 'index.html'), '--js', fs.readFileSync(script, 'utf8')], {
     cwd: root,
     encoding: 'utf8',
     env: { ...process.env, CHROME: chrome, CHROME_FLAGS: extraFlags }
