@@ -4,12 +4,12 @@ try{
 A.roleSwitch({value:'hq'});closeDlg();
 /* 1. 一套能力口径 */
 const abs=dimOf('Dab').values.map(v=>v.name);
-CK('全站能力只有 4 个业务项',abs.length===4&&abs.join('/')==='探需/场景化讲车/顾虑解除/带人辅导',abs.join('/'));
+CK('全站能力只有 7 个业务项',abs.length===7&&abs.join('/')==='探需/产品讲解/试乘试驾/顾虑解除/促单成交/客户经营/带人辅导',abs.join('/'));
 CK('知识点能力与画像同源',S.kps.every(k=>{const id=(k.dims.Dab||[])[0];return !id||!!dimVal('Dab',id)}));
 CK('没有旧六力残留',!JSON.stringify(S).match(/技术力|沟通力|业务力|服务力|领导力|执行力/));
 /* 2. 多车型 */
 CK('知识点支持多车型字段',S.kps.every(k=>Array.isArray(k.cars)&&k.cars.length>0));
-CK('多车型统计按车型分开',(()=>{const t=ptagByPath('内饰');const stats=kpCarsHost().map(c=>kpStatFor(t.id,c));return stats.length===3&&stats.some((x,i,a)=>i&&x.n!==a[0].n)})() ,kpCarsHost().map(c=>c+'='+kpStatFor(ptagByPath('内饰').id,c).n).join(' / '));
+CK('多车型统计按车型分开',(()=>{const t=ptagByPath('内饰');const stats=kpCarsHost().map(c=>kpStatFor(t.id,c));return stats.length===13&&stats.some((x,i,a)=>i&&x.n!==a[0].n)})() ,kpCarsHost().map(c=>c+'='+kpStatFor(ptagByPath('内饰').id,c).n).join(' / '));
 /* 3. 知识点页:三件事 */
 UI.page='catalog';UI.tab.catalog='总览';render();const ov=tx();
 CK('总览第一屏是缺口而不是学员列表',/先做这三步/.test(ov)&&/车型 × 标签/.test(ov)&&ov.indexOf('车型 × 标签')<ov.indexOf('学员集中薄弱'),'矩阵位置 '+ov.indexOf('车型 × 标签')+' 薄弱位置 '+ov.indexOf('学员集中薄弱'));

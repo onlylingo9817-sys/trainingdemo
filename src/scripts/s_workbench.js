@@ -12,9 +12,14 @@ function wbItems(){
   /* —— 备料:知识点缺口(最影响学员的先排)—— */
   /* 只给「已启用」的点派发缺讲解待办;停用且无负责人的点只留一条批量治理提示,避免 67 条待办被同一类问题淹没 */
   const act=S.kps.filter(k=>k.st==='启用'&&k.owner);
-  act.forEach(k=>{const h=kpHealth(k);const w=kpWeak(k),tt=kpTested(k);
-    if(h.cells.exp.s!=='ok')add('备料',3,'缺讲解','<b>'+esc(kpLabel(k))+'</b>',(tt?'学员 '+w+'/'+tt+' 人未过关 · ':'')+h.cells.exp.t,'去补',ck+' data-p="kp" data-id="'+k.id+'" data-ky="kid"');
-  });
+  const noExp=act.filter(k=>kpHealth(k).cells.exp.s!=='ok');
+  if(noExp.length<=5){
+    noExp.forEach(k=>{const h=kpHealth(k);const w=kpWeak(k),tt=kpTested(k);
+      add('备料',3,'缺讲解','<b>'+esc(kpLabel(k))+'</b>',(tt?'学员 '+w+'/'+tt+' 人未过关 · ':'')+h.cells.exp.t,'去补',ck+' data-p="kp" data-id="'+k.id+'" data-ky="kid"');
+    });
+  }else{
+    add('备料',3,'缺讲解','<b>'+noExp.length+' 个知识点</b>还没有可用讲解','同一类问题合并;按车型 × 知识域看缺口,批量补讲解','去处理',ck+' data-p="catalog" data-tab="总览" data-ky="none"');
+  }
   const qNeed=act.filter(k=>{const h=kpHealth(k);return h.cells.q.s!=='ok'&&k.type==='事实型'});
   if(qNeed.length)add('备料',1,'缺测评题','<b>'+qNeed.length+' 个产品知识</b>测评题不够','题太少会影响诊断和掌握度；可批量进内容中心补题','去补题',ck+' data-p="content" data-tab="题" data-ky="none"');
   const weakTodo=act.filter(k=>{const w=kpWeak(k),tt=kpTested(k);return tt>=KP_WEAK_N&&w/tt>=KP_WEAK_R&&!kpTopicOf(k)});

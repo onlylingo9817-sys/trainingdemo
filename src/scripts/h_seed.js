@@ -175,7 +175,7 @@ function kpGapSeed(){
     pre:['K20'],rel:['K21'],created:today,
     hist:[{t:today,who:'总部培训部 刘翔',act:'由课题补齐',note:'课题 T9：展厅接待首句问候不统一'}]};
   if(ab.id)nk.dims.Dab=[ab.id];
-  if(tag)nk.dims.Dprod=[tag.id];
+  if(tag)nk.dims.Ddomain=[dimIdByName('Ddomain','销售技能')].filter(Boolean);
   nk.dims.Dcar=(typeof kpCarIds==='function'?kpCarIds(nk.cars):[]);
   S.kps.push(nk);
 }

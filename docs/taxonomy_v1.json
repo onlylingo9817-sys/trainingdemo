@@ -1,0 +1,1852 @@
+{
+  "meta": {
+    "domains": [
+      "品牌文化",
+      "本品知识",
+      "竞品对比",
+      "销售技能",
+      "政策权益",
+      "交付服务",
+      "客户经营",
+      "行业洞察"
+    ],
+    "abilities": [
+      "探需",
+      "产品讲解",
+      "试乘试驾",
+      "顾虑解除",
+      "促单成交",
+      "客户经营",
+      "带人辅导"
+    ],
+    "stages": [
+      "全阶段",
+      "线索与邀约",
+      "排程与 PDC",
+      "到店接待",
+      "试乘试驾",
+      "试驾回访",
+      "跟进促单",
+      "下订与改配",
+      "交付及交付后"
+    ],
+    "cars": [
+      "通用车型",
+      "SU7",
+      "YU7",
+      "澎程 N70",
+      "澎程 N90",
+      "SU7 标准版",
+      "SU7 Pro",
+      "SU7 Max",
+      "SU7 Ultra",
+      "YU7 标准版",
+      "YU7 长续航版",
+      "YU7 Pro",
+      "YU7 Max",
+      "YU7 GT",
+      "澎程 N70 Pro",
+      "澎程 N70 Max",
+      "澎程 N90 Max",
+      "澎程 N90 Max 探索版"
+    ],
+    "series": {
+      "SU7": [
+        "SU7 标准版",
+        "SU7 Pro",
+        "SU7 Max",
+        "SU7 Ultra"
+      ],
+      "YU7": [
+        "YU7 标准版",
+        "YU7 长续航版",
+        "YU7 Pro",
+        "YU7 Max",
+        "YU7 GT"
+      ],
+      "澎程 N70": [
+        "澎程 N70 Pro",
+        "澎程 N70 Max"
+      ],
+      "澎程 N90": [
+        "澎程 N90 Max",
+        "澎程 N90 Max 探索版"
+      ]
+    },
+    "scenes": [
+      "通勤",
+      "家庭出行",
+      "长途自驾",
+      "露营户外",
+      "商务接待",
+      "接送孩子",
+      "宠物出行",
+      "移动办公"
+    ],
+    "custs": [
+      "首购",
+      "增换购",
+      "家庭用户",
+      "企业客户",
+      "米粉生态",
+      "年轻个人"
+    ],
+    "comps": [
+      "特斯拉 Model 3",
+      "特斯拉 Model Y",
+      "理想 L6",
+      "理想 L7",
+      "理想 L8",
+      "理想 L9",
+      "问界 M7",
+      "问界 M8",
+      "问界 M9",
+      "极氪 001",
+      "极氪 007",
+      "极氪 7X",
+      "小鹏 G7",
+      "小鹏 P7+",
+      "蔚来 ES6",
+      "乐道 L60",
+      "奔驰 GLC"
+    ],
+    "notes": {
+      "行业洞察": "二期预留:v1 不铺知识点,不进入完备率分母"
+    }
+  },
+  "items": [
+    {
+      "code": "KP-BR-01",
+      "name": "小米品牌与“真诚热爱”价值观",
+      "type": "事实",
+      "domain": "品牌文化",
+      "ab": "产品讲解",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "汽车学堂功能简介",
+      "doc": "cee60cfad6b511f1bef9ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-BR-02",
+      "name": "小米汽车产品线全景:SU7 / YU7 / 澎程",
+      "type": "事实",
+      "domain": "品牌文化",
+      "ab": "产品讲解",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-BR-03",
+      "name": "新零售模式与门店岗位分工",
+      "type": "事实",
+      "domain": "品牌文化",
+      "ab": "客户经营",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "汽车学堂功能简介",
+      "doc": "cee60cfad6b511f1bef9ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-BR-04",
+      "name": "人车家全生态战略",
+      "type": "事实",
+      "domain": "品牌文化",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "试乘试驾"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-BR-05",
+      "name": "纯电 vs 增程技术路线",
+      "type": "事实",
+      "domain": "品牌文化",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-01",
+      "name": "车型定位与四个版本差异",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-02",
+      "name": "外观、颜色、轮毂卖点",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [
+        "家庭出行",
+        "商务接待"
+      ],
+      "custs": [
+        "首购",
+        "家庭用户"
+      ],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-03",
+      "name": "内饰质感与豪华配置",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P1",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-04",
+      "name": "续航与补能:Pro 版 902km / 800V",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "试乘试驾",
+        "跟进促单"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [
+        "通勤",
+        "长途自驾"
+      ],
+      "custs": [
+        "首购",
+        "增换购"
+      ],
+      "comps": [],
+      "legacy": [],
+      "note": "电池容量按版本参数表:Pro 94.3kWh、Max 101kWh;不再用“100 度电”一刀切",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-05",
+      "name": "底盘与驾控:运动和舒适两种性格",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "试乘试驾",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [
+        "通勤",
+        "长途自驾"
+      ],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-06",
+      "name": "智能座舱:天际屏 / 超级小爱",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-07",
+      "name": "辅助驾驶 HAD/XLA 与能力边界",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-08",
+      "name": "安全:主动 / 被动 / 极端冗余",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [
+        "家庭出行",
+        "接送孩子"
+      ],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K7",
+        "K16"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SU7-09",
+      "name": "SU7 Ultra 性能与赛道卖点",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "SU7 Ultra"
+      ],
+      "pri": "P1",
+      "src": "SU7 Ultra 试乘试驾体验点及话术",
+      "doc": "e455e5d0841f11f19d3cba7e9068ae7b",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "Ultra 是 SU7 车系下的版本值;讲车时按 Ultra 版本口径",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-01",
+      "name": "车型定位与版本差异",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-02",
+      "name": "外观设计与颜色",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-03",
+      "name": "续航与 800V 补能",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾",
+        "跟进促单"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [
+        "通勤",
+        "长途自驾"
+      ],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-04",
+      "name": "驾控与底盘",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "试乘试驾",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-05",
+      "name": "座舱与天际屏",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P1",
+      "src": "YU7车辆讲解话术V1.5",
+      "doc": "45402f40d6b911f1a2fb52c1dfea1be6",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K10"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-06",
+      "name": "空间与家庭场景",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "试乘试驾"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [
+        "家庭出行",
+        "接送孩子",
+        "宠物出行"
+      ],
+      "custs": [
+        "首购",
+        "家庭用户"
+      ],
+      "comps": [],
+      "legacy": [
+        "K9",
+        "K13"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-YU7-07",
+      "name": "安全卖点",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-01",
+      "name": "品牌与车型定位(N70 大五座 / N90 大七座)",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程上市发布会内容介绍",
+      "doc": "2132371cab2911f1b09f2eac02de4cd3",
+      "scenes": [
+        "家庭出行",
+        "商务接待"
+      ],
+      "custs": [
+        "家庭用户",
+        "企业客户"
+      ],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-02",
+      "name": "价格与版本差异(Pro/Max/探索版)",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "跟进促单"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程上市发布会内容介绍",
+      "doc": "2132371cab2911f1b09f2eac02de4cd3",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-03",
+      "name": "增程动力与纯电续航(N70 Max 505km / N90 Max 464km)",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程N70参数配置表",
+      "doc": "c59d5670d6bb11f1ac873627d1e928e5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K5"
+      ],
+      "note": "按版本分开:N70 Max 505km、N90 Max 464km;N70 Pro 纯电续航空缺,以配置表为准",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-04",
+      "name": "亏电油耗与用车成本(N70 Pro 5.7L / N70 Max 6.1L / N90 Max 6.26L)",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程N70参数配置表",
+      "doc": "c59d5670d6bb11f1ac873627d1e928e5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K15"
+      ],
+      "note": "按版本分开,不能把 N70 Pro 的 5.7L 讲成 N90 的油耗",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-05",
+      "name": "大七座空间与座椅布局(N90)",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "试乘试驾"
+      ],
+      "cars": [
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程N90产品知识730(下)",
+      "doc": "6a1efcbed6ba11f18a3ea21bf54387f8",
+      "scenes": [
+        "家庭出行",
+        "商务接待"
+      ],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K3"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-06",
+      "name": "智能可变大空间 / 纯平地板 / 滑轨",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "试乘试驾"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程上市发布会内容介绍",
+      "doc": "2132371cab2911f1b09f2eac02de4cd3",
+      "scenes": [
+        "露营户外",
+        "移动办公",
+        "家庭出行"
+      ],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K1",
+        "K8",
+        "K11",
+        "K14"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-07",
+      "name": "二排零重力 / 旋转座椅",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "澎程 N90"
+      ],
+      "pri": "P1",
+      "src": "小米澎程N90产品知识730(下)",
+      "doc": "6a1efcbed6ba11f18a3ea21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K2"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-08",
+      "name": "智能座舱与生态",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程N90产品知识730(下)",
+      "doc": "6a1efcbed6ba11f18a3ea21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K12"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-PC-09",
+      "name": "辅助驾驶与安全",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "小米澎程N90产品知识730(下)",
+      "doc": "6a1efcbed6ba11f18a3ea21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K6"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-01",
+      "name": "小米龙甲电池与电池安全",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-02",
+      "name": "充电补能体系(家充/超充/三方桩)",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾",
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [
+        "通勤",
+        "长途自驾",
+        "露营户外"
+      ],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K4"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-03",
+      "name": "辅助驾驶能力边界与法规责任",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-04",
+      "name": "OTA 升级机制",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-05",
+      "name": "超级小爱与四域合一",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "YU7产品亮点强化",
+      "doc": "1535470ed6b911f1b444ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-06",
+      "name": "车身结构与被动安全",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 产品知识(完整版)",
+      "doc": "707d1b36e3c111f1968ce6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-TECH-07",
+      "name": "增程器 NVH / 热管理 / 冬季续航",
+      "type": "事实",
+      "domain": "本品知识",
+      "ab": "产品讲解",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P1",
+      "src": "小米澎程N90产品知识730(下)",
+      "doc": "6a1efcbed6ba11f18a3ea21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-COMP-01",
+      "name": "竞品对比方法论:先认同、讲差异、回到需求",
+      "type": "技能",
+      "domain": "竞品对比",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 竞品对比话术",
+      "doc": "64154b5ad6b711f1b0b2a21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K19"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-COMP-02",
+      "name": "SU7 vs 特斯拉 Model 3 / 极氪 001/007",
+      "type": "事实",
+      "domain": "竞品对比",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "SU7"
+      ],
+      "pri": "P0",
+      "src": "新一代SU7 竞品对比话术",
+      "doc": "64154b5ad6b711f1b0b2a21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [
+        "特斯拉 Model 3",
+        "极氪 001",
+        "极氪 007"
+      ],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-COMP-03",
+      "name": "YU7 vs 特斯拉 Model Y / Model Y L",
+      "type": "事实",
+      "domain": "竞品对比",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "特斯拉ModelYL-上市速递与竞对培训(资料合集)",
+      "doc": "1304495ed69511f19846a21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [
+        "特斯拉 Model Y"
+      ],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-COMP-04",
+      "name": "YU7 vs 理想 L6/L7 / 问界 M7/M8",
+      "type": "事实",
+      "domain": "竞品对比",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "YU7"
+      ],
+      "pri": "P0",
+      "src": "YU7-分品牌/维度友商应对话术",
+      "doc": "085bdd32d69511f1883d4ed4269eba83",
+      "scenes": [],
+      "custs": [],
+      "comps": [
+        "理想 L6",
+        "理想 L7",
+        "问界 M7",
+        "问界 M8"
+      ],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-COMP-05",
+      "name": "澎程 vs 理想 L8/L9 / 问界 M8/M9",
+      "type": "事实",
+      "domain": "竞品对比",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "澎程 N70",
+        "澎程 N90"
+      ],
+      "pri": "P0",
+      "src": "每周竞品资讯(河南分公司分享)",
+      "doc": "371b5586d69911f1ad574ed4269eba83",
+      "scenes": [],
+      "custs": [],
+      "comps": [
+        "理想 L8",
+        "理想 L9",
+        "问界 M8",
+        "问界 M9"
+      ],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-COMP-06",
+      "name": "竞品政策与权益周更",
+      "type": "事实",
+      "domain": "竞品对比",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "每周竞品资讯(河南分公司分享)",
+      "doc": "371b5586d69911f1ad574ed4269eba83",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-01",
+      "name": "线索分级与 5 分钟首触",
+      "type": "流程",
+      "domain": "销售技能",
+      "ab": "客户经营",
+      "stages": [
+        "线索与邀约"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "小米汽车销售阶段指标字典",
+      "doc": "c1c01020d69211f1aaa652c1dfea1be6",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "知识库口径是 5 分钟内首次触达;2 小时是零售通倒计时高亮规则,不是首触要求,已纠正",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-02",
+      "name": "电话邀约八步法",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "客户经营",
+      "stages": [
+        "线索与邀约"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "「助销工具」初阶-多场景邀约速查手册",
+      "doc": "ba75a714d6b811f1a61cfe68a8d05fe7",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K21"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-03",
+      "name": "二次邀约与决策人邀约",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "探需",
+      "stages": [
+        "线索与邀约"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "首触挖需&线下排程邀约 强化培训",
+      "doc": "f83dd462d69611f1b2cb3627d1e928e5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-04",
+      "name": "到店接待标准流程(10 秒迎宾/破冰/留资)",
+      "type": "流程",
+      "domain": "销售技能",
+      "ab": "客户经营",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "零售门店销售SOP流程-门店接待篇(宣贯版)",
+      "doc": "d556fd48d69611f19d9a3627d1e928e5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K23"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-05",
+      "name": "需求挖掘必问 5 问",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "探需",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "需求分析-提问的方法",
+      "doc": "e55b3b02d69411f1a173e6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K20"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-06",
+      "name": "开放式 + 封闭式提问组合",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "探需",
+      "stages": [
+        "到店接待",
+        "试乘试驾"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "需求分析-提问的方法",
+      "doc": "e55b3b02d69411f1a173e6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-07",
+      "name": "决策人 / 用车人 / 付款人识别",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "探需",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "需求分析-挖需销冠案例",
+      "doc": "ece8585ad69411f1b9814ed4269eba83",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-08",
+      "name": "场景化讲车 SPIN 四步",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "现车销售实战技巧&话术(江苏分公司分享)",
+      "doc": "9bd54346d69f11f1965ae6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K17"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-09",
+      "name": "卖点转译:参数 → 场景利益",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "产品讲解",
+      "stages": [
+        "到店接待",
+        "试乘试驾"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "现车销售实战技巧&话术(江苏分公司分享)",
+      "doc": "9bd54346d69f11f1965ae6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-10",
+      "name": "PDC 试驾确认",
+      "type": "流程",
+      "domain": "销售技能",
+      "ab": "试乘试驾",
+      "stages": [
+        "排程与 PDC"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "零售门店销售SOP流程-试乘试驾篇(宣贯版)",
+      "doc": "d650fa0ad69611f18652ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-11",
+      "name": "试乘试驾标准流程与路线设计",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "试乘试驾",
+      "stages": [
+        "试乘试驾"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "零售门店销售SOP流程-试乘试驾篇(宣贯版)",
+      "doc": "d650fa0ad69611f18652ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-12",
+      "name": "试驾回访 T+1",
+      "type": "流程",
+      "domain": "销售技能",
+      "ab": "客户经营",
+      "stages": [
+        "试驾回访"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "零售门店销售SOP流程-试乘试驾篇(宣贯版)",
+      "doc": "d650fa0ad69611f18652ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-13",
+      "name": "价格异议处理:价值锚点 / 总拥有成本",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "现车销售实战技巧&话术(江苏分公司分享)",
+      "doc": "9bd54346d69f11f1965ae6b9d9292771",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K18"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-SALE-14",
+      "name": "促单三步与下订 / 改配",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "促单成交",
+      "stages": [
+        "跟进促单",
+        "下订与改配"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "「销冠说」金句合集(持续更新)",
+      "doc": "912deb74d69e11f1a8d74ed4269eba83",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-POL-01",
+      "name": "国补 / 地补口径",
+      "type": "政策",
+      "domain": "政策权益",
+      "ab": "顾虑解除",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【活动通知】2026年11月销售权益",
+      "doc": "d1cd9130d99511f1a763ca291fe033b5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K22"
+      ],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-POL-02",
+      "name": "以旧换新 / 置换补贴",
+      "type": "政策",
+      "domain": "政策权益",
+      "ab": "促单成交",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【活动通知】2026年11月销售权益",
+      "doc": "d1cd9130d99511f1a763ca291fe033b5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-POL-03",
+      "name": "首销权益与限时权益",
+      "type": "政策",
+      "domain": "政策权益",
+      "ab": "促单成交",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【活动通知】小米澎程上市发布会相关信息及热点问题-20260907",
+      "doc": "ab909b04cdf911f1b9dca21bf54387f8",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-POL-04",
+      "name": "复购权益",
+      "type": "政策",
+      "domain": "政策权益",
+      "ab": "促单成交",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "【活动通知】2026年11月销售权益",
+      "doc": "d1cd9130d99511f1a763ca291fe033b5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-POL-05",
+      "name": "金融方案:首付 / 月供 / 贴息",
+      "type": "政策",
+      "domain": "政策权益",
+      "ab": "促单成交",
+      "stages": [
+        "跟进促单"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【活动通知】2026年11月销售权益",
+      "doc": "d1cd9130d99511f1a763ca291fe033b5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-POL-06",
+      "name": "保险 / 上牌 / 质保政策",
+      "type": "政策",
+      "domain": "政策权益",
+      "ab": "客户经营",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【全流程】小米交付业务手册",
+      "doc": "0e2c8a44842011f1a5a4b6c66b9e6803",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-DLV-01",
+      "name": "交付前准备与建群交接",
+      "type": "流程",
+      "domain": "交付服务",
+      "ab": "客户经营",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "【全流程】小米交付业务手册",
+      "doc": "0e2c8a44842011f1a5a4b6c66b9e6803",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-DLV-02",
+      "name": "到店交付 / 验车 / 签约 / 手续",
+      "type": "流程",
+      "domain": "交付服务",
+      "ab": "客户经营",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【全流程】小米交付业务手册",
+      "doc": "0e2c8a44842011f1a5a4b6c66b9e6803",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-DLV-03",
+      "name": "车辆功能讲解 9 大模块",
+      "type": "技能",
+      "domain": "交付服务",
+      "ab": "产品讲解",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "【全流程】小米交付业务手册",
+      "doc": "0e2c8a44842011f1a5a4b6c66b9e6803",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-DLV-04",
+      "name": "交付后回访与投诉应对",
+      "type": "技能",
+      "domain": "交付服务",
+      "ab": "客户经营",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "【全流程】小米交付业务手册",
+      "doc": "0e2c8a44842011f1a5a4b6c66b9e6803",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-CUST-01",
+      "name": "企微客户标签与分层",
+      "type": "技能",
+      "domain": "客户经营",
+      "ab": "客户经营",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "零售通APP使用手册1030",
+      "doc": "d73ecc80d69611f1b9783627d1e928e5",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-CUST-02",
+      "name": "朋友圈 / 内容运营与沉睡唤醒",
+      "type": "技能",
+      "domain": "客户经营",
+      "ab": "客户经营",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "【综合运营】零售门店运营白皮书",
+      "doc": "c4468a2ad6b711f18d74ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-CUST-03",
+      "name": "转介绍与复购",
+      "type": "技能",
+      "domain": "客户经营",
+      "ab": "客户经营",
+      "stages": [
+        "交付及交付后"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "【综合运营】零售门店运营白皮书",
+      "doc": "c4468a2ad6b711f18d74ae4d84b55faa",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "",
+      "kpId": ""
+    },
+    {
+      "code": "KP-MGR-01",
+      "name": "新人带教与陪访",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "带人辅导",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "2026年服务中心人员及培训运营指导手册",
+      "doc": "c5d867acd6a111f18f7452c1dfea1be6",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K24"
+      ],
+      "note": "管理类,不进零售顾问车型分母",
+      "kpId": ""
+    },
+    {
+      "code": "KP-MGR-02",
+      "name": "门店例会与目标拆解",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "带人辅导",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P1",
+      "src": "2026年服务中心人员及培训运营指导手册",
+      "doc": "c5d867acd6a111f18f7452c1dfea1be6",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [
+        "K25"
+      ],
+      "note": "管理类,不进零售顾问车型分母",
+      "kpId": ""
+    },
+    {
+      "code": "KP-MGR-03",
+      "name": "试驾 / 接待质量点检与辅导工单",
+      "type": "技能",
+      "domain": "销售技能",
+      "ab": "带人辅导",
+      "stages": [
+        "全阶段"
+      ],
+      "cars": [
+        "通用车型"
+      ],
+      "pri": "P0",
+      "src": "2026年服务中心人员及培训运营指导手册",
+      "doc": "c5d867acd6a111f18f7452c1dfea1be6",
+      "scenes": [],
+      "custs": [],
+      "comps": [],
+      "legacy": [],
+      "note": "管理类,不进零售顾问车型分母",
+      "kpId": ""
+    }
+  ]
+}

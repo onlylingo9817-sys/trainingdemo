@@ -311,7 +311,7 @@ A.drill=el=>{UI.drill=el.dataset.l?el.dataset.l.split(','):[];render()};
 /* ========== 配置中心 ========== */
 function pgConfig(){
   /* 12 个页签按「改的是什么」分组:页签值不变(旧链接、测试、跳转都沿用),只是多一层分组栏 */
-  const CFG_GROUPS=[['培训项目',['指标库','培训类型默认值','阈值与口径','业务规则']],['能力与评价',['维度体系','岗位画像','评价口径','学习包模板']],['内容与知识点',['内容管理','知识点规则','评审灰度','标签管理']],['系统',['数据源']]];
+  const CFG_GROUPS=[['培训项目',['指标库','培训类型默认值','阈值与口径','业务规则']],['能力与评价',['维度体系','岗位画像','评价口径','学习包模板']],['内容与知识点',['知识点库 v1','内容管理','知识点规则','评审灰度','标签管理']],['系统',['数据源']]];
   const tabs=[].concat(...CFG_GROUPS.map(g=>g[1]));const t=curTab('config',tabs);let b='';
   const grp=(CFG_GROUPS.find(g=>g[1].includes(t))||CFG_GROUPS[0]);
   const cellsOver=()=>{let n=0;[...new Set(PEOPLE.map(x=>x.store))].forEach(s=>WEEKS.forEach(w=>{if(loadAt(s,w)>S.cfg.limit)n++}));return n};
@@ -342,6 +342,7 @@ function pgConfig(){
     b=srcBar('系统规则的唯一来源,改了立刻在「作用于」列的页面生效。新人开单率的统计窗口等口径不在这里,在「指标库」。')
      +'<div class="tw"><table class="t"><tr><th>配置项</th><th style="width:110px">当前值</th><th>作用于哪里</th><th>当前引用情况</th></tr>'+rows.map(r=>'<tr><td><b>'+r[1]+'</b></td><td><input type="number" id="cf_'+r[0]+'" value="'+S.cfg[r[0]]+'" style="width:70px;border:1px solid var(--bd);border-radius:4px;padding:4px 6px"> '+r[2]+'</td><td>'+r[3].map(x=>x[1]?'<div><a class="link" data-act="go" data-p="'+x[1]+'"'+(x[2]?' data-t="'+x[2]+'"':'')+'>'+x[0]+'</a></div>':'<div>'+x[0]+'</div>').join('')+'</td><td>'+r[4]+'</td></tr>').join('')+'</table></div><div style="margin-top:10px"><button class="btn pri" data-act="cfgSave">保存</button> <span class="hint">试试把「样本量门槛」改成 50,再看效果看板;或把「ASR 底线」改成 90,看行为 / 话术层变化。</span></div>';
   }
+  if(t==='知识点库 v1')b=cfgTaxLib();
   if(t==='维度体系')b=cfgDims();
   if(t==='岗位画像')b=cfgProfile();
   if(t==='评价口径')b=cfgEval();

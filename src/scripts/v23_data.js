@@ -39,36 +39,77 @@ function v23Sync(mid,kid,mode){
   const blended=old?Math.round((old.score*nOld+score*rec.length)/(nOld+rec.length)):score;
   S.ev[src][mid][kid]={score:blended,n:(old?old.n:0)+1,ts:today,live:true};
 }
+
+/* 车型层级:车系 → 可下单版本;通用车型 = 全系适用。
+   知识点的「车型」可以挂版本、挂车系、或挂通用车型;挂车系自动覆盖该车系所有版本。 */
+const V23_CAR_TREE={
+  'SU7':['SU7 标准版','SU7 Pro','SU7 Max','SU7 Ultra'],
+  'YU7':['YU7 标准版','YU7 长续航版','YU7 Pro','YU7 Max','YU7 GT'],
+  '澎程 N70':['澎程 N70 Pro','澎程 N70 Max'],
+  '澎程 N90':['澎程 N90 Max','澎程 N90 Max 探索版']
+};
+const V23_CAR_SERIES_OF={};
+const V23_CAR_LEAVES=[];
+Object.keys(V23_CAR_TREE).forEach(sr=>V23_CAR_TREE[sr].forEach(v=>{V23_CAR_SERIES_OF[v]=sr;V23_CAR_LEAVES.push(v)}));
+const V23_CAR_ALL=['通用车型'].concat(Object.keys(V23_CAR_TREE),V23_CAR_LEAVES);
+
 /* ---------- 1. 维度体系(标签树的底层分类) ---------- */
 /* shape: tree|flat · role: belong 归属(参与统计)/context 上下文(筛选推荐)/ability 能力(带权重,进画像) */
 const V23_DIM_SEED=[
- {id:'Dprod',name:'产品',shape:'tree',role:'belong',multi:1,requiredFor:['kp'],source:'sync',values:null,note:'标签树可在标签管理里维护,id 稳定,改名不改 id'},
- {id:'Dcar',name:'车型',shape:'flat',role:'belong',multi:1,requiredFor:['kp'],source:'manual',values:['N70系列','N90 Max','N90 Max 探索版','通用车型']},
- {id:'Dscene',name:'场景',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['家庭出行','露营','通勤','长途','商务接待','首购到店']},
- {id:'Dcust',name:'客户类型',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['首购家庭','增换购','企业客户','年轻个人']},
- {id:'Dcomp',name:'竞品',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['奔驰 GLC','问界 M8','极氪 7X','特斯拉 Model Y']},
- {id:'Dstage',name:'销售阶段',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['邀约','接待','试驾','报价','交付']},
- {id:'Dab',name:'能力',shape:'tree',role:'ability',multi:1,requiredFor:['kp'],source:'manual',values:null}
+ {id:'Dcar',name:'车型',shape:'tree',role:'belong',multi:1,requiredFor:['kp'],source:'manual',values:null,note:'知识点可挂版本、车系或通用车型;车系自动覆盖其下所有版本'},
+ {id:'Ddomain',name:'知识域',shape:'flat',role:'belong',multi:0,requiredFor:['kp'],source:'manual',values:['品牌文化','本品知识','竞品对比','销售技能','政策权益','交付服务','客户经营','行业洞察'],note:'单值:一个知识点只归一个域,否则完备率会重复计数'},
+ {id:'Dab',name:'能力项',shape:'flat',role:'ability',multi:0,requiredFor:['kp'],source:'manual',values:['探需','产品讲解','试乘试驾','顾虑解除','促单成交','客户经营','带人辅导'],note:'单值:岗位画像只能引用这 7 项'},
+ {id:'Dstage',name:'销售阶段',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['全阶段','线索与邀约','排程与 PDC','到店接待','试乘试驾','试驾回访','跟进促单','下订与改配','交付及交付后']},
+ {id:'Dscene',name:'客户场景',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['通勤','家庭出行','长途自驾','露营户外','商务接待','接送孩子','宠物出行','移动办公']},
+ {id:'Dcust',name:'客户类型',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['首购','增换购','家庭用户','企业客户','米粉生态','年轻个人']},
+ {id:'Dcomp',name:'竞品',shape:'flat',role:'context',multi:1,requiredFor:[],source:'manual',values:['特斯拉 Model 3','特斯拉 Model Y','理想 L6','理想 L7','理想 L8','理想 L9','问界 M7','问界 M8','问界 M9','极氪 001','极氪 007','极氪 7X','小鹏 G7','小鹏 P7+','蔚来 ES6','乐道 L60','奔驰 GLC']}
 ];
-/* 能力树:探需 / 场景化讲车 / 顾虑解除 三个收敛方向 + 店长带人 */
+/* 能力项:7 项,单值;岗位画像只允许引用这一套,不允许另起名字 */
 const V23_AB_RAW=[
  ['探需',[]],
- ['场景化讲车',[]],
+ ['产品讲解',[]],
+ ['试乘试驾',[]],
  ['顾虑解除',[]],
+ ['促单成交',[]],
+ ['客户经营',[]],
  ['带人辅导',[]]
 ];
+/* 旧数据(车型 / 场景 / 客户 / 阶段 / 能力)的统一迁移别名:只改引用,不改历史 id */
+const V23_CAR_ALIAS={
+  '新一代 SU7':['SU7'],'SU7':['SU7'],
+  'YU7':['YU7'],
+  'N70系列':['澎程 N70'],'澎程 N70':['澎程 N70'],
+  'N90 Max':['澎程 N90 Max'],'N90 Max 探索版':['澎程 N90 Max 探索版'],'澎程 N90':['澎程 N90'],
+  '通用车型':['通用车型'],
+  'SU7 标准版':['SU7 标准版'],'SU7 Pro':['SU7 Pro'],'SU7 Max':['SU7 Max'],'SU7 Ultra':['SU7 Ultra'],
+  'YU7 标准版':['YU7 标准版'],'YU7 长续航版':['YU7 长续航版'],'YU7 Pro':['YU7 Pro'],'YU7 Max':['YU7 Max'],'YU7 GT':['YU7 GT'],
+  '澎程 N70 Pro':['澎程 N70 Pro'],'澎程 N70 Max':['澎程 N70 Max'],'澎程 N90 Max':['澎程 N90 Max'],'澎程 N90 Max 探索版':['澎程 N90 Max 探索版']
+};
+const V23_SCENE_ALIAS={'长途':'长途自驾','露营':'露营户外','首购到店':null,'试驾到店':null,'家庭出行':'家庭出行','通勤':'通勤','商务接待':'商务接待'};
+const V23_CUST_ALIAS={'首购家庭':['首购','家庭用户'],'增换购':['增换购'],'企业客户':['企业客户'],'年轻个人':['年轻个人'],'首购':['首购'],'家庭用户':['家庭用户'],'米粉生态':['米粉生态']};
+const V23_STAGE_ALIAS={'邀约':'线索与邀约','接待':'到店接待','试驾':'试乘试驾','报价':'跟进促单','交付':'交付及交付后','全阶段':'全阶段'};
+function v23AliasNames(names,alias){return (names||[]).flatMap(n=>{const v=alias[n];return v===null?[]:(Array.isArray(v)?v:(v?[v]:[n]))})}
 function v23Dims(){
   S.dims=V23_DIM_SEED.map(d=>Object.assign({},d,{
-    /* tree 维度的值从树源码重建;flat 维度直接沿用种子里的字面量(转成 {id,name} 结构) */
     values:d.shape==='tree'?[]:d.values.map(n=>({id:'V'+d.id.slice(1)+'_'+n.length+'_'+hsh(n),name:n,lv:1,path:n,status:'on'})),
     hist:[]
   }));
-  /* 产品:从 PTAGS 平铺进维度值,保留 lv/pid 表达树 */
-  const dp=dimOf('Dprod');
-  dp.values=PTAGS.map(t=>({id:t.id,name:t.name,pid:t.pid,lv:t.lv,path:t.path,status:'on'}));
-  /* 能力:两层树 */
-  const da=dimOf('Dab');let n=0;
-  V23_AB_RAW.forEach(a=>{const id='AB'+(++n);da.values.push({id,name:a[0],pid:null,lv:1,path:a[0],status:'on'});a[1].forEach(c=>da.values.push({id:'AB'+(++n),name:c,pid:id,lv:2,path:a[0]+'_'+c,status:'on'}))});
+  /* 车型:车系 → 版本的两层树;通用车型作为独立根节点 */
+  const dc=dimOf('Dcar');
+  dc.values=[];
+  dc.values.push({id:'CAR_GENERAL',name:'通用车型',pid:null,lv:1,path:'通用车型',status:'on'});
+  Object.keys(V23_CAR_TREE).forEach(sr=>{
+    const sid='CAR_S_'+hsh(sr);
+    dc.values.push({id:sid,name:sr,pid:null,lv:1,path:sr,status:'on'});
+    V23_CAR_TREE[sr].forEach(v=>dc.values.push({id:'CAR_V_'+hsh(v),name:v,pid:sid,lv:2,path:sr+'_'+v,status:'on'}));
+  });
+  /* 能力项保持 flat;保留 values 为 {id,name} 结构,画像/筛选都按 name 解析 */
+  const da=dimOf('Dab');
+  da.values=(V23_AB_RAW||[]).map(a=>({id:'AB_'+a[0],name:a[0],lv:1,path:a[0],status:'on'}));
+  /* 车型 / 内容分类迁移:旧名字 → 新车型值,避免内容筛选和知识点挂载掉队 */
+  const cars=S.cfg&&S.cfg.tax?S.cfg.tax.car:null;
+  if(cars){S.cfg.tax.car=V23_CAR_LEAVES.slice();S.cfg.tax.ability=['探需','产品讲解','试乘试驾','顾虑解除','促单成交','客户经营','带人辅导','未指定']}
+  (S.contents||[]).forEach(c=>{if(c.car&&V23_CAR_ALIAS[c.car]){const a=V23_CAR_ALIAS[c.car];c.car=(V23_CAR_TREE[a[0]]?V23_CAR_TREE[a[0]][0]:a[0])}});
   return S.dims;
 }
 const dimOf=id=>S.dims.find(d=>d.id===id);
@@ -88,23 +129,23 @@ const abName=(vid,short)=>{const p=dimPath('Dab',vid);return short?p.split('_').
 /* ---------- 2. 知识点 × 维度值组合 ---------- */
 /* 知识点不再分"事实型/技能型",由挂的维度自然区分:挂产品=产品卖点,挂能力+场景=销售动作 */
 const V23_KP_DIM={
- K1:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景化讲车'},
- K2:{scene:['家庭出行','商务接待'],cust:['增换购'],stage:['接待','试驾'],ab:'场景化讲车'},
- K3:{scene:['家庭出行'],cust:['首购家庭','增换购'],stage:['接待'],ab:'场景化讲车'},
- K4:{scene:['露营','长途'],cust:['年轻个人','首购家庭'],stage:['试驾'],ab:'场景化讲车'},
- K5:{scene:['长途','通勤'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景化讲车'},
- K6:{scene:['长途','通勤'],cust:['首购家庭'],stage:['试驾'],ab:'场景化讲车'},
- K7:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待'],ab:'场景化讲车'},
- K8:{scene:['商务接待'],cust:['企业客户'],stage:['接待'],ab:'场景化讲车'},
- K9:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待','试驾'],ab:'场景化讲车'},
- K10:{scene:['家庭出行','露营'],cust:['首购家庭','年轻个人'],stage:['试驾'],ab:'场景化讲车'},
- K11:{scene:['露营'],cust:['年轻个人'],stage:['试驾'],ab:'场景化讲车'},
- K12:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待'],ab:'场景化讲车'},
- K13:{scene:['家庭出行'],cust:['年轻个人'],stage:['接待'],ab:'场景化讲车'},
- K14:{scene:['商务接待'],cust:['企业客户','年轻个人'],stage:['接待'],ab:'场景化讲车'},
+ K1:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待','试驾'],ab:'产品讲解'},
+ K2:{scene:['家庭出行','商务接待'],cust:['增换购'],stage:['接待','试驾'],ab:'产品讲解'},
+ K3:{scene:['家庭出行'],cust:['首购家庭','增换购'],stage:['接待'],ab:'产品讲解'},
+ K4:{scene:['露营','长途'],cust:['年轻个人','首购家庭'],stage:['试驾'],ab:'产品讲解'},
+ K5:{scene:['长途','通勤'],cust:['首购家庭'],stage:['接待','试驾'],ab:'产品讲解'},
+ K6:{scene:['长途','通勤'],cust:['首购家庭'],stage:['试驾'],ab:'产品讲解'},
+ K7:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待'],ab:'产品讲解'},
+ K8:{scene:['商务接待'],cust:['企业客户'],stage:['接待'],ab:'产品讲解'},
+ K9:{scene:['家庭出行'],cust:['首购家庭'],stage:['接待','试驾'],ab:'产品讲解'},
+ K10:{scene:['家庭出行','露营'],cust:['首购家庭','年轻个人'],stage:['试驾'],ab:'产品讲解'},
+ K11:{scene:['露营'],cust:['年轻个人'],stage:['试驾'],ab:'产品讲解'},
+ K12:{scene:['家庭出行','长途'],cust:['首购家庭'],stage:['接待'],ab:'产品讲解'},
+ K13:{scene:['家庭出行'],cust:['年轻个人'],stage:['接待'],ab:'产品讲解'},
+ K14:{scene:['商务接待'],cust:['企业客户','年轻个人'],stage:['接待'],ab:'产品讲解'},
  K15:{scene:['通勤'],cust:['增换购'],stage:['报价'],ab:'顾虑解除'},
- K16:{scene:['通勤'],cust:['首购家庭'],stage:['试驾'],ab:'场景化讲车'},
- K17:{scene:['试驾到店'],cust:['首购家庭'],stage:['试驾'],ab:'场景化讲车',comp:['奔驰 GLC']},
+ K16:{scene:['通勤'],cust:['首购家庭'],stage:['试驾'],ab:'产品讲解'},
+ K17:{scene:['试驾到店'],cust:['首购家庭'],stage:['试驾'],ab:'产品讲解',comp:['奔驰 GLC']},
  K18:{scene:['首购到店'],cust:['增换购'],stage:['报价'],ab:'顾虑解除'},
  K19:{scene:['首购到店'],cust:['首购家庭','增换购'],stage:['报价'],ab:'顾虑解除',comp:['奔驰 GLC','问界 M8','极氪 7X']},
  K20:{scene:['首购到店'],cust:['首购家庭'],stage:['接待'],ab:'探需'},
@@ -118,20 +159,43 @@ const V23_EXTRA_KP=[
  {id:'K24',name:'新人带教与陪访',car:'通用车型',owner:'周丽',syn:['带教','陪访','师徒']},
  {id:'K25',name:'门店例会与目标拆解',car:'通用车型',owner:'陈磊',syn:['例会','晨会','目标拆解']}
 ];
+function v23LegacyDomain(kid){
+  if(/^K(?:[1-9]|1[0-6])$/.test(kid))return '本品知识';
+  if(kid==='K19')return '竞品对比';
+  if(kid==='K22')return '政策权益';
+  return '销售技能';
+}
 function v23KpDims(){
   S.v23={};
   V23_EXTRA_KP.forEach(x=>{if(!kp(x.id))S.kps.push({id:x.id,name:x.name,type:'技能型',tags:[],dim:'带人辅导',car:x.car,syn:x.syn,owner:x.owner,st:'启用',ext:[],created:addDays(today,-40),hist:[]})});
   S.kps.forEach(k=>{
     const m=V23_KP_DIM[k.id]||{};
     k.dims={};
-    k.cars=(k.cars&&k.cars.length?k.cars:[k.car||'通用车型']).slice();
+    /* 旧车型名统一迁移到新字典,避免维度值对不上导致知识点掉出完备率矩阵 */
+    const oldCars=(k.cars&&k.cars.length?k.cars:[k.car||'通用车型']);
+    k.cars=[...new Set(v23AliasNames(oldCars,V23_CAR_ALIAS))];
+    k.car=k.cars[0]||'通用车型';
     const carIds=k.cars.map(n=>dimIdByName('Dcar',n)).filter(Boolean);
     if(carIds.length)k.dims.Dcar=carIds;
-    if((k.tags||[]).length)k.dims.Dprod=k.tags.slice(0,2);
+    const dom=dimIdByName('Ddomain',v23LegacyDomain(k.id));
+    if(dom)k.dims.Ddomain=[dom];
     const put=(did,names)=>{const ids=dimIdsByNames(did,names);if(ids.length)k.dims[did]=ids};
-    put('Dscene',m.scene);put('Dcust',m.cust);put('Dcomp',m.comp);put('Dstage',m.stage);
-    /* 能力维度按业务名解析成树里的稳定 id(可指父节点) */
+    put('Dscene',v23AliasNames(m.scene,V23_SCENE_ALIAS));
+    put('Dcust',v23AliasNames(m.cust,V23_CUST_ALIAS));
+    put('Dcomp',m.comp);
+    put('Dstage',v23AliasNames(m.stage,V23_STAGE_ALIAS).concat('全阶段'));
+    /* 能力项按业务名解析成稳定 id;单值,旧名字已迁移 */
     if(m.ab){const ab=dimIdByName('Dab',m.ab);if(ab){k.dims.Dab=[ab];k.dim=abName(ab,true)}}
+    /* 兜底:CEMN / SPIN 等历史知识点没有 V23_KP_DIM 配置,按名称/类型归到 7 项能力之一 */
+    if(!(k.dims.Dab||[]).length){
+      const nm=k.dim==='场景化讲车'?'产品讲解':(k.dim||'');
+      const ab=dimIdByName('Dab',nm)||dimIdByName('Dab',k.type==='技能型'?'客户经营':'产品讲解');
+      if(ab){k.dims.Dab=[ab];k.dim=abName(ab,true)}
+    }
+    if(!(k.dims.Ddomain||[]).length){
+      const dom=dimIdByName('Ddomain',(k.tags||[]).length?'本品知识':'销售技能');
+      if(dom)k.dims.Ddomain=[dom];
+    }
   });
 }
 /* 知识点是否挂了某个维度值(含树形父节点) */
@@ -148,22 +212,29 @@ function v23IsConcern(k){
 /* ---------- 3. 岗位画像(四档,理想数据,业务可改) ---------- */
 const V23_TIER=['新人顾问','进阶顾问','销冠','店长'];
 const V23_PROFILE_SEED=[
- {id:'PF1',role:'新人顾问',note:'先把产品讲清楚，再学会问需求、处理常见顾虑',
-  items:[{id:'PF1-1',dim:'Dab',vals:['场景化讲车'],weight:50,target:85,label:'产品讲解'},
+ {id:'PF1',role:'新人顾问',note:'先把产品讲清楚，再学会问需求、处理常见顾虑。权重为业务待确认草案',
+  items:[{id:'PF1-1',dim:'Dab',vals:['产品讲解'],weight:40,target:80,label:'产品讲解'},
          {id:'PF1-2',dim:'Dab',vals:['探需'],weight:25,target:70,label:'探需'},
-         {id:'PF1-3',dim:'Dab',vals:['顾虑解除'],weight:25,target:60,label:'顾虑处理'}]},
- {id:'PF2',role:'进阶顾问',note:'从会讲产品，到会问、会应对',
-  items:[{id:'PF2-1',dim:'Dab',vals:['探需'],weight:35,target:85,label:'探需'},
-         {id:'PF2-2',dim:'Dab',vals:['场景化讲车'],weight:35,target:85,label:'场景化讲车'},
-         {id:'PF2-3',dim:'Dab',vals:['顾虑解除'],weight:30,target:75,label:'顾虑解除'}]},
- {id:'PF3',role:'销冠',note:'复杂异议和竞品对比能稳定处理，打法可复制',
-  items:[{id:'PF3-1',dim:'Dab',vals:['顾虑解除'],weight:45,target:90,label:'复杂异议与竞品'},
-         {id:'PF3-2',dim:'Dab',vals:['场景化讲车'],weight:30,target:90,label:'场景化讲车'},
-         {id:'PF3-3',dim:'Dab',vals:['探需'],weight:25,target:85,label:'探需'}]},
- {id:'PF4',role:'店长',note:'带人辅导为主，同时能判断讲法和异议处理是否到位',
+         {id:'PF1-3',dim:'Dab',vals:['试乘试驾'],weight:15,target:70,label:'试乘试驾'},
+         {id:'PF1-4',dim:'Dab',vals:['顾虑解除'],weight:20,target:60,label:'顾虑解除'}]},
+ {id:'PF2',role:'进阶顾问',note:'从会讲产品，到会问、会应对、能推进。权重为业务待确认草案',
+  items:[{id:'PF2-1',dim:'Dab',vals:['探需'],weight:25,target:85,label:'探需'},
+         {id:'PF2-2',dim:'Dab',vals:['产品讲解'],weight:25,target:85,label:'产品讲解'},
+         {id:'PF2-3',dim:'Dab',vals:['试乘试驾'],weight:15,target:80,label:'试乘试驾'},
+         {id:'PF2-4',dim:'Dab',vals:['顾虑解除'],weight:20,target:75,label:'顾虑解除'},
+         {id:'PF2-5',dim:'Dab',vals:['促单成交'],weight:15,target:70,label:'促单成交'}]},
+ {id:'PF3',role:'销冠',note:'复杂异议和竞品对比能稳定处理，打法可复制。权重为业务待确认草案',
+  items:[{id:'PF3-1',dim:'Dab',vals:['探需'],weight:20,target:90,label:'探需'},
+         {id:'PF3-2',dim:'Dab',vals:['产品讲解'],weight:15,target:90,label:'产品讲解'},
+         {id:'PF3-3',dim:'Dab',vals:['试乘试驾'],weight:10,target:85,label:'试乘试驾'},
+         {id:'PF3-4',dim:'Dab',vals:['顾虑解除'],weight:30,target:90,label:'复杂异议与竞品'},
+         {id:'PF3-5',dim:'Dab',vals:['促单成交'],weight:20,target:85,label:'促单成交'},
+         {id:'PF3-6',dim:'Dab',vals:['客户经营'],weight:5,target:80,label:'客户经营'}]},
+ {id:'PF4',role:'店长',note:'带人辅导为主，同时能判断探需和异议处理是否到位。权重为业务待确认草案',
   items:[{id:'PF4-1',dim:'Dab',vals:['带人辅导'],weight:50,target:85,label:'带人辅导'},
-         {id:'PF4-2',dim:'Dab',vals:['探需'],weight:25,target:75,label:'判断探需'},
-         {id:'PF4-3',dim:'Dab',vals:['顾虑解除'],weight:25,target:70,label:'判断讲法'}]}
+         {id:'PF4-2',dim:'Dab',vals:['探需'],weight:20,target:75,label:'判断探需'},
+         {id:'PF4-3',dim:'Dab',vals:['顾虑解除'],weight:15,target:70,label:'判断讲法'},
+         {id:'PF4-4',dim:'Dab',vals:['客户经营'],weight:15,target:70,label:'客户经营'}]}
 ];
 function v23Profiles(){
   S.profiles=JSON.parse(JSON.stringify(V23_PROFILE_SEED));
@@ -512,7 +583,7 @@ function v23Seed(){
   /* 理想态数据依赖 v22 的知识点 / 题 / 内容底座;底座为空时不生成半截数据 */
   if(!S.kps||!S.kps.length||!S.qs||!S.qs.length)return S;
   if(typeof PF_BASE!=='undefined')PF_BASE=null;
-  v23Dims();v23KpDims();v23Profiles();v23Learners();v23Evidence();v23Outcome();v23Mistakes();v23Packs();v23CfgVersions();
+  v23Dims();v23KpDims();if(typeof v23TaxSeed==='function')v23TaxSeed();v23Profiles();v23Learners();v23Evidence();v23Outcome();v23Mistakes();v23Packs();v23CfgVersions();
   v23RefreshAll();
   S.trial={projId:(S.projects[2]||{}).id||'',name:'新人训第10期',start:addDays(today,-35),end:addDays(today,4),
     pilot:S.lrn.filter(l=>l.group==='试点批').length,ctrl:S.lrn.filter(l=>l.group==='对照批').length,
