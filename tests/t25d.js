@@ -19,6 +19,6 @@ A.cAiKp({dataset:{v:'K9'}});CK('内容采纳第二个知识点为提及',C.kps.i
 /* 4. 页面引导和软提示 */
 UI.page='catalog';UI.tab.catalog='总览';render();CK('知识点总览不再有 AI 找缺口（矩阵已展示）',!/AI 找缺口/.test(tx())&&/车型/.test(tx()));
 UI.page='tagmanage';render();CK('标签管理不再有治理提示块',!/标签治理：只提示/.test(tx()));
-UI.page='catalog';UI.tab.catalog='题库';render();CK('旧题库链接落到内容中心且筛题',UI.page==='content'&&(UI.sel.caf||{}).k==='题');
-UI.page='catalog';UI.tab.catalog='演练';render();CK('旧演练链接落到内容中心且筛演练',UI.page==='content'&&(UI.sel.caf||{}).k==='演练');
+UI.page='catalog';UI.tab.catalog='题库';render();CK('旧题库链接落到内容中心且筛题',UI.page==='content'&&(UI.sel.cq||{}).kind==='题');
+UI.page='catalog';UI.tab.catalog='演练';render();CK('旧演练链接落到内容中心且筛演练',UI.page==='content'&&(UI.sel.cq||{}).kind==='演练');
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}

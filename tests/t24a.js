@@ -16,7 +16,7 @@ CK('总览第一屏是四指标与热力图',/覆盖度/.test(ov)&&/车型 × �
 CK('总览矩阵每款车单独列',kpCarsHost().every(c=>document.querySelector('#main').innerText.includes(c)));
 CK('总览不再出现「车型 × 部位」',!/车型 × 部位|车上的部位/.test(ov));
 UI.tab.catalog='知识点库';render();const lib=tx();
-CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&/卖点分类/.test(lib));
+CK('知识点库可按适用车型筛',/适用车型/.test(lib)&&!!document.querySelector('select[data-k="sellpoint"]'));
 CK('知识点库支持排序/导出',/排序/.test(lib)&&/导出/.test(lib));
 UI.tab.catalog='知识点库';render();A.kpOpenBatch();const batch=document.querySelector('#drw-root').innerText;
 CK('批量新建含 CSV 导入',/批量导入/.test(batch)&&/下载 CSV 模板/.test(batch));

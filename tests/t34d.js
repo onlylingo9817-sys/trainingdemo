@@ -5,13 +5,16 @@ A.roleSwitch({value:'hq'});closeDlg();
 /* 1. 知识点不再保留题库/演练页签，旧链接落内容中心 */
 UI.page='catalog';UI.tab.catalog='总览';render();
 const tabs=[...document.querySelectorAll('#main .tab')].map(e=>e.innerText.trim().replace(/\s+\d+$/,''));
-CK('知识点页签只有总览/知识点库/候选/补学进度',tabs.length===4&&tabs.join('/')==='总览/知识点库/候选/补学进度',tabs.join('/'));
+CK('知识点页签保留总览/知识图谱/知识点库/候选/补学进度',tabs.length===5&&tabs.join('/')==='总览/知识图谱/知识点库/候选/补学进度',tabs.join('/'));
 UI.tab.catalog='题库';render();
-CK('旧题库链接落到内容中心并筛题',UI.page==='content'&&(UI.sel.caf||{}).k==='题',UI.page+'/'+(UI.sel.caf||{}).k);
+CK('旧题库链接落到内容中心并筛题',UI.page==='content'&&(UI.sel.cq||{}).kind==='题',UI.page+'/'+((UI.sel.cq||{}).kind||''));
 UI.page='catalog';UI.tab.catalog='演练';render();
-CK('旧演练链接落到内容中心并筛演练',UI.page==='content'&&(UI.sel.caf||{}).k==='演练',UI.page+'/'+(UI.sel.caf||{}).k);
+CK('旧演练链接落到内容中心并筛演练',UI.page==='content'&&(UI.sel.cq||{}).kind==='演练',UI.page+'/'+((UI.sel.cq||{}).kind||''));
 UI.page='content';UI.sel.caf={k:'题'};render();
-CK('内容中心仍是题/演练唯一维护入口',/题/.test(document.querySelector('#main').innerText)&&S.qs.slice(0,3).every(q=>document.querySelector('#main').innerText.includes(q.stem.slice(0,8))));
+UI.sel.cq={kind:'题'};UI.sel.clist={page:1,size:20};
+const q0=S.qs[0];UI.sel.cqs=q0.stem.slice(0,8);render();
+CK('内容中心仍是题/演练唯一维护入口',document.querySelector('#main').innerText.includes(q0.stem.slice(0,8)));
+UI.sel.cqs='';
 
 /* 2. 上架页：筛选网格 + 表格可横滚 */
 UI.page='publish';UI.tab.publish='已上架';render();

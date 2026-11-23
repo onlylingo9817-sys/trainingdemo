@@ -7,9 +7,25 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const root = path.resolve(__dirname, '..', 'src');
-const host = process.env.HOST || '127.0.0.1';
-const port = Number(process.env.PORT || 4173);
-const open = process.env.OPEN !== '0';
+const args = process.argv.slice(2);
+function cliArg(name) {
+  const index = args.indexOf(name);
+  if (index >= 0) {
+    const value = args[index + 1];
+    return value && !value.startsWith('--') ? value : '';
+  }
+  const pair = args.find(arg => arg.startsWith(name + '='));
+  return pair ? pair.slice(name.length + 1) : undefined;
+}
+const hostArg = cliArg('--host');
+const portArg = cliArg('--port');
+const host = hostArg === '' ? '0.0.0.0' : (hostArg || process.env.HOST || '127.0.0.1');
+const port = Number(portArg || process.env.PORT || 4173);
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  console.error(`无效端口: ${portArg || process.env.PORT}`);
+  process.exit(1);
+}
+const open = process.env.OPEN !== '0' && !args.includes('--no-open');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

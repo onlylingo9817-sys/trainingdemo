@@ -6,7 +6,7 @@ try{
 A.roleSwitch({value:'hq'});closeDlg();
 UI.page='catalog';UI.tab.catalog='总览';render();
 const tabs=tabTexts();
-CK('知识点页签收敛为 4 个',tabs.length===4&&tabs.includes('补学进度'),tabs.join(' / '));
+CK('知识点页签收敛为 5 个并保留知识图谱',tabs.length===5&&tabs.includes('知识图谱')&&tabs.includes('补学进度'),tabs.join(' / '));
 CK('页签不再包含批量新建/清河迁移',!tabs.includes('批量新建')&&!tabs.includes('清河迁移'),tabs.join(' / '));
 UI.tab.catalog='知识点库';render();
 A.kpOpenBatch();

@@ -21,7 +21,7 @@ UI.page='catalog';UI.tab.catalog='总览';render();
 CK('总览有四指标',/覆盖度/.test(tx())&&/可授课率/.test(tx())&&/可考核率/.test(tx())&&/时效健康度/.test(tx()));
 CK('总览有车型×卖点热力图',/车型 × 卖点分类/.test(tx()));
 CK('总览有车型×能力热力图',/车型 × 能力项/.test(tx()));
-CK('总览有口径选择',!!document.querySelector('[data-act=kpV12OvSet]'));
+CK('总览有口径选择',!!document.querySelector('[data-wc=kpV12OvSet]'));
 CK('总览有补学进度',/补学进度/.test(tx()));
 CK('总览无旧标签树',document.querySelectorAll('#main .tag-row').length===0);
 CK('总览无 undefined/NaN',!/undefined|NaN/.test(tx()));
