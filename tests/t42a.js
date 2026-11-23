@@ -16,7 +16,9 @@ CK('数据校验 0 error / 48 warn',val.errors===0&&val.warns===48,val.errors+' 
 CK('SU7 / YU7 / N70 / N90 分母 33/32/32/32',v23TaxDenom('SU7 Pro',false).length===33&&v23TaxDenom('YU7 Pro',false).length===32&&v23TaxDenom('澎程 N70 Max',false).length===32&&v23TaxDenom('澎程 N90 Max',false).length===32,[v23TaxDenom('SU7 Pro',false).length,v23TaxDenom('YU7 Pro',false).length,v23TaxDenom('澎程 N70 Max',false).length,v23TaxDenom('澎程 N90 Max',false).length].join('/'));
 CK('交付顾问 2 / 店长 2',S.tax.filter(t=>t.pri==='P0'&&(t.roles||[]).includes('交付顾问')).length===2&&v23TaxDenom('通用车型',true).length===2);
 const s=kpV12Summary({role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0'});
-CK('四指标:33 条 / 覆盖 94% / 可授课 94% / 可考核 36%',s.n===33&&s.cov===94&&s.teach===94&&s.assess===36,JSON.stringify(s));
+CK('四指标默认不含占位:33 条 / 覆盖 24% / 可授课 24% / 可考核 36%',s.n===33&&s.cov===24&&s.teach===24&&s.assess===36,JSON.stringify(s));
+const sAll=kpV12Summary({role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0',placeholder:'include'});
+CK('含占位时覆盖/可授课仍是 94%',sAll.n===33&&sAll.cov===94&&sAll.teach===94&&sAll.assess===36,JSON.stringify(sAll));
 const mains={};(S.contents||[]).forEach(c=>(c.kps||[]).forEach(id=>{if(((c.kpRole&&c.kpRole[id])||'主讲解')==='主讲解')mains[id]=(mains[id]||0)+1}));
 CK('每个知识点最多 1 条主讲解',Object.values(mains).every(n=>n<=1),Object.keys(mains).filter(id=>mains[id]>1).join(','));
 CK('内容/题/演练都指向有效知识点',(S.contents||[]).every(c=>(c.kps||[]).every(id=>kp(id)))&&(S.qs||[]).every(q=>!q.kp||kp(q.kp))&&(S.drills||[]).every(d=>!d.kp||kp(d.kp)));

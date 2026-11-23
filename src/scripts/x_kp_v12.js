@@ -185,7 +185,7 @@ function kpV12Health(k){
   const pending=kpV12Status(k)==='内容待核';
   const cells={
     owner:owner?{s:'ok',t:'负责人：'+k.owner}:{s:'err',t:'没有负责人（不能启用）'},
-    exp:main?{s:'ok',t:'核心讲解：'+main.title}:{s:'err',t:'没有核心讲解'},
+    exp:main?{s:'ok',t:(kpIsPlaceholder(main)?'合成占位讲解：'+main.title+'（默认不计入覆盖度）':'核心讲解：'+main.title)}:{s:'err',t:'没有核心讲解'},
     spec:spec?{s:'ok',t:'核心测评题 '+aq+' / 过关演练 '+ad}:{s:'warn',t:'核心测评题 '+aq+' / 过关演练 '+ad+'，未达考核规格'},
     fresh:fresh?{s:'ok',t:'在有效期/复核期内'}:{s:'warn',t:'过期/待复核/无主讲解'}
   };
@@ -202,7 +202,9 @@ function kpV12Metrics(k,ctx){
   if(!inDenom)return null;
   const h=kpV12Health(k);
   const pending=h.pending;
-  return {inDenom:true,coverage:h.cells.exp.s==='ok',teachable:h.cells.exp.s==='ok'&&!pending,assessable:h.spec&&!pending,fresh:h.fresh&&!pending,pending};
+  const includePh=ctx.placeholder==='include';
+  const lecture=kpV12HasLecture(k,includePh);
+  return {inDenom:true,coverage:lecture,teachable:lecture&&!pending,assessable:h.spec&&!pending,fresh:lecture&&kpV12ReviewOk(k)&&!pending,pending,placeholder:includePh?'include':'exclude'};
 }
 function kpV12Summary(ctx){
   let n=0,c=0,t=0,a=0,f=0,p=0;
@@ -276,7 +278,7 @@ function kpV12Content(k){
   const c=C0({id,title:'【主讲解】'+k.name,kind:'课程',type:'图文',lecturer:lect,cover:'默认封面.png',chan:['汽车销售'],vis:'全国',tags:[],intro:k.one,
     body:{mins:10,outline:'1. '+k.one+'\n2. 关键讲法\n3. 常见错误\n4. 练习'},kps:[k.id],kpRole:{[k.id]:'主讲解'},mainKp:k.id,
     st:'已定稿',pubSt:'已上架',pubVer:1,ver:1,vers:[],up:0,down:0,views:0,created:today,expire:'',
-    source:'知识点库 v1.2 种子',creator:'总部培训部 刘翔',cK:'hq',rK:'hq',rName:'总部培训部 刘翔',simulated:true,origin:'v1.2 种子'});
+    source:'知识点库 v1.2 种子',creator:'总部培训部 刘翔',cK:'hq',rK:'hq',rName:'总部培训部 刘翔',simulated:true,origin:'v1.2 种子',placeholder:true});
   S.contents.unshift(c);
 }
 function kpV12Question(k,role,idx){
@@ -307,6 +309,7 @@ function seedV12Demo(){
   S.contents.forEach(c=>{if(c.simulated&&c.id.indexOf('N_V12_')===0)nC++});
   S.qs.forEach(q=>{if(q.simulated&&String(q.id).indexOf('Q_V12_')===0)nQ++});
   S.drills.forEach(d=>{if(d.simulated&&String(d.id).indexOf('D_V12_')===0)nD++});
+  kpBackfillScopes(true);
   window.__KP_SEED_INFO={contents:nC,questions:nQ,drills:nD,ready:20,lecture_only:28,gap:16,pending:4};
 }
 
@@ -540,9 +543,160 @@ A.cKpRole=function(el){
   render();
 };
 
+/* ---------- 车系范围 / 合成占位（业务规则） ----------
+   题、演练的 carScope 只到车系（SU7 / YU7 / 澎程 N70 / 澎程 N90），空数组 = 通用。
+   组卷按目标车系过滤：专属题不能进其他车系的卷。合成占位主讲解打 placeholder，默认不进覆盖度 / 可授课率。 */
+const KP_SERIES_V12=['SU7','YU7','澎程 N70','澎程 N90'];
+function kpNormalizeScope(list){
+  const out=[];(list||[]).forEach(x=>{if(KP_SERIES_V12.includes(x)&&!out.includes(x))out.push(x)});
+  return out;
+}
+function kpInferSeries(text){
+  const s=String(text||'');const hit=[];
+  if(/SU7/.test(s))hit.push('SU7');
+  if(/YU7/.test(s))hit.push('YU7');
+  if(/N70(?!\d)/.test(s))hit.push('澎程 N70');
+  if(/N90(?!\d)/.test(s))hit.push('澎程 N90');
+  if(/澎程/.test(s)&&!hit.some(x=>x.indexOf('澎程')===0)){hit.push('澎程 N70','澎程 N90')}
+  return hit;
+}
+function kpDrillText(d){
+  if(!d)return '';
+  const turns=(d.turns||[]).map(t=>[t.say,t.ref,t.mustT,t.ideaT,(t.must||[]).map(m=>(m[0]||'')+' '+((m[1]||[]).join(' '))).join(' '),(t.idea||[]).map(m=>(m[0]||'')+' '+((m[1]||[]).join(' '))).join(' ')].join(' ')).join('\n');
+  return [d.name,d.persona,d.scene,turns].join('\n');
+}
+function kpDrillFormText(d){return kpDrillText(d)}
+function kpSeriesOfCar(car){
+  if(!car||car==='全部车型'||car==='通用车型')return '';
+  if(KP_SERIES_V12.includes(car))return car;
+  if(typeof V23_CAR_SERIES_OF!=='undefined'&&V23_CAR_SERIES_OF[car])return V23_CAR_SERIES_OF[car];
+  if(car==='澎程')return '澎程';
+  return '';
+}
+function kpAssetScope(item){return kpNormalizeScope(item&&item.carScope)}
+function kpAssetFitsCar(item, car){
+  const scope=kpAssetScope(item);
+  if(!scope.length)return true;
+  const sr=kpSeriesOfCar(car);
+  if(!sr)return true;
+  if(sr==='澎程')return scope.some(x=>x.indexOf('澎程')===0);
+  return scope.includes(sr);
+}
+function kpKpSeries(k){
+  const out=[];((k&&k.cars)||[]).forEach(n=>{
+    if(!n||n==='通用车型')return;
+    const sr=kpSeriesOfCar(n);
+    if(sr==='澎程'){['澎程 N70','澎程 N90'].forEach(x=>{if(!out.includes(x))out.push(x)});return}
+    if(sr&&!out.includes(sr))out.push(sr);
+  });
+  return out;
+}
+function kpCoversSeries(k, car){
+  const sr=kpSeriesOfCar(car)||'';
+  if(!sr)return true;
+  if(kpV12CoversCar(k, car)||kpV12CoversCar(k, sr))return true;
+  const leaves=(typeof V23_CAR_TREE!=='undefined'&&V23_CAR_TREE[sr])||[];
+  return leaves.some(v=>kpV12CoversCar(k, v));
+}
+function kpPaperCar(kid, explicit){
+  if(explicit)return explicit;
+  const k=kid&&typeof kp==='function'?kp(kid):null;
+  const series=k?kpKpSeries(k):[];
+  const sess=(typeof R!=='undefined'&&R&&R.diagCar)||'';
+  const sessSr=kpSeriesOfCar(sess);
+  if(series.length===1)return series[0];
+  if(series.length>1)return (sessSr&&series.includes(sessSr))?sessSr:series[0];
+  if(sess)return sess;
+  return 'SU7';
+}
+function kpDiagTarget(car){
+  const v=car||((typeof R!=='undefined'&&R&&R.diagCar)||'SU7');
+  if(typeof R!=='undefined'&&R)R.diagCar=v;
+  return v;
+}
+function kpScopeShown(item, text){
+  if(item&&(item._scopeTouched||item.carScopeManual))return kpNormalizeScope(item.carScope);
+  return kpInferSeries(text);
+}
+function kpScopeFieldHtml(item, text, act){
+  const on=kpScopeShown(item, text);
+  return KP_SERIES_V12.map(s=>'<label style="margin-right:12px;font-size:13px"><input type="checkbox" data-wc="'+act+'" data-v="'+esc(s)+'" '+(on.includes(s)?'checked':'')+'> '+esc(s)+'</label>').join('')
+    +'<div class="fh">不勾选 = 通用，各车系都能抽到。题面写明车系时归到对应车系，避免串进其他车系的卷。</div>';
+}
+function kpCommitScope(item, text){
+  if(!item)return;
+  if(item._scopeTouched||item.carScopeManual){item.carScope=kpNormalizeScope(item.carScope);item.carScopeManual=true}
+  else{item.carScope=kpInferSeries(text);item.carScopeManual=false}
+  delete item._scopeTouched;
+}
+A.qScope=el=>{
+  if(typeof QF==='undefined'||!QF)return;
+  const base=kpScopeShown(QF, QF.stem);
+  const v=el.dataset.v;
+  QF.carScope=el.checked?base.concat(v).filter((x,i,a)=>a.indexOf(x)===i):base.filter(x=>x!==v);
+  QF._scopeTouched=true;render();
+};
+A.drScope=el=>{
+  if(typeof DF==='undefined'||!DF)return;
+  const base=kpScopeShown(DF, kpDrillFormText(DF));
+  const v=el.dataset.v;
+  DF.carScope=el.checked?base.concat(v).filter((x,i,a)=>a.indexOf(x)===i):base.filter(x=>x!==v);
+  DF._scopeTouched=true;render();
+};
+function kpLooksPlaceholder(c){
+  if(!c||String(c.id||'').indexOf('N_V12_')!==0)return false;
+  const o=(c.body&&(c.body.outline||c.body.lines))||'';
+  return /关键讲法/.test(o)&&/常见错误/.test(o);
+}
+function kpIsPlaceholder(c){return !!(c&&(c.placeholder===true||kpLooksPlaceholder(c)))}
+function kpPlaceholderTag(c){return kpIsPlaceholder(c)?'<span class="tag warn">合成占位</span>':''}
+function kpV12HasLecture(k, includePlaceholder){
+  return (S.contents||[]).some(c=>{
+    if(!(c.kps||[]).includes(k.id))return false;
+    if(((c.kpRole&&c.kpRole[k.id])||'主讲解')!=='主讲解')return false;
+    if(typeof isPub==='function'&&!isPub(c))return false;
+    if(typeof expState==='function'&&expState(c)==='已过期')return false;
+    if(!includePlaceholder&&kpIsPlaceholder(c))return false;
+    return true;
+  });
+}
+function kpBackfillScopes(force){
+  (S.qs||[]).forEach(q=>{
+    if(force||!Array.isArray(q.carScope)){q.carScope=kpInferSeries(q.stem||'');q.carScopeManual=false}
+    else q.carScope=kpNormalizeScope(q.carScope);
+  });
+  (S.drills||[]).forEach(d=>{
+    if(force||!Array.isArray(d.carScope)){d.carScope=kpInferSeries(kpDrillText(d));d.carScopeManual=false}
+    else d.carScope=kpNormalizeScope(d.carScope);
+  });
+  (S.contents||[]).forEach(c=>{if(c.placeholder!==true&&kpLooksPlaceholder(c))c.placeholder=true});
+}
+const __qSaveScope=A.qSave;
+A.qSave=function(el){
+  if(typeof QF!=='undefined'&&QF){
+    const fin=el&&el.dataset&&el.dataset.s==='1';
+    const blocked=!String(QF.stem||'').trim()||(fin&&typeof qCheckHard==='function'&&qCheckHard(QF).length);
+    if(!blocked)kpCommitScope(QF, QF.stem);
+  }
+  return __qSaveScope(el);
+};
+const __drSaveScope=A.drSave;
+A.drSave=function(el){
+  if(typeof DF!=='undefined'&&DF){
+    const fin=el&&el.dataset&&el.dataset.s==='1';
+    const draft=DF.turns.map(t=>({say:t.say,ref:t.ref,must:typeof drParse==='function'?drParse(t.mustT):[],idea:typeof drParse==='function'?drParse(t.ideaT):[],emo:[]}));
+    const blocked=!String(DF.name||'').trim()||(fin&&typeof drHard==='function'&&drHard(Object.assign({},DF,{turns:draft})).length);
+    if(!blocked)kpCommitScope(DF, kpDrillFormText(DF));
+  }
+  return __drSaveScope(el);
+};
+const __loadNowScope=loadNow;
+loadNow=function(){const ok=__loadNowScope();if(ok)kpBackfillScopes(false);return ok};
+
 /* ---------- 覆盖：抽题 / 演练 / 证据 ---------- */
-qPick=function(mid,kid,n,mode){
-  const pool=qsOf(kid,'已定稿');
+qPick=function(mid,kid,n,mode,car){
+  const target=car||kpPaperCar(kid);
+  const pool=qsOf(kid,'已定稿').filter(q=>kpAssetFitsCar(q,target));
   const anchors=pool.filter(q=>q.role==='锚题');
   const practices=pool.filter(q=>q.role!=='锚题');
   const src=mode==='retest'?anchors:(mode==='practice'?practices:anchors.concat(practices.length?practices:anchors));
@@ -550,11 +704,25 @@ qPick=function(mid,kid,n,mode){
   const sc=q=>{const a=seen[q.id];if(mode==='diag')return (a?5:0)+(q.role==='锚题'?0:1)+(q.lv||1);return a?(a.ok?3:0):1.5};
   return src.slice().sort((a,b)=>sc(a)-sc(b)).slice(0,n);
 };
-drPick=function(mid,kid){
-  const L=drsOf(kid,'已定稿').filter(drUsable);if(!L.length)return null;
+function kpDiagSet(mid,car){
+  const target=kpDiagTarget(car);
+  const ks=kpPool().filter(k=>kpCoversSeries(k,target)&&qPick(mid,k.id,1,'diag',target).length).sort((a,b)=>hsh(mid+a.id)-hsh(mid+b.id)).slice(0,8);
+  const L=[];ks.forEach(k=>qPick(mid,k.id,2,'diag',target).forEach(q=>L.push(q.id)));
+  return L;
+}
+drPick=function(mid,kid,car){
+  const target=car||kpPaperCar(kid);
+  const L=drsOf(kid,'已定稿').filter(drUsable).filter(d=>kpAssetFitsCar(d,target));if(!L.length)return null;
   const anchors=L.filter(d=>d.role==='锚定演练');const pool=anchors.length?anchors:L;
   const done={};(S.ansLog||[]).filter(a=>a.mid===mid&&a.mode==='drill').forEach(a=>{done[a.q]=a.ok});
   return pool.slice().sort((a,b)=>((a.id in done)?(done[a.id]?3:1):0)-((b.id in done)?(done[b.id]?3:1):0))[0];
+};
+qzStartPack=function(p){
+  const need=(p.steps||[]).find(s=>!s.done);const n=need?packStepNeed(need):3;
+  const target=kpPaperCar(p.kp);
+  const all=qsOf(p.kp,'已定稿').filter(q=>kpAssetFitsCar(q,target));
+  const ids=all.slice(0,Math.max(1,Math.min(n,all.length))).map(q=>q.id);
+  return qzStart(R.quizCtx&&R.quizCtx.learn?'pack':(need&&need.t==='复测'?'retest':'pack'),p.kp,ids);
 };
 const __mClassicV12=mClassic;
 mClassic=function(mid,kid){

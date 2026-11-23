@@ -153,7 +153,7 @@ function kpUxHeat(kind,ctx){
   };
   return '<div class="tw"><table class="t nw ux-heat"><tr><th>车型</th>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'
     +rows.map(car=>'<tr><td><b>'+esc(car)+'</b></td>'+cols.map(c=>'<td>'+cell(car,c)+'</td>').join('')+'</tr>').join('')
-    +'</table></div><div class="hint" style="margin-top:6px">格子 = 可授课 / 应有知识点，绿色 ≥80%、橙色有缺口、红色全缺；点格子进入对应知识点。</div>';
+    +'</table></div><div class="hint" style="margin-top:6px">格子 = 可授课 / 应有知识点（'+(ctx&&ctx.placeholder==='include'?'含合成占位':'不含合成占位')+'），绿色 ≥80%、橙色有缺口、红色全缺；点格子进入对应知识点。</div>';
 }
 A.kpHeatGo=el=>{
   const ctx=UI.sel.kpOv||{};const f={car:el.dataset.car,more:true};
@@ -171,15 +171,21 @@ A.kpGapAll=()=>{
 };
 kpOverviewNew=function(){
   const ctx=UI.sel.kpOv||(UI.sel.kpOv={role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0'});
-  const s=kpV12Summary(ctx),ts=kpTaskStats();
+  if(ctx.placeholder!=='include')ctx.placeholder='exclude';
+  const sReal=kpV12Summary(Object.assign({},ctx,{placeholder:'exclude'}));
+  const sAll=kpV12Summary(Object.assign({},ctx,{placeholder:'include'}));
+  const s=ctx.placeholder==='include'?sAll:sReal,ts=kpTaskStats();
   const val=window.__KP_VALIDATION||kpV12ValidateAll();
+  const phLabel=ctx.placeholder==='include'?'含合成占位':'不含合成占位';
   const sel=(k,label,arr,lab)=>'<div class="fi2"><label>'+label+'</label><select data-wc="kpV12OvSet" data-k="'+k+'">'+arr.map(x=>'<option value="'+esc(x)+'" '+(ctx[k]===x?'selected':'')+'>'+esc((lab&&lab[x])||x)+'</option>').join('')+'</select></div>';
   const bar='<div class="ux-bar"><div class="filg">'+sel('role','岗位',KP_DICT_V12.roles)+sel('car','车型',['全部车型'].concat(V23_CAR_LEAVES))+sel('batch','学习阶段',KP_DICT_V12.batches,KP_BATCH_LABEL)+sel('pri','优先级',['P0','P1','全部'])+'</div><span class="ux-bar-r hint">当前口径下应覆盖 <b>'+s.n+'</b> 个知识点</span></div>';
+  const caliber='<div class="ux-note">覆盖度、可授课率<b>默认不含合成占位主讲解</b>。不含占位是 <b>'+sReal.cov+'% / '+sReal.teach+'%</b>（'+sReal.c+' / '+sReal.n+'），含占位是 <b>'+sAll.cov+'% / '+sAll.teach+'%</b>（'+sAll.c+' / '+sAll.n+'）。可考核率两种口径都是 <b>'+sReal.assess+'%</b>。占位稿仍挂在知识点上，标题标「合成占位」，不进默认完成数；待补缺口仍按「有没有挂上主讲解」列。</div>'
+    +'<div class="kp-view-bar"><span>主讲解口径</span><button type="button" class="kp-view '+(ctx.placeholder!=='include'?'on':'')+'" data-act="kpOvPh" data-v="exclude">不含占位 '+sReal.cov+'%</button><button type="button" class="kp-view '+(ctx.placeholder==='include'?'on':'')+'" data-act="kpOvPh" data-v="include">含占位 '+sAll.cov+'%</button></div>';
   const m=(l,v,sub,tip)=>'<div class="ux-metric" title="'+esc(tip)+'"><div class="l">'+l+'</div><div class="n">'+v+'</div><div class="s">'+sub+'</div></div>';
-  const strip='<div class="ux-metrics">'+m('覆盖度',s.cov+'%',s.c+' / '+s.n+' 个点有核心讲解','有核心讲解的知识点占应覆盖的比例')
-    +m('可授课率',s.teach+'%',s.t+' / '+s.n+' 个点已上架且未过期','核心讲解已上架且未过期')
-    +m('可考核率',s.assess+'%',s.a+' / '+s.n+' 个点题和演练齐','核心测评题和过关演练都达到要求')
-    +m('时效健康度',s.fresh+'%',s.f+' / '+Math.max(1,s.c)+' 个点在有效期内','有核心讲解的点里，未过期、未超复核日的占比')+'</div>';
+  const strip='<div class="ux-metrics">'+m('覆盖度',s.cov+'%',s.c+' / '+s.n+' 个点有核心讲解（'+phLabel+'）','有核心讲解的知识点占应覆盖的比例。默认不含合成占位。')
+    +m('可授课率',s.teach+'%',s.t+' / '+s.n+' 个点已上架且未过期（'+phLabel+'）','核心讲解已上架且未过期。默认不含合成占位。')
+    +m('可考核率',s.assess+'%',s.a+' / '+s.n+' 个点题和演练齐','核心测评题和过关演练都达到要求。与占位讲解无关。')
+    +m('时效健康度',s.fresh+'%',s.f+' / '+Math.max(1,s.c)+' 个点在有效期内','计入覆盖度的点里，未过期、未超复核日的占比')+'</div>';
   const sub='<div class="ux-subline"><span>内容待核 <b>'+s.p+'</b> 个<span class="hint">（计入分母，不计入完成）</span></span><span>补学任务 <b>'+ts.done+' / '+ts.total+'</b> 已完成，逾期 <b'+(ts.overdue?' style="color:var(--err)"':'')+'>'+ts.overdue+'</b> <a class="link" data-act="tab" data-k="catalog" data-v="补学进度">去看 ›</a></span></div>';
   const sev=k=>kpGapList(k).some(x=>x[0]==='err')?0:1;
   const gaps=(S.kps||[]).filter(k=>kpV12Metrics(k,ctx)&&kpGapList(k).length).sort((a,b)=>sev(a)-sev(b)||(a.pri===b.pri?0:a.pri==='P0'?-1:1)||a.name.localeCompare(b.name,'zh'));
@@ -194,8 +200,9 @@ kpOverviewNew=function(){
   const stageBody=stages.length?'<div class="tw"><table class="t"><tr><th>业务环节</th><th>知识点数</th><th>已测人次</th><th>未过关人次</th><th>未过关占比</th></tr>'+stages.map(st=>{const x=by[st];const p=x.t?Math.round(x.w/x.t*100):0;return '<tr><td><b>'+esc(st)+'</b></td><td>'+x.n+'</td><td>'+x.t+'</td><td>'+x.w+'</td><td><span class="tag '+(p>=50?'err':p?'warn':'ok')+'">'+p+'%</span></td></tr>'}).join('')+'</table></div><div class="hint" style="margin-top:6px">只用于定位和对照，不作因果结论；样本量与对照批在真实接入后由效果页给出。</div>':uxEmpty({title:'还没有可对照的知识点'});
   const fold=(t,h,b)=>'<details class="card ux-fold"><summary>'+t+(h?' <span class="hint">'+h+'</span>':'')+'</summary><div class="ux-fold-b">'+b+'</div></details>';
   const check=fold('数据校验','管理员用',(val.errors?'<div class="ux-inline warn">'+val.errorList.slice(0,8).map(esc).join('<br>')+'</div>':'<div class="chk ok"><b>✓</b><span>标准库结构校验通过（'+val.total+' 条）。</span></div>')+'<div class="hint">结构错误 '+val.errors+' 个；另有 '+val.warns+' 条缺口提示，来自上面的「待补缺口」，不是系统故障。</div>');
-  return bar+strip+sub+gapCard+heat+fold('业务环节对照','按主要业务环节汇总学员未过关情况',stageBody)+check;
+  return bar+caliber+strip+sub+gapCard+heat+fold('业务环节对照','按主要业务环节汇总学员未过关情况',stageBody)+check;
 };
+A.kpOvPh=el=>{const f=UI.sel.kpOv||(UI.sel.kpOv={});f.placeholder=el.dataset.v==='include'?'include':'exclude';render()};
 
 /* ---------- 6. 候选：确认新增走新增表单，不再生成残缺知识点 ---------- */
 function kpCandCars(x){
