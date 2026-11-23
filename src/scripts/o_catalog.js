@@ -39,13 +39,13 @@ const ptagDesc=id=>{const r=[id];ptagKids(id).forEach(c=>ptagDesc(c.id).forEach(
 const ptagLeaf=id=>!PTAGS.filter(t=>t.pid===id&&t.status!=='off').length;
 const kpTagTxt=k=>(k.tags||[]).map(id=>{const t=ptagOf(id);return t?t.path:''}).filter(Boolean);
 const kpTagNames=k=>(k.tags||[]).map(id=>{const t=ptagOf(id);return t?t.name:''}).filter(Boolean);
-const kp=id=>S.kps.find(k=>k.id===id);
+const kp=id=>{if(!id||typeof S==='undefined'||!S)return null;const hit=(S.kps||[]).find(k=>k.id===id);if(hit)return hit;return (S.kps||[]).find(k=>(k.aliasIds||[]).indexOf(id)>=0)||null};
 /* 主讲解 / 关联提及:课程可能覆盖多个点，但只有"主讲解"才算备齐了该点的讲解；
    关联提及只用于推荐和检索，不用于完备度。老数据没有 kpRole 时一律按主讲解兼容。 */
 const kpMountedAll=k=>S.contents.filter(c=>(c.kps||[]).includes(k.id));
 const kpMounted=k=>kpMountedAll(k).filter(c=>!c.kpRole||c.kpRole[k.id]!=='提及');
 const kpMentioned=k=>kpMountedAll(k).filter(c=>c.kpRole&&c.kpRole[k.id]==='提及');
-const kpRoleOf=(c,kid)=>(c.kpRole&&c.kpRole[kid])||'主讲解';
+const kpRoleOf=(c,kid)=>{const id=(typeof kp==='function'&&kp(kid)||{}).id||kid;return (c.kpRole&&(c.kpRole[id]||c.kpRole[kid]))||'主讲解'};
 const kpUsesQH=k=>(k.ext||[]).some(e=>e.src==='清河大学');
 const kpLabel=k=>k.name+(k.cars&&k.cars.length?' · '+k.cars.join('/'):(k.car&&k.car!=='通用车型'?' · '+k.car:''));
 const kpOwners=()=>[...new Set(LECTURERS.concat(S.roles.map(r=>r.name)).concat(UI.role.type==='boss'?[]:[UI.role.name]))];
@@ -219,7 +219,7 @@ function kpCands(){
    +'<table class="t"><tr><th style="width:30px"></th><th>候选</th><th>类型 / 车型</th><th>来源</th><th>为什么要加</th><th>状态</th><th>操作</th></tr>'+rows.map(x=>'<tr><td>'+(x.st==='待确认'?'<input type="checkbox" data-act="candSel" data-id="'+x.id+'" '+(candSel.includes(x.id)?'checked':'')+'>':'')+'</td><td><b>'+esc(x.name)+'</b></td><td>'+(typeof kpTypeText==='function'?kpTypeText(x):x.type)+' · '+esc(x.car)+'</td><td class="hint" style="white-space:normal">'+esc(x.from)+'</td><td style="white-space:normal;min-width:220px">'+esc(x.why)+(x.sug.length?'<div class="hint">相近的已有知识点:'+x.sug.map(esc).join('、')+'(可能是同义,建议先并入)</div>':'')+'</td><td>'+(x.st==='评审中'?'<span class="tag blue">评审中</span>'+(typeof rvChip==='function'&&rvActive('kp',x.id)?'<div style="margin-top:4px">'+rvChip('kp',x.id)+'</div><div class="hint">期限 '+rvActive('kp',x.id).due+'</div>':''):x.st==='待确认'?'<span class="tag warn">待确认</span>'+(x.rvPass?' <span class="tag ok">评审已通过</span>':'')+(typeof rvChip==='function'&&!x.rvPass?(function(){const c=rvChip('kp',x.id);return c?'<div style="margin-top:4px">'+c+'</div>':''})():''):'<span class="tag '+(x.st==='已新增'?'ok':'')+'">'+x.st+'</span>')+'</td><td>'+(x.st==='待确认'?'<button class="btn sm pri" data-act="kpCandOk" data-id="'+x.id+'">确认新增</button> '+(x.rvPass?'':'<button class="btn sm" data-act="rvStart" data-k="kp" data-id="'+x.id+'">发起评审</button> ')+'<button class="btn sm" data-act="kpCandMerge" data-id="'+x.id+'" '+(x.sug.length?'':'disabled')+'>并入已有</button> <button class="btn sm" data-act="kpCandNo" data-id="'+x.id+'">忽略</button>':'<span class="hint">—</span>')+'</td></tr>').join('')+'</table>':'<div class="hint">暂无候选</div>')+'</div>'}
 A.kpCandClearFrom=()=>{UI.sel.kpCandFrom='';render()};
 A.kpCandOk=el=>{const x=S.kpCand.find(c=>c.id===el.dataset.id);if(x&&x.st==='评审中')return toast('这个候选正在评审灰度,评审通过后才能确认新增','err');const id=aiNextKpId();S.kps.push({id,name:x.name,type:x.type,tags:[],dim:x.type==='事实型'?'场景化讲车':'探需',car:x.car,syn:[],owner:null,st:'停用',ext:[],created:today,hist:[{t:today,who:meShort(),act:'由候选确认新增',note:x.from}]});x.st='已新增';x.newKpId=id;if(x.contentId){const c=content(x.contentId);if(c){c.kps=c.kps||[];c.kpRole=c.kpRole||{};if(!c.kps.includes(id))c.kps.push(id);if(!c.mainKp){c.mainKp=id;c.kpRole[id]='主讲解'}else c.kpRole[id]=c.kpRole[id]||'提及';chist(c,'确认课程候选知识点',x.name)}}toast('已新增「'+x.name+'」。还没有负责人,先停用状态;指定负责人后才能启用'+(x.contentId?'；已回挂到导入课程':''),'ok');UI.kid=id;UI.page='kp';render()};
-A.kpCandMerge=el=>{const x=S.kpCand.find(c=>c.id===el.dataset.id);if(x&&x.st==='评审中')return toast('这个候选正在评审灰度,请先处理评审','err');const k=S.kps.find(k=>k.name===x.sug[0]);if(k){k.syn=(k.syn||[]).concat([x.name]);x.st='已并入「'+k.name+'」';kpHist(k,'并入候选',x.name);toast('已并入「'+k.name+'」,并加为它的同义词','ok')}else toast('没有找到相近的已有知识点，请用「补全并新增」或忽略','err');render()};
+A.kpCandMerge=el=>{const x=S.kpCand.find(c=>c.id===el.dataset.id);if(x&&x.st==='评审中')return toast('这个候选正在评审灰度,请先处理评审','err');const k=(typeof kpCandSimilar==='function'?kpCandSimilar(x):null)||S.kps.find(k=>k.name===x.sug[0]);if(k){k.syn=(k.syn||[]).concat([x.name]);x.st='已并入「'+k.name+'」';kpHist(k,'并入候选',x.name);toast('已并入「'+k.name+'」,并加为它的同义词','ok')}else toast('没有找到相近的已有知识点，请用「补全并新增」或忽略','err');render()};
 A.kpCandNo=el=>{const x=S.kpCand.find(c=>c.id===el.dataset.id);if(x.st==='评审中')return toast('这个候选正在评审灰度,请先在评审里撤回','err');x.st='已忽略';render()};
 
 /* ---- 脱离清河:登记里来源是清河大学的资源,按知识点列出;有自有题/演练的点可「切换」 ---- */

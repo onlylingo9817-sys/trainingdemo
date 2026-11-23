@@ -22,9 +22,9 @@ const oldQKp=kp('K12'),newQKp=kp('K6'),oldQN=kpV12AnchorQn(oldQKp),newQN=kpV12An
 const qRole=q0.role,qState=q0.st;q0.src=kpMounted(oldQKp)[0].id;
 CK('测试来源讲解确实未挂到目标点',!kpMounted(newQKp).some(c=>c.id===q0.src));
 A.kpAssetMove({dataset:{kind:'q',id:qid}});
-CK('改挂前说明会移出原知识点且尚未搬走',/确认后会从那里移出/.test((document.querySelector('#dlg')||{}).innerText||'')&&q0.kp!=='K6');
+CK('改挂前说明会移出原知识点且尚未搬走',/确认后会从那里移出/.test((document.querySelector('#dlg')||{}).innerText||'')&&q0.kp!==kp('K6').id);
 A.kpAssetMove({dataset:{kind:'q',id:qid,ok:'1'}});
-CK('已有题移入后新旧核心数量同步变化',q0.kp==='K6'&&kpV12AnchorQn(oldQKp)===oldQN-1&&kpV12AnchorQn(newQKp)===newQN+1,oldQN+'→'+kpV12AnchorQn(oldQKp)+' / '+newQN+'→'+kpV12AnchorQn(newQKp));
+CK('已有题移入后新旧核心数量同步变化',q0.kp===kp('K6').id&&kpV12AnchorQn(oldQKp)===oldQN-1&&kpV12AnchorQn(newQKp)===newQN+1,oldQN+'→'+kpV12AnchorQn(oldQKp)+' / '+newQN+'→'+kpV12AnchorQn(newQKp));
 CK('题目用途定稿状态和作答统计保留',q0.role===qRole&&q0.st===qState&&JSON.stringify(q0.stat)===qStat);
 CK('题目历史作答不改写',JSON.stringify(S.ansLog.filter(a=>a.q===qid))===qLog);
 CK('新旧知识点都有题目移入移出留痕',oldQKp.hist[0].act==='移出题目'&&newQKp.hist[0].act==='移入题目'&&oldQKp.hist[0].note.includes(qid)&&newQKp.hist[0].note.includes(qid));
@@ -38,9 +38,9 @@ const oldDKp=kp('K57'),newDKp=kp('K6'),oldDN=kpV12AnchorDrillN(oldDKp),newDN=kpV
 const dRole=d0.role,dScene=d0.scene,dState=d0.st;d0.src=kpMounted(oldDKp)[0].id;
 CK('演练测试来源确实未挂到目标点',!kpMounted(newDKp).some(c=>c.id===d0.src));
 A.kpAssetMove({dataset:{kind:'d',id:did}});
-CK('演练改挂前同样先确认',/确认后会从那里移出/.test((document.querySelector('#dlg')||{}).innerText||'')&&d0.kp!=='K6');
+CK('演练改挂前同样先确认',/确认后会从那里移出/.test((document.querySelector('#dlg')||{}).innerText||'')&&d0.kp!==kp('K6').id);
 A.kpAssetMove({dataset:{kind:'d',id:did,ok:'1'}});
-CK('已有演练移入后新旧过关数量同步变化',d0.kp==='K6'&&kpV12AnchorDrillN(oldDKp)===oldDN-1&&kpV12AnchorDrillN(newDKp)===newDN+1,oldDN+'→'+kpV12AnchorDrillN(oldDKp)+' / '+newDN+'→'+kpV12AnchorDrillN(newDKp));
+CK('已有演练移入后新旧过关数量同步变化',d0.kp===kp('K6').id&&kpV12AnchorDrillN(oldDKp)===oldDN-1&&kpV12AnchorDrillN(newDKp)===newDN+1,oldDN+'→'+kpV12AnchorDrillN(oldDKp)+' / '+newDN+'→'+kpV12AnchorDrillN(newDKp));
 CK('演练用途场景定稿状态和练习统计保留',d0.role===dRole&&d0.scene===dScene&&d0.st===dState&&JSON.stringify(d0.stat)===dStat);
 CK('演练历史作答不改写',JSON.stringify(S.ansLog.filter(a=>a.q===did))===dLog);
 CK('新旧知识点都有演练移入移出留痕',oldDKp.hist[0].act==='移出演练'&&newDKp.hist[0].act==='移入演练'&&oldDKp.hist[0].note.includes(did)&&newDKp.hist[0].note.includes(did));
@@ -48,5 +48,5 @@ CK('演练来源清理且详情可见',d0.src===''&&tx().includes(d0.name));
 CK('已移入演练不再出现在可添加列表',!kpAssetCands().some(d=>d.id===did)&&!dtx().includes(did));
 CK('页面与抽屉无 undefined / NaN',!/undefined|NaN/.test(html()+document.querySelector('#drw-root').innerHTML));
 A.drwClose();A.kpContentNew();
-CK('新增内容预挂当前知识点且默认补充材料',UI.page==='cedit'&&C.kps.length===1&&C.kps[0]==='K6'&&C.kpRole.K6==='补充材料'&&!C.mainKp);
+CK('新增内容预挂当前知识点且默认补充材料',UI.page==='cedit'&&C.kps.length===1&&C.kps[0]===kp('K6').id&&C.kpRole[kp('K6').id]==='补充材料'&&!C.mainKp);
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n').slice(1,3).join(' | '))}

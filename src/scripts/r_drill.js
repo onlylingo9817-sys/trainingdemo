@@ -8,7 +8,7 @@
 const DR_DIM=[['know','知识正确',35],['emo','情绪安抚',15],['idea','思路正确',50]];
 const DR_PASS=60;
 const drById=id=>S.drills.find(d=>d.id===id);
-const drsOf=(kid,st)=>S.drills.filter(d=>d.kp===kid&&(!st||d.st===st));
+const drsOf=(kid,st)=>{const k=typeof kp==='function'?kp(kid):null;const id=k?k.id:kid;return S.drills.filter(d=>d.kp===id&&(!st||d.st===st))};
 const drUsable=d=>d.st==='已定稿'&&d.turns.length>0;
 /* 脚本:[id, 知识点, 名称, 场景, 客户画像, 来源话术, 回合[{say, must:[[关键点,[同义说法…]]], emo:[安抚词…], idea:[[思路点,[说法…]]], ref}] ] */
 const DR_SEED=[

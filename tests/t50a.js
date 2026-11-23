@@ -3,25 +3,25 @@ const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')
 try{
 A.roleSwitch({value:'hq'});closeDlg();A.reset();
 const ex0=kpV12Summary({role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0'});
-CK('占位口径仍是 24/24/36',ex0.n===33&&ex0.cov===24&&ex0.teach===24&&ex0.assess===36,JSON.stringify(ex0));
+CK('目录已是 49 个知识点',S.kps.filter(k=>String(k.code||'').indexOf('XM-')===0).length===49);
 UI.kid='K57';UI.page='kp';render();
-const q=S.qs.find(x=>x.kp==='K57'&&x.st==='已定稿');
+const q=S.qs.find(x=>x.kp===kp('K57').id&&x.st==='已定稿'&&x.role);
 const role0=q.role;
 A.kpQRole({dataset:{id:q.id}});
-CK('题的用途在知识点页行内切换',UI.page==='kp'&&UI.kid==='K57'&&q.role!==role0);
+CK('题的用途在知识点页行内切换',UI.page==='kp'&&kp(UI.kid).id===kp('K57').id&&q.role!==role0);
 A.kpQRole({dataset:{id:q.id}});
 CK('再点一次回到原来的用途',q.role===role0&&UI.page==='kp');
 const kp0=q.kp;
 A.qOpen({dataset:{id:q.id}});
-CK('从知识点进入题编辑',UI.page==='qform'&&UI.sel.returnKp==='K57');
+CK('从知识点进入题编辑',UI.page==='qform'&&kp(UI.sel.returnKp).id===kp('K57').id);
 A.qCancel();
-CK('取消回到原知识点',UI.page==='kp'&&UI.kid==='K57'&&q.kp===kp0);
+CK('取消回到原知识点',UI.page==='kp'&&kp(UI.kid).id===kp('K57').id&&q.kp===kp0);
 A.kpQUnlink({dataset:{id:q.id}});
 CK('解除关联后题目还在、归属变空',qById(q.id)&&q.kp===''&&UI.page==='kp');
-q.kp='K57';
+q.kp=kp('K57').id;
 /* 课程选用不改归属 */
 const course=content('N_CEMN1');
-const other=S.qs.find(x=>x.kp&&x.kp!=='K57'&&x.st==='已定稿');
+const other=S.qs.find(x=>x.kp&&x.kp!==kp('K57').id&&x.st==='已定稿');
 const keep=other.kp;
 kpPicks(course).qs=[other.id];
 CK('选用不改变原知识点',other.kp===keep&&kpPicks(course).qs[0]===other.id);

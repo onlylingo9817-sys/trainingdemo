@@ -3,7 +3,7 @@ const tx=()=>document.querySelector('#main').innerText;
 /* t24b:v1.2 知识点库筛选 / 热力图 / 标签不再作为独立概念 */
 try{
 A.roleSwitch({value:'hq'});closeDlg();
-CK('v1.2 共 68 条知识点',S.kps.length===68,S.kps.length+' 条');
+CK('当前目录 49 条知识点',S.kps.filter(k=>String(k.code||'').indexOf('XM-')===0).length===49,S.kps.length+' 条');
 UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={};UI.sel.kpPage={page:1,size:50};render();
 CK('知识点库有业务线/岗位/知识域/卖点筛选',['line','role','domain','ability','sellpoint'].every(k=>!!document.querySelector('[data-k='+k+']')),'');
 CK('知识点库有排序与导出',!!document.querySelector('[data-k=sort]')&&!!document.querySelector('[data-act=lstExport]'));

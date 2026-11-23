@@ -11,7 +11,7 @@ const t=document.querySelector('#main').innerText;
 CK('总览有车型×卖点热力图',/车型 × 卖点分类/.test(t));
 CK('总览有车型×能力热力图',/车型 × 能力项/.test(t));
 CK('总览有补学进度',/补学进度/.test(t));
-UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={q:'KP-SALE-13'};render();
-CK('知识点库可搜索编号',/价格异议处理/.test(document.querySelector('#main').innerText));
+UI.page='catalog';UI.tab.catalog='知识点库';UI.sel.kpf={q:'XM-S11'};render();
+CK('知识点库可搜索编号',/顾虑澄清/.test(document.querySelector('#main').innerText));
 UI.sel.kpf={};
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n')[1])}
