@@ -65,10 +65,12 @@ kpPicks(course).qs=['QB0','QB1'];
 kpPicks(course).drills=[S.drills.find(d=>d.st==='已定稿').id];
 A.cPackFrom({dataset:{id:course.id}});
 const pk=S.packs[0];
-CK('学习包记下具体题和演练',pk.pick&&pk.pick.qIds.join()==='QB0,QB1'&&pk.pick.drillIds.length===1&&pk.pick.contentId===host);
-R.quizCtx={mode:'pack',packId:pk.id,kp:pk.kp};
+CK('学习包复制配套，不把题改挂走',pk.arranged&&pk.bank&&pk.bank.qs.join()==='QB0,QB1'&&pk.fromCourse===host&&qById('QB0').kp===baseKp);
+const inStep=pk.steps.find(s=>s.t==='课中');
+R.packStep=pk.steps.indexOf(inStep);
+R.quizCtx={mode:'pack',packId:pk.id,kp:pk.kp,slot:'课中',step:R.packStep};
 qzStartPack(pk);
-CK('学员端练习用的就是选用的题',QZ&&QZ.ids.join()==='QB0,QB1',QZ&&QZ.ids.join());
+CK('学员端课中只用安排里的题',QZ&&QZ.ids.join()===inStep.qIds.filter(id=>{const q=qById(id);return q&&q.st==='已定稿'}).join(),QZ&&QZ.ids.join());
 QZ=null;
 /* 项目演练引用演练库 */
 const d0=S.drills.find(d=>d.st==='已定稿');
