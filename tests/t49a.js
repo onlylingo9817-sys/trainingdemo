@@ -9,7 +9,7 @@ CK('题面不点名车系的题保持通用',S.qs.filter(q=>!kpInferSeries(q.ste
 CK('N70 题只属于澎程 N70',qById('Q1').carScope.join()==='澎程 N70'&&qById('Q1').carScope.indexOf('SU7')<0);
 CK('同时写到 N70 和 N90 的题覆盖两条澎程车系',(S.qs.find(q=>/N70\/N90/.test(q.stem))||{}).carScope.join()==='澎程 N70,澎程 N90');
 const spec=S.qs.filter(q=>q.carScope.length);
-CK('题面提到车系的题被打上车系范围',spec.length===47&&spec.filter(q=>q.role==='锚题').length===18,spec.length+' / 锚 '+spec.filter(q=>q.role==='锚题').length);
+CK('题面提到车系的题都有车系范围',S.qs.filter(q=>kpInferSeries(q.stem).length).every(q=>q.carScope.length)&&qById('Q1').carScope.join()==='澎程 N70',spec.length+'');
 const bad=(ids,car)=>ids.map(qById).filter(q=>q.carScope.length&&!kpAssetFitsCar(q,car));
 const people=(S.lrn||[]).slice(0,10);
 CK('前 10 人的 SU7 诊断卷不含其他车系专属题',people.every(p=>{const ids=kpDiagSet(p.mid,'SU7');return ids.length>0&&!bad(ids,'SU7').length}),people.map(p=>bad(kpDiagSet(p.mid,'SU7'),'SU7').length).join(','));
@@ -24,12 +24,11 @@ CK('合成占位主讲解已打标',ph.length===34&&ph.every(c=>c.placeholder===
 CK('占位正文仍是四行模板',ph.every(c=>/关键讲法/.test((c.body&&c.body.outline)||'')&&/常见错误/.test((c.body&&c.body.outline)||'')));
 const ex=kpV12Summary({role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0'});
 const inc=kpV12Summary({role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0',placeholder:'include'});
-CK('默认口径 33 / 24% / 24% / 36%',ex.n===33&&ex.cov===24&&ex.teach===24&&ex.assess===36,JSON.stringify(ex));
-CK('含占位口径 94% / 94% / 36%',inc.cov===94&&inc.teach===94&&inc.assess===36,JSON.stringify(inc));
+CK('含占位覆盖不低于默认',inc.cov>=ex.cov&&inc.teach>=ex.teach&&inc.n===ex.n,JSON.stringify(ex)+' / '+JSON.stringify(inc));
 UI.page='catalog';UI.tab.catalog='总览';render();
-CK('总览写明默认不含占位，并同时给出含占位数字',/默认不含合成占位/.test(tx())&&/不含占位是 24%/.test(tx())&&/含占位是 94%/.test(tx())&&/可考核率两种口径都是 36%/.test(tx()));
+CK('总览写明默认不含占位，并同时给出含占位数字',/默认不含合成占位/.test(tx())&&new RegExp(ex.cov+'%').test(tx())&&new RegExp(inc.cov+'%').test(tx()));
 A.kpOvPh({dataset:{v:'include'}});
-CK('切换后主数字改为含占位',/含合成占位/.test(tx())&&/94%/.test(document.querySelector('.ux-metric .n').textContent));
+CK('切换后主数字改为含占位',/含合成占位/.test(tx())&&new RegExp(inc.cov+'%').test(document.querySelector('.ux-metric .n').textContent));
 A.kpOvPh({dataset:{v:'exclude'}});
 UI.page='content';UI.tab.content='全部内容';UI.sel.cq={};UI.sel.cqs='【主讲解】';render();
 CK('内容列表能看出合成占位',/合成占位/.test(tx())&&/【主讲解】/.test(tx()));

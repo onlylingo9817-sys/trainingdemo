@@ -222,7 +222,7 @@ function kpCandKF(x){
   f.assess.anchorDrill=drill?1:0;f.assess.validityDays=drill?90:180;
   return f;
 }
-function kpCandSimilar(x){const n=(x.sug||[])[0];return n?S.kps.find(k=>k.name===n):null}
+function kpCandSimilar(x){const n=(x.sug||[])[0];return n?S.kps.find(k=>k.name===n||(k.syn||[]).indexOf(n)>=0):null}
 kpCands=function(){
   const candSel=UI.sel.candSel||(UI.sel.candSel=[]);
   const from=UI.sel.kpCandFrom||'';

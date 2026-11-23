@@ -5,7 +5,7 @@
 const Q_TYPES=['单选','多选','判断'];
 const Q_ST=['草稿','已定稿','已停用'];
 const qById=id=>S.qs.find(q=>q.id===id);
-const qsOf=(kid,st)=>S.qs.filter(q=>q.kp===kid&&(!st||q.st===st));
+const qsOf=(kid,st)=>{const k=typeof kp==='function'?kp(kid):null;const id=k?k.id:kid;return S.qs.filter(q=>q.kp===id&&(!st||q.st===st))};
 const qUsable=q=>q.st==='已定稿';
 const qAns=q=>(Array.isArray(q.ans)?q.ans:[q.ans]).slice().sort().join('');
 const qLetters='ABCDEF';

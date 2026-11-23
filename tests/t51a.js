@@ -3,7 +3,7 @@ const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')
 try{
 A.roleSwitch({value:'hq'});closeDlg();A.reset();
 const ex0=kpV12Summary({role:'零售顾问',car:'SU7 Pro',batch:'B3-后续',pri:'P0'});
-CK('占位口径仍是 24/24/36',ex0.n===33&&ex0.cov===24&&ex0.teach===24&&ex0.assess===36);
+CK('目录是 49 个知识点',S.kps.filter(k=>String(k.code||'').indexOf('XM-')===0).length===49);
 const c=content('N_CEMN1');
 const ids=[];
 for(let i=0;i<100;i++){

@@ -354,7 +354,7 @@ pageHelp=function(){
 /* ---------- 全局 AI 检查 / 工作台 ---------- */
 function aiGlobalCounts(){
   const imports=S.cimps.filter(b=>b.st==='待确认');
-  const unlinked=S.contents.filter(c=>visC(c)&&!(c.kps||[]).length&&c.st!=='已归档');
+  const unlinked=S.contents.filter(c=>visC(c)&&!(c.kps||[]).length&&c.st!=='已归档'&&c.kpMap!=='待整理');
   const kpNoTag=S.kps.filter(k=>k.st==='启用'&&!(k.tags||[]).length);
   const contentNoTag=S.contents.filter(c=>visC(c)&&!(c.tags||[]).length&&c.st!=='已归档');
   const weak=kpWeakList();

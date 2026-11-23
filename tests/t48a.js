@@ -67,6 +67,6 @@ CK('详情标题行不再出现「通用车型」文本',!/通用车型/.test(do
 /* 9 知识点库点阵与复制标记 */
 fresh();UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;UI.sel.kpPage={page:2,size:20};render();
 CK('知识点库状态列含讲解点阵 + 题/演练计数 + 判定',document.querySelectorAll('.kp-assets .row').length>=2&&document.querySelectorAll('.kp-assets .ux-dot').length>=4);
-CK('疑似复制对标记可渲染',document.querySelectorAll('.kp-dup').length>0);
+CK('不再把同一学习结果按车型复制成对',S.kps.filter(k=>k.code==='XM-P02').length===1);
 CK('页面无 undefined / NaN',!/undefined|NaN/.test(document.querySelector('#main').innerHTML));
 }catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n').slice(1,3).join(' | '))}

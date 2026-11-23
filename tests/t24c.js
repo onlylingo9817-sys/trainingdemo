@@ -7,13 +7,13 @@ const before=JSON.stringify(adaptList(mid).map(x=>[x.k.id,x.m.v]));R.page='train
 CK('学习任务完成会更新进度',myDone(p).includes(n.id),'done='+myDone(p).length);
 CK('学习完成不伪装成掌握度提升',before===JSON.stringify(adaptList(mid).map(x=>[x.k.id,x.m.v])));
 /* 2. 答题会进入证据流 */
-const q=qsOf('K4','已定稿')[0];const m0=(S.mastery[mid]||{}).K4||{v:null};QZ={mode:'practice',kid:'K4',ids:[q.id],i:0,picked:[],shown:false,log:[],chg:{}};R.page='quiz';renderRN();QZ.picked=qzQ().ans.slice();A.qzSubmit();
-CK('真实答题写入证据流',!!(S.ev.q[mid]||{}).K4,'ev='+JSON.stringify((S.ev.q[mid]||{}).K4));
-CK('真实答题更新掌握度',(S.mastery[mid]||{}).K4&&(S.mastery[mid]||{}).K4.v!==m0.v,(m0.v==null?'—':m0.v)+'→'+((S.mastery[mid]||{}).K4||{}).v);
+const kid4=kp('K4').id;const q=qsOf(kid4,'已定稿')[0];const m0=(S.mastery[mid]||{})[kid4]||{v:null};QZ={mode:'practice',kid:kid4,ids:[q.id],i:0,picked:[],shown:false,log:[],chg:{}};R.page='quiz';renderRN();QZ.picked=qzQ().ans.slice();A.qzSubmit();
+CK('真实答题写入证据流',!!((S.ev.q[mid]||{})[kid4]),'ev='+JSON.stringify((S.ev.q[mid]||{})[kid4]));
+CK('真实答题更新掌握度',(S.mastery[mid]||{})[kid4]&&(S.mastery[mid]||{})[kid4].v!==m0.v,(m0.v==null?'—':m0.v)+'→'+(((S.mastery[mid]||{})[kid4]||{}).v));
 /* 3. 薄弱点 -> 补练包 -> 学员可见 */
-document.body.dataset.end='pc';UI.page='kp';UI.kid='K4';render();const t=document.querySelector('#main').innerText;
+document.body.dataset.end='pc';UI.page='kp';UI.kid=kid4;render();const t=document.querySelector('#main').innerText;
 CK('薄弱点详情给出怎么补',/怎么补/.test(t)&&/指派补练包/.test(t));
-const n0=S.packs.length;A.kpWeakPack({dataset:{id:'K4'}});const pk=S.packs[0];
+const n0=S.packs.length;A.kpWeakPack({dataset:{id:kid4}});const pk=S.packs[0];
 CK('指派补练包覆盖未过关学员',pk.mids.length>0&&pk.audience===pk.mids.length,'mids='+pk.mids.length+' audience='+pk.audience);
 document.body.dataset.end='rn';const found=pk.mids.find(m=>PEOPLE.some(p=>p.mid===m)&&((personOf(m)||{}).group!=='对照批'))||PEOPLE[0];ME=PEOPLE.find(p=>p.mid===found)||PEOPLE[0];R.page='adapt';renderRN();
 CK('学员端能看到补练包',document.querySelector('#rscr').innerText.includes(pk.name));

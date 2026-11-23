@@ -8,7 +8,7 @@ CK('学员 41 人 / 6 店',S.lrn.length===41&&v23Stores().length===6,S.lrn.lengt
 CK('学员 MID 唯一(不重号)',new Set(S.lrn.map(l=>l.mid)).size===S.lrn.length,'去重后 '+new Set(S.lrn.map(l=>l.mid)).size+' / '+S.lrn.length);
 CK('生成学员的 MID 不与 v22 演示学员冲突',S.lrn.filter(l=>!V23_BASE.some(b=>b[0]===l.mid)&&!['2023202','2023201','2023203','2023204','2024113','2023206'].includes(l.mid)).every(l=>!PEOPLE.some(p=>p.mid===l.mid)));
 CK('三档岗位都有人',V23_TIER.length===3&&V23_TIER.every(t=>S.lrn.some(l=>l.tier===t)),JSON.stringify(S.lrn.reduce((a,x)=>(a[x.tier]=(a[x.tier]||0)+1,a),{})));
-CK('12 周数据',Object.values(S.out)[0].length===12&&Object.values(S.beh)[0].K1.length===12);
+CK('12 周数据',Object.values(S.out)[0].length===12&&Object.values(Object.values(S.beh)[0])[0].length===12);
 CK('试点批 / 对照批都有',S.lrn.some(l=>l.group==='试点批')&&S.lrn.some(l=>l.group==='对照批'));
 const sig1=JSON.stringify(S.lrn.map(l=>v23Readiness(l.mid,l.tier).val));
 A.reset();
@@ -23,7 +23,7 @@ CK('知识点不再依赖"事实型/技能型"来区分(由维度推断)',S.kps.
 CK('三档画像权重合计均为 100',S.profiles.length===3&&S.profiles.every(p=>pfWsum(p)===100),S.profiles.map(p=>p.role+':'+pfWsum(p)).join(' '));
 CK('每个画像项都命中知识点(不存在空选择器)',S.profiles.every(p=>p.items.every(it=>pfKps(it).length>0)),S.profiles.flatMap(p=>p.items.filter(it=>!pfKps(it).length).map(it=>it.id)).join(','));
 /* ---- 4. 掌握度:来源权重真的在起作用 ---- */
-const l0=S.lrn.find(l=>l.train);const kid='K57';
+const l0=S.lrn.find(l=>l.train);const kid=kp('K57').id;
 const m0=v23Mastery(l0.mid,kid);
 const cfgA=Object.assign({},S.cfg,{srcW:{quiz:1,drill:0,behavior:0,coach:0,self:0}});
 const cfgB=Object.assign({},S.cfg,{srcW:{quiz:0,drill:0,behavior:1,coach:0,self:0}});

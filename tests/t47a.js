@@ -20,7 +20,7 @@ UI.sel.kpTf=null;
 /* 候选：确认走表单，不生成残缺知识点 */
 UI.tab.catalog='候选';render();
 CK('候选按钮为「补全并新增」且无旧按钮',/补全并新增/.test(tx())&&!document.querySelector('[data-act="kpCandOk"]'));
-CK('候选相近提示指向 v1.2 已有知识点',S.kpCand.filter(x=>x.st==='待确认').every(x=>(x.sug||[]).every(n=>S.kps.some(k=>k.name===n))));
+CK('候选相近提示指向现有知识点或旧名称',S.kpCand.filter(x=>x.st==='待确认').every(x=>(x.sug||[]).every(n=>S.kps.some(k=>k.name===n||(k.syn||[]).indexOf(n)>=0))));
 CK('「金融方案讲解」可并入已有',!document.querySelector('[data-act="kpCandMerge"][data-id="C3"]').disabled);
 const c1=S.kpCand.find(x=>x.id==='C1');const n0=S.kps.length;
 A.kpCandForm({dataset:{id:'C1'}});
