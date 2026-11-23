@@ -19,8 +19,11 @@ const KP_DICT_V12={
   taskStates:['未读','已读','已确认','已复测','逾期','挂起','已关闭']
 };
 const KP_SELLPOINT_LEAVES_V12=['外观设计','内饰质感','空间舒适','续航补能','充电补能','动力技术','智能座舱','辅助驾驶','安全','驾控','性能赛道','车型定位','产品线路线','用车成本','产品讲解'];
-if(typeof KP_CELLS!=='undefined'){KP_CELLS.length=0;KP_CELLS.push(['owner','负责人'],['exp','主讲解'],['spec','考核规格'],['fresh','时效']);}
-if(typeof KP_TABS!=='undefined'&&!KP_TABS.includes('补学进度'))KP_TABS.push('补学进度');
+if(typeof KP_CELLS!=='undefined'){KP_CELLS.length=0;KP_CELLS.push(['owner','负责人'],['exp','核心讲解'],['spec','考核规格'],['fresh','时效']);}
+if(typeof KP_TABS!=='undefined'){
+  if(!KP_TABS.includes('知识图谱'))KP_TABS.splice(Math.max(1,KP_TABS.indexOf(KP_TAB_LIB)),0,'知识图谱');
+  if(!KP_TABS.includes('补学进度'))KP_TABS.push('补学进度');
+}
 const KP_LIB_V12=[
 {"id": "K1", "code": "KP-BR-01", "name": "小米品牌与“真诚热爱”价值观", "one": "用品牌故事和价值观建立信任，不喊口号。", "line": "销售", "roles": ["零售顾问"], "also": [], "scope": ["CAR-GEN"], "scopeLevel": "通用", "cars": ["通用车型"], "domain": "品牌文化", "ability": "场景化讲车", "sellpoint": "", "type": "概念", "typeLegacy": "事实型", "batch": "B3-后续", "stage": "不直接对应", "assess": {"methods": "客观题（单选/判断）；口头复述可选", "anchorQ": 3, "practiceQ": 5, "anchorDrill": 0, "pass": 70, "validityDays": 180}, "behavior": "暂无（仅知识测评）", "ownerRole": "品牌培训负责人", "owner": "王磊", "status": "结构已核", "pri": "P1", "specVer": 1, "reviewDue": "", "srcDoc": "", "legacy": "KP-BR-01", "legacyV11": "KP-BR-01", "demo": "gap", "note": ""},
 {"id": "K2", "code": "KP-BR-06", "name": "人车家全生态战略", "one": "讲清手机、车、家如何连成一个生态。", "line": "销售", "roles": ["零售顾问"], "also": [], "scope": ["CAR-GEN"], "scopeLevel": "通用", "cars": ["通用车型"], "domain": "品牌文化", "ability": "场景化讲车", "sellpoint": "", "type": "概念", "typeLegacy": "事实型", "batch": "B2-90天", "stage": "不直接对应", "assess": {"methods": "客观题（单选/判断）；口头复述可选", "anchorQ": 3, "practiceQ": 5, "anchorDrill": 0, "pass": 70, "validityDays": 180}, "behavior": "暂无（仅知识测评）", "ownerRole": "品牌培训负责人", "owner": "王磊", "status": "结构已核", "pri": "P0", "specVer": 1, "reviewDue": "", "srcDoc": "", "legacy": "KP-BR-04", "legacyV11": "KP-BR-06", "demo": "lecture_only", "note": ""},
@@ -182,8 +185,8 @@ function kpV12Health(k){
   const pending=kpV12Status(k)==='内容待核';
   const cells={
     owner:owner?{s:'ok',t:'负责人：'+k.owner}:{s:'err',t:'没有负责人（不能启用）'},
-    exp:main?{s:'ok',t:'主讲解：'+main.title}:{s:'err',t:'没有主讲解'},
-    spec:spec?{s:'ok',t:'锚题 '+aq+' / 锚定演练 '+ad}:{s:'warn',t:'锚题 '+aq+' / 锚定演练 '+ad+'，未达考核规格'},
+    exp:main?{s:'ok',t:'核心讲解：'+main.title}:{s:'err',t:'没有核心讲解'},
+    spec:spec?{s:'ok',t:'核心测评题 '+aq+' / 过关演练 '+ad}:{s:'warn',t:'核心测评题 '+aq+' / 过关演练 '+ad+'，未达考核规格'},
     fresh:fresh?{s:'ok',t:'在有效期/复核期内'}:{s:'warn',t:'过期/待复核/无主讲解'}
   };
   const vals=Object.values(cells).map(x=>x.s);
@@ -245,7 +248,7 @@ v23TaxDims=function(t){
   return d;
 };
 v23TaxKp=function(id,t){
-  return {id,code:t.code,name:t.name,type:t.typeLegacy,tags:[],dim:t.ability||'',
+  return {id,code:t.code,name:t.name,one:t.one||'',type:t.typeLegacy,tags:[],dim:t.ability||'',
     car:(t.cars||['通用车型'])[0],cars:(t.cars||['通用车型']).slice(),syn:[t.name],owner:t.owner,st:'启用',ext:[],
     created:addDays(today,-15),hist:[{t:today,who:'总部培训部 刘翔',act:'v1.2 建库',note:t.code}],pre:[],rel:[],
     dims:v23TaxDims(t),taxCode:t.code,taxDomain:t.domain,taxAbility:t.ability,
@@ -317,34 +320,54 @@ function seedV12Tasks(){
     const level=i%5===0?'L3-作废/重大':'L2-口径变更';
     const states=['已关闭','已复测','已确认','已读','未读','逾期','挂起'];
     const state=states[i%states.length];
+    const dueOff=({'逾期':-(1+i%3),'未读':1+i%6,'已读':1+i%6,'已确认':1+i%6,'挂起':2+i%5})[state];/* 截止日与状态一致:逾期=已过截止,进行中=未到截止 */
     S.tasks.push({id:'T'+(i+1),mid:l.mid,name:l.name,kpId:k.id,kpCode:k.code,kpName:k.name,specVer:k.specVer,level,
-      reason:'演示：'+k.name+' 口径变更',due:addDays(today,(i%9)-3),state,store:l.store,role:l.tier==='店长'?'店长':'零售顾问',line:'销售',
+      reason:'演示：'+k.name+' 口径变更',due:addDays(today,dueOff==null?-(1+i%4):dueOff),state,store:l.store,role:l.tier==='店长'?'店长':'零售顾问',line:'销售',
       sourceContentId:'',mergedFrom:[],ts:addDays(today,-4),readAt:state!=='未读'?addDays(today,-3):'',
       confirmedAt:['已确认','已复测','已关闭'].includes(state)?addDays(today,-2):'',retestedAt:['已复测','已关闭'].includes(state)?addDays(today,-1):''});
   });
   window.__KP_TASKS={total:S.tasks.length,done:S.tasks.filter(t=>['已复测','已关闭'].includes(t.state)).length,overdue:S.tasks.filter(t=>t.state==='逾期').length,people:S.people.length};
 }
 
-/* ---------- 数据校验 ---------- */
+/* ---------- 数据校验：标准库与手工新增 / 编辑共用同一套规则 ---------- */
+function kpV12ValidateKp(k){
+  const errors=[];const add=m=>errors.push(m);
+  const label=k.code||k.id||'未编号知识点';const type=kpV12Type(k);
+  if(!k.id)add('缺少知识点 ID');if(!k.code)add(label+' 缺少标准编号');
+  if(!String(k.name||'').trim())add(label+' 缺少名称');
+  if(!KP_DICT_V12.domains.includes(k.domain))add(label+' 知识域不在字典：'+(k.domain||'空'));
+  if(!KP_DICT_V12.types.includes(type))add(label+' 类型不在字典：'+type);
+  if(!KP_DICT_V12.batches.includes(k.batch))add(label+' 批次不在字典：'+(k.batch||'空'));
+  if(!KP_DICT_V12.stages.includes(k.stage))add(label+' 主要环节不在字典：'+(k.stage||'空'));
+  const cars=kpCars(k);if(!cars.length)add(label+' 至少选择一个适用车型');
+  const validCars=new Set((typeof V23_CAR_ALL!=='undefined'?V23_CAR_ALL:[]).concat((S.cfg&&S.cfg.tax&&S.cfg.tax.car)||[]));
+  cars.forEach(c=>{if(!validCars.has(c))add(label+' 车型不在车型树：'+c)});
+  if(cars.includes('通用车型')&&cars.length>1)add(label+' 通用车型不能与具体车型同时选择');
+  const roles=k.roles||[];if(!roles.length)add(label+' 至少选择一个适用岗位');
+  roles.forEach(r=>{if(!KP_DICT_V12.roles.includes(r))add(label+' 岗位不在字典：'+r)});
+  if(k.domain==='产品知识'){
+    if(k.ability)add(label+' 产品知识能力项应为空');
+    if(!KP_SELLPOINT_LEAVES_V12.includes(k.sellpoint))add(label+' 产品知识请选择有效卖点分类');
+  }else{
+    if(!KP_DICT_V12.abilities.includes(k.ability))add(label+' 非产品知识请选择有效能力项');
+    if(k.sellpoint)add(label+' 非产品知识不应填卖点分类');
+  }
+  if(type==='政策'&&kpV12Assess(k).validityDays!==30)add(label+' 政策类成绩有效期应为 30 天');
+  return errors;
+}
 function kpV12ValidateAll(){
   const errors=[],warns=[],byField={};
   const addE=(f,m)=>{errors.push(m);byField[f]=(byField[f]||0)+1};
-  const ids=new Set();
-  KP_LIB_V12.forEach(t=>{
-    if(ids.has(t.id))addE('kp_id','重复编号 '+t.id);ids.add(t.id);
-    if(!KP_DICT_V12.domains.includes(t.domain))addE('domain',t.code+' 知识域不在字典：'+t.domain);
-    if(!KP_DICT_V12.types.includes(t.type))addE('type',t.code+' 类型不在字典：'+t.type);
-    if(!KP_DICT_V12.batches.includes(t.batch))addE('batch',t.code+' 批次不在字典：'+t.batch);
-    if(!KP_DICT_V12.stages.includes(t.stage))addE('stage',t.code+' 主要环节不在字典：'+t.stage);
-    if(t.domain==='产品知识'){if(t.ability)addE('ability',t.code+' 产品知识能力项应为空');if(!t.sellpoint)addE('sellpoint',t.code+' 产品知识缺卖点分类')}
-    else {if(!t.ability)addE('ability',t.code+' 非产品知识缺能力项');if(t.sellpoint)addE('sellpoint',t.code+' 非产品知识不应填卖点分类')}
-    (t.scope||[]).forEach(c=>{if(!KP_CAR_CODES_V12.has(c))addE('car_scope',t.code+' 车型 code 不在树：'+c)});
-    if(t.type==='政策'&&t.assess&&t.assess.validityDays!==30)addE('validity',t.code+' 政策类有效期应为 30 天');
+  const ids=new Set(),codes=new Set();
+  (S.kps||[]).forEach(k=>{
+    if(ids.has(k.id))addE('kp_id','重复 ID '+k.id);ids.add(k.id);
+    if(codes.has(k.code))addE('kp_code','重复编号 '+k.code);codes.add(k.code);
+    kpV12ValidateKp(k).forEach(m=>{const field=/知识域/.test(m)?'domain':/类型/.test(m)?'type':/批次/.test(m)?'batch':/环节/.test(m)?'stage':/能力项/.test(m)?'ability':/卖点/.test(m)?'sellpoint':/车型/.test(m)?'car':/岗位/.test(m)?'role':/有效期/.test(m)?'validity':'kp';addE(field,m)});
   });
   const mainCount={};(S.contents||[]).forEach(c=>{(c.kps||[]).forEach(id=>{if(((c.kpRole&&c.kpRole[id])||'主讲解')==='主讲解')mainCount[id]=(mainCount[id]||0)+1})});
   Object.keys(mainCount).forEach(id=>{if(mainCount[id]>1)addE('main_lecture','知识点 '+id+' 有 '+mainCount[id]+' 条主讲解')});
-  S.kps.forEach(k=>{const h=kpV12Health(k);if(h.level!=='ok')warns.push(k.code+'：'+[h.cells.owner.s!=='ok'?'缺负责人':'',h.cells.exp.s!=='ok'?'缺主讲解':'',h.cells.spec.s!=='ok'?'缺考核规格':'',h.cells.fresh.s!=='ok'?'时效待处理':''].filter(Boolean).join(' / '))});
-  const out={total:KP_LIB_V12.length,errors:errors.length,warns:warns.length,errorList:errors,warnList:warns,byField};
+  (S.kps||[]).forEach(k=>{const h=kpV12Health(k);if(h.level!=='ok')warns.push(k.code+'：'+[h.cells.owner.s!=='ok'?'缺负责人':'',h.cells.exp.s!=='ok'?'缺主讲解':'',h.cells.spec.s!=='ok'?'缺考核规格':'',h.cells.fresh.s!=='ok'?'时效待处理':''].filter(Boolean).join(' / '))});
+  const out={total:(S.kps||[]).length,errors:errors.length,warns:warns.length,errorList:errors,warnList:warns,byField};
   window.__KP_VALIDATION=out;return out;
 }
 
@@ -354,7 +377,7 @@ kpDimsHtml=function(k){
   const rows=[['业务线',k.line],['岗位',(k.roles||[]).join('、')],['适用车型',kpCarText(k)],['知识域',k.domain],
     ['能力项',k.ability||'—（产品知识用卖点分类）'],['卖点分类',k.sellpoint||'—'],['类型',kpV12Type(k)],['批次',kpV12Batch(k)],
     ['主要环节',k.stage],['考核方式',(kpV12Assess(k).methods||'—')],['有效期',(kpV12Assess(k).validityDays||'—')+' 天'],['负责人角色',k.ownerRole||'—']];
-  return rows.filter(x=>x[1]).map(x=>'<div class="kv-line"><span>'+x[0]+'</span><b>'+esc(x[1])+'</b></div>').join('')+'<div class="hint" style="margin-top:6px">v1.2：产品知识不占能力项；考核只看锚题/锚定演练。</div>';
+  return rows.filter(x=>x[1]).map(x=>'<div class="kv-line"><span>'+x[0]+'</span><b>'+esc(x[1])+'</b></div>').join('')+'<div class="hint" style="margin-top:6px">产品知识不占能力项；过关与复测只看核心测评题 / 过关情景演练，巩固练习不计入。</div>';
 };
 
 /* ---------- 覆盖：总览 ---------- */
@@ -402,50 +425,73 @@ kpOverviewNew=function(){
    +'<div class="card"><h3>数据校验 <span class="hint">error 必须为 0；warn 是缺口提示</span></h3><div class="hint">error '+val.errors+' · warn '+val.warns+' · total '+val.total+'</div>'+(val.errorList.length?'<div class="tag err" style="display:block;margin-top:6px;white-space:normal">'+val.errorList.slice(0,8).map(esc).join('<br>')+'</div>':'<div class="chk ok" style="margin-top:6px"><b>✓</b><span>无结构错误</span></div>')+'</div>';
 };
 
-/* ---------- 覆盖：知识点库列表 ---------- */
+/* ---------- 覆盖：知识点库列表（默认精简，按需展开完整字段） ---------- */
+function kpV12ListMatch(k,f){
+  const h=kpV12Health(k);
+  if(f.line&&k.line!==f.line)return false;
+  if(f.role&&!(k.roles||[]).includes(f.role))return false;
+  if(f.car==='通用车型'&&!kpCars(k).includes('通用车型'))return false;
+  if(f.car&&f.car!=='通用车型'&&!(V23_CAR_TREE[f.car]?kpCarOverlap(kpCars(k),[f.car]):kpV12CoversCar(k,f.car)))return false;
+  if(f.domain&&k.domain!==f.domain)return false;
+  if(f.ability&&k.ability!==f.ability)return false;
+  if(f.sellpoint&&k.sellpoint!==f.sellpoint)return false;
+  if(f.batch&&kpV12Batch(k)!==f.batch)return false;
+  if(f.status&&kpV12Status(k)!==f.status)return false;
+  if(f.pri&&f.pri!=='全部'&&k.pri!==f.pri)return false;
+  if(f.owner&&(f.owner==='(无)'?!k.owner:k.owner!==f.owner))return false;
+  if(f.lv==='只看有缺口'&&h.level!=='err')return false;
+  if(f.lv==='只看待补'&&h.level!=='warn')return false;
+  if(f.lv==='只看完备'&&h.level!=='ok')return false;
+  if(f.lv==='未完备'&&kpGapList(k,h).length===0&&!h.pending)return false;
+  if(f.view==='mine'&&k.owner!==meShort())return false;
+  if(f.view==='p0gap'&&!(k.pri==='P0'&&h.cells.exp.s!=='ok'))return false;
+  if(f.view==='assess'&&h.cells.spec.s==='ok')return false;
+  if(f.view==='review'&&!(kpV12Type(k)==='政策'||!kpV12ReviewOk(k)||h.pending))return false;
+  if(f.q){const q=f.q.trim();if(q&&!(k.name.includes(q)||String(k.code||'').includes(q)||k.id===q||(k.legacy&&k.legacy.includes(q))||(k.syn||[]).some(w=>w.includes(q))))return false}
+  return true;
+}
+A.kpView=el=>{const f=kpLibFilter();f.view=f.view===el.dataset.v?'':el.dataset.v;UI.sel.kpPage={page:1,size:20};render()};
+A.kpFull=()=>{const f=kpLibFilter();f.full=!f.full;render()};
+A.kpMore=()=>{const f=kpLibFilter();f.more=!f.more;render()};
+A.kpEditRow=el=>{UI.kid=el.dataset.id;A.kpEdit()};
 kpLibrary=function(){
-  const f=UI.sel.kpf||(UI.sel.kpf={});
-  const rows=(S.kps||[]).filter(k=>{
-    if(f.line&&k.line!==f.line)return false;
-    if(f.role&&!(k.roles||[]).includes(f.role))return false;
-    if(f.car&&!kpV12CoversCar(k,f.car))return false;
-    if(f.domain&&k.domain!==f.domain)return false;
-    if(f.ability&&k.ability!==f.ability)return false;
-    if(f.sellpoint&&k.sellpoint!==f.sellpoint)return false;
-    if(f.batch&&kpV12Batch(k)!==f.batch)return false;
-    if(f.status&&kpV12Status(k)!==f.status)return false;
-    if(f.pri&&f.pri!=='全部'&&k.pri!==f.pri)return false;
-    if(f.owner&&(f.owner==='(无)'?!k.owner:k.owner!==f.owner))return false;
-    if(f.lv){const lv=kpV12Health(k).level;if(f.lv==='只看有缺口'&&lv!=='err')return false;if(f.lv==='只看待补'&&lv!=='warn')return false;if(f.lv==='只看完备'&&lv!=='ok')return false}
-    if(f.q){const q=f.q.trim();if(q&&!(k.name.includes(q)||k.code.includes(q)||k.id===q||(k.legacy&&k.legacy.includes(q))||(k.syn||[]).some(w=>w.includes(q))))return false}
-    return true;
-  });
+  const f=kpLibFilter();const full=!!f.full;
+  const rows=(S.kps||[]).filter(k=>kpV12ListMatch(k,f));
+  const sort=f.sort||'gap';
+  const MORE=['line','role','ability','sellpoint','batch','status','pri','owner'];const nMore=MORE.filter(x=>f[x]).length;const nAct=Object.keys(f).filter(x=>f[x]&&!['more','full','sort'].includes(x)).length;
+  if(sort==='name')rows.sort((a,b)=>a.name.localeCompare(b.name,'zh'));
+  if(sort==='gap')rows.sort((a,b)=>{const r=x=>(x.pri==='P0'?0:3)+(kpV12Health(x).level==='err'?0:kpV12Health(x).level==='warn'?1:2);return r(a)-r(b)||a.name.localeCompare(b.name,'zh')});
+  if(sort==='pri')rows.sort((a,b)=>String(a.pri).localeCompare(String(b.pri))||a.name.localeCompare(b.name,'zh'));
+  UI.kpOrder=rows.map(k=>k.id);
   const pg=lstPage('kpPage',rows);
   const sel=(key,label,arr)=>'<div class="fi2"><label>'+label+'</label><select data-wc="kpset" data-k="'+key+'"><option value="">全部</option>'+arr.map(x=>'<option value="'+esc(x)+'" '+(f[key]===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div>';
-  const filter='<div class="card"><div class="filg">'
+  const carOpts='<option value="">全部车型</option><option value="通用车型" '+(f.car==='通用车型'?'selected':'')+'>通用车型</option>'+Object.keys(V23_CAR_TREE).map(sr=>'<optgroup label="'+esc(sr)+'"><option value="'+esc(sr)+'" '+(f.car===sr?'selected':'')+'>'+esc(sr)+' 全系</option>'+V23_CAR_TREE[sr].map(v=>'<option value="'+esc(v)+'" '+(f.car===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</optgroup>').join('');
+  const views=[['mine','我负责的'],['p0gap','P0 缺讲解'],['assess','考核不全'],['review','政策 / 待复核']];
+  const viewBar='<div class="kp-view-bar"><span>常用视图</span>'+views.map(v=>'<button type="button" class="kp-view '+(f.view===v[0]?'on':'')+'" data-act="kpView" data-v="'+v[0]+'">'+v[1]+'</button>').join('')+(f.view?'<button type="button" class="link" data-act="kpView" data-v="'+f.view+'">取消视图</button>':'')+'</div>';
+  const primary='<div class="filg kp-filter-primary">'
     +'<div class="fi2"><label>搜索</label><input data-wc="kpq" value="'+esc(f.q||'')+'" placeholder="编号 / 名称 / 旧编号"></div>'
+    +'<div class="fi2"><label>适用车型</label><select data-wc="kpset" data-k="car">'+carOpts+'</select></div>'
+    +sel('domain','知识域',KP_DICT_V12.domains)
+    +'<div class="fi2"><label>完备度</label><select data-wc="kpset" data-k="lv"><option value="">全部</option>'+['未完备','只看有缺口','只看待补','只看完备'].map(x=>'<option '+(f.lv===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div></div>';
+  const more='<div class="filg kp-more-filters" '+(f.more?'':'hidden')+'>'
     +sel('line','业务线',KP_DICT_V12.businessLines)+sel('role','岗位',KP_DICT_V12.roles)
-    +sel('car','车型',['全部车型'].concat(V23_CAR_LEAVES))+sel('domain','知识域',KP_DICT_V12.domains)
     +sel('ability','能力项',KP_DICT_V12.abilities)+sel('sellpoint','卖点分类',KP_SELLPOINT_LEAVES_V12)
-    +sel('batch','批次',KP_DICT_V12.batches)+sel('pri','P0/P1',['P0','P1','全部'])
-    +'<div class="fi2"><label>完备度</label><select data-wc="kpset" data-k="lv"><option value="">全部</option>'+['只看有缺口','只看待补','只看完备'].map(x=>'<option '+(f.lv===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'
-    +'<div class="fi2"><label>排序</label><select data-wc="kpset" data-k="sort"><option value="">默认</option><option value="name" '+(f.sort==='name'?'selected':'')+'>名称</option><option value="gap" '+(f.sort==='gap'?'selected':'')+'>缺口优先</option></select></div>'
-    +'<div class="fi2" style="align-self:end"><button class="btn" data-act="kpFclr">清除</button></div>'
-    +'<div class="fi2" style="align-self:end">'+lstCsvBtn(['编号','名称','业务线','岗位','车型','知识域','能力/卖点','类型','批次','主要环节','完备度'],[['编号','名称','业务线','岗位','车型','知识域','能力/卖点','类型','批次','主要环节','完备度']].concat(rows.map(k=>[k.code,k.name,k.line,(k.roles||[]).join('、'),kpCarText(k),k.domain,k.ability||k.sellpoint,kpV12Type(k),kpV12Batch(k),k.stage,kpV12Health(k).level])),'知识点库')+'</div></div></div>';
-  if(f.sort==='name')rows.sort((a,b)=>a.name.localeCompare(b.name,'zh'));
-  if(f.sort==='gap')rows.sort((a,b)=>{const r=x=>kpV12Health(x).level==='err'?0:kpV12Health(x).level==='warn'?1:2;return r(a)-r(b)});
-  return srcBar('v1.2 知识点库：68 条全量。产品知识不填能力项、用卖点分类；「主讲解 / 考核规格 / 时效」四个格子决定能不能上课、能不能量。')
-    +filter
-    +'<div class="card"><h3>知识点清单 <span class="hint">共 '+S.kps.length+' 条；筛选后 '+rows.length+' 条</span></h3><div class="tw"><table class="t nw stk kp-list"><tr><th>知识点</th><th>编号</th><th>业务线/岗位</th><th>适用车型</th><th>知识域</th><th>能力 / 卖点</th><th>类型/批次</th><th>主要环节</th><th>完备度</th><th>考核规格</th><th>弱点</th><th>操作</th></tr>'
-    +pg.rows.map(k=>{const h=kpV12Health(k);return '<tr><td style="white-space:normal;min-width:180px"><a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>'+(typeof rvChip==='function'?' '+rvChip('kp',k.id):'')+'<div class="hint">'+esc(k.one||'')+'</div></td>'
-      +'<td><b>'+esc(k.code)+'</b><div class="hint">'+(k.legacy?'旧 '+esc(k.legacy):'')+'</div></td>'
-      +'<td>'+esc(k.line)+'<div class="hint">'+esc((k.roles||[]).join('、'))+'</div></td>'
-      +'<td style="white-space:normal;min-width:130px">'+esc(kpCarText(k))+'</td>'
-      +'<td>'+esc(k.domain)+'</td><td>'+esc(k.ability||('卖点 · '+(k.sellpoint||'—')))+'</td>'
-      +'<td>'+esc(kpV12Type(k))+'<div class="hint">'+esc(kpV12Batch(k))+'</div></td>'
-      +'<td>'+esc(k.stage)+'</td><td><span class="kp-dots">'+kpDots(h)+'</span> <span class="tag '+(h.level==='ok'?'ok':h.level==='warn'?'warn':'err')+'">'+(h.level==='ok'?'完备':h.level==='warn'?'待补':'缺口')+'</span>'+(h.pending?' <span class="tag warn">待核</span>':'')+'</td>'
-      +'<td>'+h.aq+' 锚 / '+h.ad+' 演练</td><td>'+kpWeakTxt(k)+'</td><td><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a></td></tr>'}).join('')
-    +'</table></div>'+lstPager('kpPage',pg)+'</div>';
+    +sel('batch','批次',KP_DICT_V12.batches)+sel('status','内容状态',KP_DICT_V12.statuses)+sel('pri','优先级',['P0','P1','全部'])
+    +sel('owner','负责人',kpOwners().concat(['(无)']))
+    +'</div>';
+  const filter='<div class="card kp-filter-card">'+viewBar+primary+more+'<div class="kp-filter-actions"><button class="btn sm" data-act="kpMore">'+(f.more?'收起筛选':'更多筛选'+(nMore?'（已选 '+nMore+'）':''))+'</button><button class="btn sm" data-act="kpFclr" '+(nAct?'':'disabled')+'>清除筛选</button><span class="sp"></span><button class="btn sm" data-act="kpFull">'+(full?'返回精简视图':'完整字段')+'</button>'
+    +lstCsvBtn(['编号','名称','业务线','岗位','车型','知识域','能力/卖点','类型','批次','主要环节','完备度'],[['编号','名称','业务线','岗位','车型','知识域','能力/卖点','类型','批次','主要环节','完备度']].concat(rows.map(k=>[k.code,k.name,k.line,(k.roles||[]).join('、'),kpCarText(k),k.domain,k.ability||k.sellpoint,kpV12Type(k),kpV12Batch(k),k.stage,kpV12Health(k).level])),'知识点库')+'</div></div>';
+  const nameCell=k=>'<td class="kp-name-cell"><a class="link" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name)+'</a>'+(typeof rvChip==='function'?' '+rvChip('kp',k.id):'')+'<div class="hint">'+esc(k.code)+' · '+esc(k.one||'暂未填写一句话定义')+'</div></td>';
+  const healthCell=(k,h)=>'<td><span class="kp-dots" title="负责人 / 主讲解 / 考核规格 / 时效">'+kpDots(h)+'</span> <span class="tag '+(h.level==='ok'?'ok':h.level==='warn'?'warn':'err')+'">'+(h.level==='ok'?'完备':h.level==='warn'?'待补':'缺口')+'</span>'+(h.pending?' <span class="tag warn">待核</span>':'')+'</td>';
+  const gapCell=(k,h)=>'<td class="kp-gap-cell">'+(h.level==='ok'?'<span class="tag ok">完备</span>':kpGapChips(k,h))+(h.pending?' <span class="tag warn">内容待核</span>':'')+'</td>';
+  const actionCell=k=>'<td class="kp-row-actions"><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a> <a class="link" data-act="kpEditRow" data-id="'+k.id+'">编辑</a></td>';
+  const compactHead='<tr><th>知识点</th><th>适用车型</th><th>分类</th><th>负责人</th><th>状态 / 缺什么</th><th>操作</th></tr>';
+  const compactRow=k=>{const h=kpV12Health(k);return '<tr class="kp-click" data-act="kpOpen" data-id="'+k.id+'">'+nameCell(k)+'<td class="kp-car-cell">'+esc(kpCarText(k))+'</td><td><b>'+esc(k.domain)+'</b><div class="hint">'+esc(k.ability||('卖点 · '+(k.sellpoint||'—')))+' · '+esc(kpV12Type(k))+'</div></td><td>'+(k.owner?esc(k.owner):'<span class="tag err">未指定</span>')+'</td>'+gapCell(k,h)+actionCell(k)+'</tr>'};
+  const fullHead='<tr><th>知识点</th><th>编号</th><th>业务线/岗位</th><th>适用车型</th><th>知识域</th><th>能力 / 卖点</th><th>类型/批次</th><th>主要环节</th><th>完备度</th><th>考核规格</th><th>弱点</th><th>操作</th></tr>';
+  const fullRow=k=>{const h=kpV12Health(k);return '<tr class="kp-click" data-act="kpOpen" data-id="'+k.id+'">'+nameCell(k)+'<td><b>'+esc(k.code)+'</b><div class="hint">'+(k.legacy?'旧 '+esc(k.legacy):'')+'</div></td><td>'+esc(k.line)+'<div class="hint">'+esc((k.roles||[]).join('、'))+'</div></td><td class="kp-car-cell">'+esc(kpCarText(k))+'</td><td>'+esc(k.domain)+'</td><td>'+esc(k.ability||('卖点 · '+(k.sellpoint||'—')))+'</td><td>'+esc(kpV12Type(k))+'<div class="hint">'+esc(kpV12Batch(k))+'</div></td><td>'+esc(k.stage)+'</td>'+healthCell(k,h)+'<td>'+h.aq+' 锚 / '+h.ad+' 演练</td><td>'+kpWeakTxt(k)+'</td>'+actionCell(k)+'</tr>'};
+  return ''
+    +filter+'<div class="card"><div class="kp-list-head"><h3>知识点清单 <span class="hint">'+(nAct?'筛选后 '+rows.length+' / '+S.kps.length+' 条':'共 '+S.kps.length+' 条')+'</span></h3><div class="kp-list-tools"><label class="hint">排序 <select data-wc="kpset" data-k="sort"><option value="gap" '+(sort==='gap'?'selected':'')+'>缺口优先（P0 在前）</option><option value="pri" '+(sort==='pri'?'selected':'')+'>优先级</option><option value="name" '+(sort==='name'?'selected':'')+'>名称</option></select></label><span class="hint">'+(full?'完整字段':'精简视图')+'</span></div></div><div class="tw"><table class="t nw stk kp-list '+(full?'full':'compact')+'">'+(full?fullHead:compactHead)
+    +pg.rows.map(full?fullRow:compactRow).join('')+'</table></div>'+lstPager('kpPage',pg)+(rows.length?'':(S.kps.length?uxEmpty({title:'没有符合条件的知识点',desc:'换个关键词，或清除筛选后再看。',act:'kpFclr',label:'清除筛选'}):uxEmpty({title:'知识点库还是空的',desc:'先新增一个知识点，或批量导入标准清单。',act:'kpNew',label:'新增知识点',act2:'kpOpenBatch',label2:'批量导入'})))+'</div>';
 };
 
 /* ---------- 覆盖：配置中心知识点库 v1.2 ---------- */
@@ -467,8 +513,8 @@ kpPicker=function(){
   const has=C.kps||[];const sel=has.map(kp).filter(Boolean);
   const role=kid=>(C.kpRole&&C.kpRole[kid])||(C.mainKp===kid?'主讲解':'补充材料');
   const opts=(S.kps||[]).filter(k=>k.st==='启用'&&!has.includes(k.id)&&kpCarOk(k,C.kind==='话术'?C.car:''));
-  return (sel.length?'<div style="margin-bottom:8px">'+sel.map(k=>{const r=role(k.id);return '<span class="tag '+(r==='主讲解'?'pri':'')+'" style="margin:0 6px 6px 0;padding:3px 8px">'+(r==='主讲解'?'主讲解 · ':r==='补充材料'?'补充 · ':'提及 · ')+esc(k.name)+' <a class="link" data-act="cKpRole" data-v="'+k.id+'">'+(r==='主讲解'?'改为补充':'设为主讲解')+'</a> <a class="link" data-act="cKpDel" data-v="'+k.id+'">×</a></span>'}).join('')+'</div>':'<div class="hint" style="margin-bottom:6px">还没有挂知识点。上架前必须挂至少 1 个；草稿可以暂不挂。</div>')
-    +(sel.length>1?'<div class="hint" style="margin-bottom:6px;line-height:1.7">一个知识点只能有 1 条主讲解；补充材料不影响新人必学路径。</div>':'')
+  return (sel.length?'<div style="margin-bottom:8px">'+sel.map(k=>{const r=role(k.id);return '<span class="tag '+(r==='主讲解'?'pri':'')+'" style="margin:0 6px 6px 0;padding:3px 8px">'+(r==='主讲解'?'核心讲解 · ':r==='补充材料'?'补充 · ':'提及 · ')+esc(k.name)+' <a class="link" data-act="cKpRole" data-v="'+k.id+'">'+(r==='主讲解'?'改为补充':'设为核心讲解')+'</a> <a class="link" data-act="cKpDel" data-v="'+k.id+'">×</a></span>'}).join('')+'</div>':'<div class="hint" style="margin-bottom:6px">还没有挂知识点。上架前必须挂至少 1 个；草稿可以暂不挂。</div>')
+    +(sel.length>1?'<div class="hint" style="margin-bottom:6px;line-height:1.7">一个知识点只能有 1 条核心讲解；补充材料不影响新人必学路径。</div>':'')
     +(function(){const rec=(typeof recKpsFor==='function'?recKpsFor({title:C.title||'',kw:C.kw||'',car:C.car||'',text:(C.kind==='话术'?Object.values(C.spin||{}).join(' '):(C.intro||''))+' '+(C.bscene||'')},3):[]).filter(k=>!has.includes(k.id));return rec.length?'<div style="margin:6px 0"><span class="hint">系统推荐：</span>'+rec.map(k=>'<span class="tag blue" style="cursor:pointer;margin:0 6px 4px 0;padding:3px 8px" data-act="cKpRec" data-v="'+k.id+'">+ '+esc(k.name)+'</span>').join('')+'</div>':''})()
     +'<input list="cp_kl" data-wc="cKpAdd" placeholder="输入编号/名称搜索知识点，如 KP-SALE-13" style="width:100%;max-width:460px"><datalist id="cp_kl">'+opts.map(k=>'<option value="'+esc(kpV12PickLabel(k))+'"></option>').join('')+'</datalist>'
     +'<div class="hint" style="margin-top:4px">'+(C.kind==='话术'&&C.car&&C.car!=='通用车型'?'已按车型「'+esc(C.car)+'」预过滤：可选 '+opts.length+' 个':'可选 '+opts.length+' 个')+'</div>'
@@ -556,7 +602,7 @@ kpMasteryCard=function(k){
   const valid=rs.filter(x=>x.st&&x.st.status==='有效').length;
   const pending=rs.filter(x=>x.st&&x.st.status==='待确认').length;
   const weak=rs.filter(x=>x.m.v<70).length;
-  return '<div class="card"><h3>学员掌握度 <span class="hint">只算锚题/锚定演练；练习不计入</span></h3><div class="grid g4"><div class="stat"><div class="l">已测人数</div><div class="n">'+rs.length+'</div></div><div class="stat"><div class="l">平均掌握度</div><div class="n">'+avg+'</div></div><div class="stat"><div class="l">未过关</div><div class="n" style="color:'+(weak?'#e5484d':'#12a36b')+'">'+weak+'</div></div><div class="stat"><div class="l">有效 / 待确认</div><div class="n">'+valid+' / '+pending+'</div></div></div><div class="hint" style="margin-top:8px">有效掌握率 = '+valid+' / '+rs.length+'（'+(rs.length?Math.round(valid/rs.length*100):0)+'%）；过期成绩降为“待确认”，不计入有效。</div></div>';
+  return '<div class="card"><h3>学员掌握度 <span class="hint">只算核心测评题 / 过关演练；巩固练习不计入</span></h3>'+(kpV12AnchorQn(k)||kpV12AnchorDrillN(k)?'':'<div class="ux-inline warn">这个知识点还没有已定稿的核心测评题和过关演练，下面是演示种子数据，不是真实作答结果。</div>')+'<div class="grid g4"><div class="stat"><div class="l">已测人数</div><div class="n">'+rs.length+'</div></div><div class="stat"><div class="l">平均掌握度</div><div class="n">'+avg+'</div></div><div class="stat"><div class="l">未过关</div><div class="n" style="color:'+(weak?'#e5484d':'#12a36b')+'">'+weak+'</div></div><div class="stat"><div class="l">有效 / 待确认</div><div class="n">'+valid+' / '+pending+'</div></div></div><div class="hint" style="margin-top:8px">有效掌握率 = '+valid+' / '+rs.length+'（'+(rs.length?Math.round(valid/rs.length*100):0)+'%）；过期成绩降为“待确认”，不计入有效。</div></div>';
 };
 
 /* ---------- 后台：补学进度 ---------- */

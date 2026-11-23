@@ -66,8 +66,8 @@ A.qkw=el=>{qFx().q=el.value.trim();render()};
 A.qJumpNoQ=()=>{const k=S.kps.find(k=>k.st==='启用'&&!qsOf(k.id,'已定稿').length);if(k)A.kpOpen({dataset:{id:k.id}})};
 A.qPass=el=>{const q=qById(el.dataset.id);const was=q.st;q.st='已定稿';toast((was==='已停用'?'已恢复':'已定稿')+':'+q.id,'ok');render()};
 A.qOff=el=>{const q=qById(el.dataset.id);q.st='已停用';toast('已停用:'+q.id+'(已作答的记录保留)','ok');render()};
-A.qOpen=el=>{const q=qById(el.dataset.id);QF=JSON.parse(JSON.stringify(q));QF._new=false;UI.page='qform';render();$('#main').scrollTop=0};
-A.qNew=()=>{const f=qFx();QF={id:null,kp:f.kp||(S.kps[0]||{}).id,type:'单选',stem:'',opts:['','','',''],ans:[0],why:'',lv:1,src:'',st:'草稿',owner:UI.role.name,_new:true};UI.page='qform';render()};
+A.qOpen=el=>{const q=qById(el.dataset.id);QF=JSON.parse(JSON.stringify(q));QF.role=QF.role||'练习题';QF._new=false;UI.page='qform';render();$('#main').scrollTop=0};
+A.qNew=()=>{const f=qFx();QF={id:null,kp:f.kp||(S.kps[0]||{}).id,type:'单选',stem:'',opts:['','','',''],ans:[0],why:'',lv:1,src:'',st:'草稿',role:'练习题',owner:UI.role.name,_new:true};UI.page='qform';render()};
 let QF=null;
 /* AI 从话术出题(演示:取话术 N 段里的数字/名词出填空式选择题的"草稿",走审核) */
 function qGenFactsOf(c){
@@ -91,7 +91,7 @@ A.qGen=()=>{const un=S.kps.filter(k=>k.st==='启用'&&qsOf(k.id,'已定稿').len
     const opts=[f.num].concat(dis);const order=opts.map((x,i)=>({x,i})).sort((a,b)=>hsh(k.id+a.x)-hsh(k.id+b.x));
     const ansIdx=order.findIndex(o=>o.i===0);
     const id='Q'+(S.qs.length+1+n);
-    S.qs.push({id,kp:k.id,type:'单选',stem:'话术「'+f.src.title.split(' · ').pop()+'」里提到的关键数据是?(草稿,定稿前请核对)',opts:order.map(o=>o.x),ans:[ansIdx],why:'来源话术原文:'+f.sent+'。',lv:1,src:f.src.id,st:'草稿',owner:k.owner||UI.role.name,created:today,stat:{n:0,ok:0},aiDraft:true});n++});
+    S.qs.push({id,kp:k.id,type:'单选',stem:'话术「'+f.src.title.split(' · ').pop()+'」里提到的关键数据是?(草稿,定稿前请核对)',opts:order.map(o=>o.x),ans:[ansIdx],why:'来源话术原文:'+f.sent+'。',lv:1,src:f.src.id,st:'草稿',role:'练习题',owner:k.owner||UI.role.name,created:today,stat:{n:0,ok:0},aiDraft:true});n++});
   toast(n?'AI 一次生成了 '+n+' 道完整草稿题(选项与解析已由话术原文生成);请核对后再定稿':'没有可出题的知识点(已有 ≥3 道题、没挂内容或话术里没有数据)',n?'ok':'err');render()};
 function pgQForm(){
   if(!QF){UI.page='catalog';return pgCatalog()}
@@ -102,6 +102,7 @@ function pgQForm(){
   const dockHtml='<!--DOCK_START--><div class="dock"><span class="sp"></span><button class="btn" data-act="qCancel">取消</button><button class="btn" data-act="qSave" data-s="0">保存草稿</button><button class="btn pri" data-act="qSave" data-s="1">保存并定稿</button></div><!--DOCK_END-->';
   return crumb('<a data-act="go" data-p="content">内容中心</a> / 题 / '+(QF._new?'新增':QF.id))+dockHtml+'<div class="ph"><h2>'+(QF._new?'新增题目':'编辑 '+QF.id)+'</h2></div>'
    +'<div class="card frm">'+FR('知识点','<select data-wc="qfset" data-k="kp">'+S.kps.map(k=>'<option value="'+k.id+'" '+(QF.kp===k.id?'selected':'')+'>'+esc(kpLabel(k))+'</option>').join('')+'</select>',{req:1,h:'题挂在知识点上;诊断时每个知识点抽题'})
+   +FR('这道题用于','<select data-wc="qfset" data-k="role"><option value="练习题" '+(QF.role!=='锚题'?'selected':'')+'>巩固练习（不计过关）</option><option value="锚题" '+(QF.role==='锚题'?'selected':'')+'>核心测评（用于过关 / 复测）</option></select>',{req:1,h:'只有已定稿的核心测评题计入过关与复测；巩固练习用于反复练手。新建默认巩固练习。'})
    +FR('题型','<div class="rels">'+Q_TYPES.map(x=>'<span class="'+(QF.type===x?'on':'')+'" data-act="qType" data-v="'+x+'">'+x+'</span>').join('')+'</div>',{req:1})
    +FR('题干','<textarea class="w" data-qf="stem" style="min-height:70px">'+esc(QF.stem)+'</textarea>',{req:1,h:'只考话术 / 课程原文里明确有的事实;不要出原文里没有的数字'})
    +FR('选项与答案',oh+(!isJ&&opts.length<6?'<a class="link" data-act="qOptAdd">+ 增加选项</a>':''),{req:1})
@@ -119,8 +120,8 @@ A.qOptDel=el=>{const i=+el.dataset.i;QF.opts.splice(i,1);QF.ans=QF.ans.filter(x=
 A.qCancel=()=>{QF=null;UI.page='content';UI.tab.content='全部内容';UI.sel.cadv=false;(UI.sel.caf||(UI.sel.caf={})).k='题';render()};
 function qCheckHard(q){const isJ=q.type==='判断';const h=[];if(!q.stem.trim())h.push('请填写题干');if(!isJ&&q.opts.some(o=>!String(o).trim()))h.push('有选项没填');if(!q.ans.length)h.push('请选择正确答案');if(q.type==='多选'&&q.ans.length<2)h.push('多选题至少 2 个正确答案');if(!q.why.trim())h.push('请写解析');if(!isJ&&new Set(q.opts.map(o=>String(o).trim())).size<q.opts.length)h.push('选项有重复');if(/请编干扰项|AI 草稿/.test(q.stem+q.opts.join('')))h.push('还有 AI 占位文字没改');return h}
 A.qSave=el=>{const fin=el.dataset.s==='1';if(!QF.stem.trim())return toast('请先填写题干','err');if(fin){const h=qCheckHard(QF);if(h.length)return toast('不能定稿:'+h[0]+(h.length>1?'(共 '+h.length+' 项)':''),'err')}
-  let q=QF.id&&qById(QF.id);const o=JSON.parse(JSON.stringify(QF));delete o._new;o.st=fin?'已定稿':(q&&q.st==='已定稿'?'草稿':o.st==='已停用'?'已停用':'草稿');
-  if(q){Object.assign(q,o)}else{o.id='Q'+(Math.max(0,...S.qs.map(x=>+x.id.slice(1)))+1);o.created=today;o.stat={n:0,ok:0};S.qs.push(o);q=o}
+  let q=QF.id&&qById(QF.id);const o=JSON.parse(JSON.stringify(QF));delete o._new;o.role=o.role==='锚题'?'锚题':'练习题';o.st=fin?'已定稿':(q&&q.st==='已定稿'?'草稿':o.st==='已停用'?'已停用':'草稿');
+  if(q){Object.assign(q,o)}else{o.id='Q'+(Math.max(0,...S.qs.map(x=>+String(x.id).slice(1)).filter(Number.isFinite))+1);o.created=today;o.stat={n:0,ok:0};S.qs.push(o);q=o}
   QF=null;UI.page='catalog';UI.tab.catalog='题库';toast(fin?'已保存并定稿 '+q.id:'已保存草稿 '+q.id,'ok');render()};
 /* ================= 零售通:真实作答(诊断 / 练习)=================
    掌握度算法(可解释,起步版):按时间倒序取该学员在该知识点最近 6 次作答,权重 1.0 / 0.85 / 0.7 … 逐次衰减,

@@ -138,10 +138,7 @@ function pgContent(){
   cSweep();let t=curTab('content',CTABS);if(t==='内容'||t==='话术与课程(高级)')t='全部内容';let b='';const V=S.contents.filter(visC);
   const canNew=['hq','region'].includes(UI.role.type);
   const head='<div class="ph"><h2>内容中心 <span class="hint" style="font-weight:400">备料:话术、课程、题、演练都在这里造,同一套状态(草稿 → 已定稿)、同样挂知识点。造完去「零售通发布」上架</span></h2><div>'+(canNew?'<button class="btn" data-act="cTab" data-v="导入" style="margin-right:8px">导入内容</button><button class="btn" data-act="cNew" data-ai="1" style="margin-right:8px">AI 生成内容</button><span class="dd2" style="display:inline-block"><button class="btn pri" data-act="cNewMenu">新增 ▾</button></span>':'')+'</div></div>';
-  if(t==='全部内容'){
-    const adv=UI.sel.cadv;
-    b=(adv?'<div class="hint" style="margin-bottom:8px"><a class="link" data-act="cafAdvOff">‹ 回到简版列表</a> 话术 / 课程的完整筛选(上架状态、有效期、来源…)</div>'+cList(V):cAllList())
-  }
+  if(t==='全部内容')b=cListU(V);
   if(t==='导入')b=pgImport();
   if(t==='使用与反馈')b=cUsage(V);
   return head+tabsH('content',CTABS)+b}
@@ -226,7 +223,7 @@ function pgContentDetail(){
     const fbn=fp.length;
     const mini=(l,v,h)=>'<div class="mini"><div class="l">'+l+'</div><div class="v">'+v+'</div>'+(h?'<div class="h">'+h+'</div>':'')+'</div>';
     side='<div class="card sd"><h3>基本信息</h3><dl class="kv sm"><dt>内容性质</dt><dd>'+kindTag(c.kind)+' '+esc(c.type)+'</dd>'
-      +(c.kind==='话术'?'<dt>车型</dt><dd>'+esc(c.car||'通用车型')+'</dd>'+(c.theme?'<dt>场景分类</dt><dd>'+esc(c.theme)+'</dd>':''):'')
+      +(c.kind==='话术'?'<dt>适用车型</dt><dd>'+carChipsHtml(carListOf(c),3)+'</dd>'+(c.theme?'<dt>场景分类</dt><dd>'+esc(c.theme)+'</dd>':''):'')
       +'<dt>知识点</dt><dd>'+kpLinks(c)+((c.kps||[]).length>1?' <span class="hint">'+(c.mainKp?'主讲解:'+(kp(c.mainKp)||{}).name+'；其余为提及':'未区分主讲解')+'</span>':'')+'</dd><dt>主题对象</dt><dd>'+esc(c.subject)+'</dd><dt>环节 / 能力</dt><dd>'+esc(c.scene)+' / '+esc(c.ability)+'</dd><dt>适用人群</dt><dd>'+esc(c.aud)+'</dd><dt>讲师</dt><dd>'+esc(c.lecturer)+'</dd>'
       +'<dt>可见范围</dt><dd>'+esc((c.chan||[]).join('、'))+' · '+esc(c.vis)+'</dd><dt>有效期</dt><dd>'+(c.expire?c.expire+' <span class="tag '+(es==='有效'?'ok':es==='即将到期'?'warn':'err')+'">'+es+'</span>':'长期有效')+'</dd><dt>出处</dt><dd>'+esc(c.source||'-')+'</dd><dt>封面</dt><dd><span class="cov" style="width:44px;height:30px">图</span> <span class="hint">'+esc(c.cover)+'</span></dd></dl></div>'
       +'<div class="card sd"><h3>来源 '+originTag(c)+'</h3><dl class="kv sm"><dt>说明</dt><dd>'+esc(c.srcTag||(c.origin==='线下资料导入'?'线下资料:'+(c.srcFile||'-')+(c.srcDept?'(来自 '+esc(c.srcDept)+')':'')+(c.batch?' · 导入批次 '+c.batch:''):c.origin==='学堂现有'?'学堂原有「内容管理」':'人工编写'))+'</dd>'+(tp?'<dt>课题</dt><dd><a class="link" data-act="topicOpen" data-id="'+tp.id+'">'+tp.id+' '+esc(tp.title)+'</a></dd>':'')+(c.goal?'<dt>生成输入</dt><dd>目标:'+esc(c.goal)+'<br>描述:'+esc(c.desc||'-')+'<br>要求:'+esc(c.req||'-')+'</dd>':'')+((c.refs||[]).length?'<dt>参考素材</dt><dd>'+c.refs.map(r=>'<span class="tag blue" style="margin:0 4px 4px 0">'+esc(r.t)+':'+esc(r.label)+'</span>').join('')+'</dd>':'')+(ad!=null?'<dt>AI 采纳率</dt><dd><b>'+ad+'%</b> <span class="hint">其余为人改 / 新增</span></dd>':'')+'</dl></div>'
@@ -269,7 +266,7 @@ function pgContentDetail(){
   const keyinfo='<div class="keyinfo">'+ki('版本','v'+c.ver+(isPub(c)&&c.pubVer<c.ver?' <small>零售通 v'+c.pubVer+'</small>':''))+ki('发布时间',pubTxt)+ki('负责人',esc(cShort(c.creator)))+ki('审核人',esc(cShort(c.rName||c.creator)))+ki('最近更新',upd||'-')+ki('有效期',c.expire?c.expire:'长期')+'</div>';
   const acts=cActions(c);
   return crumb('<a data-act="go" data-p="content">内容中心</a> / '+c.id)
-   +linkBar({type:'content',c})+'<div class="cdh"><div class="cdh-l"><h2>'+esc(c.title)+'</h2><div class="ph-meta">'+kindTag(c.kind)+(c.kind==='话术'&&c.car?'<span class="tag">'+esc(c.car)+'</span>':'')+cchip(c.st)+pubchip(pubOf(c))+originTag(c)+(typeof rvChip==='function'?rvChip('content',c.id):'')+alerts.join('')+'</div>'+keyinfo+'</div>'
+   +linkBar({type:'content',c})+'<div class="cdh"><div class="cdh-l"><h2>'+esc(c.title)+'</h2><div class="ph-meta">'+kindTag(c.kind)+carChipsHtml(carListOf(c),3)+cchip(c.st)+pubchip(pubOf(c))+originTag(c)+(typeof rvChip==='function'?rvChip('content',c.id):'')+alerts.join('')+'</div>'+keyinfo+'</div>'
    +'<div class="cdh-r"><div class="dnav"><button class="btn sm" data-act="cNav" data-d="-1" '+(ix<=0?'disabled':'')+'>‹ 上一条</button><span class="hint">'+(ix+1)+' / '+lst.length+'</span><button class="btn sm" data-act="cNav" data-d="1" '+(ix>=lst.length-1?'disabled':'')+'>下一条 ›</button></div><div class="dacts">'+(acts||'<span class="hint">当前无可做的操作</span>')+'</div>'+(c.st==='审核中'&&c.rK!==UI.role.k?'<div class="hint" style="margin-top:6px;text-align:right">等待审核人 '+esc(c.rName)+' 处理</div>':'')+'</div></div>'
    +'<div class="tabs">'+DTABS.map(x=>'<div class="tab '+(tab===x?'on':'')+'" data-act="cdtab" data-v="'+x+'">'+x+(x==='使用与反馈'&&fp.length?' <span class="dot" style="display:inline-block">'+fp.length+'</span>':'')+'</div>').join('')+'</div>'
    +(tab==='内容'?'<div class="dgrid"><div class="dmain">'+main+'</div><div class="dside">'+side+'</div></div>':main)

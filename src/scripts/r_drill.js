@@ -66,8 +66,8 @@ A.drOff=el=>{drById(el.dataset.id).st='已停用';toast('已停用(已练习的�
 let DF=null;
 const drLines=(arr)=>arr.map(m=>m[0]+'='+m[1].join(',')).join('\n');
 const drParse=(txt)=>String(txt||'').split('\n').map(x=>x.trim()).filter(Boolean).map(l=>{const i=l.indexOf('=');const name=(i<0?l:l.slice(0,i)).trim();const ws=(i<0?[name]:l.slice(i+1).split(/[,,、]/)).map(x=>x.trim()).filter(Boolean);return [name,ws.length?ws:[name]]});
-A.drOpen=el=>{const d=drById(el.dataset.id);DF=JSON.parse(JSON.stringify(d));DF.turns=DF.turns.map(t=>({say:t.say,ref:t.ref,emoT:t.emo.join(','),mustT:drLines(t.must),ideaT:drLines(t.idea)}));DF._new=false;UI.page='dform';render();$('#main').scrollTop=0};
-A.drNew=()=>{const f=drFx();DF={id:null,kp:f.kp||(S.kps.find(k=>k.type==='技能型')||S.kps[0]).id,name:'',scene:'展厅',persona:'',src:'',turns:[drBlank()],st:'草稿',owner:UI.role.name,_new:true};UI.page='dform';render()};
+A.drOpen=el=>{const d=drById(el.dataset.id);DF=JSON.parse(JSON.stringify(d));DF.role=DF.role||'练习演练';DF.turns=DF.turns.map(t=>({say:t.say,ref:t.ref,emoT:t.emo.join(','),mustT:drLines(t.must),ideaT:drLines(t.idea)}));DF._new=false;UI.page='dform';render();$('#main').scrollTop=0};
+A.drNew=()=>{const f=drFx();DF={id:null,kp:f.kp||(S.kps.find(k=>k.type==='技能型')||S.kps[0]).id,name:'',scene:'展厅',persona:'',src:'',turns:[drBlank()],st:'草稿',role:'练习演练',owner:UI.role.name,_new:true};UI.page='dform';render()};
 const drBlank=()=>({say:'',ref:'',emoT:'',mustT:'',ideaT:''});
 A.drGen=()=>{let n=0;S.kps.filter(k=>k.st==='启用'&&k.type==='技能型'&&!drsOf(k.id).length&&kpMounted(k).length).slice(0,3).forEach(k=>{
   const c=kpMounted(k).find(x=>usableC(x))||kpMounted(k)[0];const sp=(c.body||{}).spin||{};
@@ -77,7 +77,7 @@ A.drGen=()=>{let n=0;S.kps.filter(k=>k.st==='启用'&&k.type==='技能型'&&!drs
   const ref=([sp.S,sp.P,sp.I,sp.N].filter(Boolean).map(x=>x.replace(/\*\*/g,'')).join(' ')||(c.title+'(请从来源话术补充参考回答)')).slice(0,200);
   const emo=['理解','明白','正常'];
   const id='D'+(S.drills.length+1+n);
-  S.drills.push({id,kp:k.id,name:'客户异议 · '+kpLabel(k),scene:'展厅',persona:'(草稿)客户提到「'+(say||kpLabel(k))+'」,有顾虑',src:c.id,turns:[{say:say||'(话术场景)',emo,must:must.length?must:[['核心卖点',[kpLabel(k).slice(0,4)]]],idea:idea.length?idea:[['先认同',['理解','明白']]],ref}],st:'草稿',owner:k.owner||UI.role.name,created:today,stat:{n:0,sum:0,pass:0},aiDraft:true});n++});
+  S.drills.push({id,kp:k.id,name:'客户异议 · '+kpLabel(k),scene:'展厅',persona:'(草稿)客户提到「'+(say||kpLabel(k))+'」,有顾虑',src:c.id,turns:[{say:say||'(话术场景)',emo,must:must.length?must:[['核心卖点',[kpLabel(k).slice(0,4)]]],idea:idea.length?idea:[['先认同',['理解','明白']]],ref}],st:'草稿',role:'练习演练',owner:k.owner||UI.role.name,created:today,stat:{n:0,sum:0,pass:0},aiDraft:true});n++});
   toast(n?'AI 一次生成了 '+n+' 个完整演练草稿(客户话 / 必说点 / 思路点 / 参考话术均由话术拆出);请核对改字后再定稿':'没有可生成的销售动作类知识点(都已有演练或没挂内容)',n?'ok':'err');render()};
 function pgDrForm(){
   if(!DF){UI.page='catalog';return pgCatalog()}
@@ -92,7 +92,8 @@ function pgDrForm(){
   return crumb('<a data-act="go" data-p="content">内容中心</a> / 演练 / '+(DF._new?'新增':DF.id))+dockHtml+'<div class="ph"><h2>'+(DF._new?'新增演练':'编辑 '+DF.id)+'</h2></div>'
    +'<div class="card frm">'+FR('名称','<input type="text" data-df="name" value="'+esc(DF.name)+'" placeholder="如:客户说"你们比 GLC 贵"" style="width:100%;max-width:420px">',{req:1})
    +FR('知识点','<select data-wc="dfset" data-k="kp">'+S.kps.map(k=>'<option value="'+k.id+'" '+(DF.kp===k.id?'selected':'')+'>'+esc(kpLabel(k))+(k.type==='技能型'?'':'(产品知识)')+'</option>').join('')+'</select>',{req:1,h:'销售动作类知识点(异议处理、探需…)最适合用演练来测'})
-   +FR('场景','<select data-wc="dfset" data-k="scene">'+['展厅','试驾','外呼','客服'].map(x=>'<option '+(DF.scene===x?'selected':'')+'>'+x+'</option>').join('')+'</select>')
+   +FR('这场演练用于','<select data-wc="dfset" data-k="role"><option value="练习演练" '+(DF.role!=='锚定演练'?'selected':'')+'>巩固演练（不计过关）</option><option value="锚定演练" '+(DF.role==='锚定演练'?'selected':'')+'>过关情景演练（用于过关 / 复测）</option></select>',{req:1,h:'只有已定稿的过关情景演练计入过关与复测；新建默认巩固演练。'})
+   +FR('场景','<select data-wc="dfset" data-k="scene">'+['展厅','试驾','外呼','客服'].map(x=>'<option '+(DF.scene===x?'selected':'')+'>'+x+'</option>').join('')+'</select>',{h:'场景属于这场演练，在这里维护；系统没有单独的“核心场景”对象。'})
    +FR('客户画像','<input type="text" data-df="persona" value="'+esc(DF.persona)+'" placeholder="如:首购客户,拿 GLC 比价,有点犹豫" style="width:100%;max-width:420px">',{h:'学员开始前会看到,帮助进入情境'})
    +FR('来源话术',(c?'<a class="link" data-act="cView" data-id="'+c.id+'">'+c.id+' '+esc(c.title)+'</a>':'<span class="hint">未关联</span>')+' <select data-wc="dfset" data-k="src"><option value="">更换…</option>'+kpMounted(kp(DF.kp)||{id:''}).map(x=>'<option value="'+x.id+'">'+x.id+' '+esc(x.title)+'</option>').join('')+'</select>',{h:'从该知识点已挂载的内容里选;评分依据'})
    +FR('回合','<div>'+th+'</div><button class="btn sm" data-act="drTurnAdd">+ 增加回合</button>',{req:1})
@@ -104,10 +105,10 @@ A.drTurnAdd=()=>{DF.turns.push(drBlank());render()};
 A.drTurnDel=el=>{if(DF.turns.length>1){DF.turns.splice(+el.dataset.i,1);render()}};
 A.drCancel=()=>{DF=null;UI.page='content';UI.tab.content='全部内容';UI.sel.cadv=false;(UI.sel.caf||(UI.sel.caf={})).k='演练';render()};
 A.drSave=el=>{const fin=el.dataset.s==='1';if(!DF.name.trim())return toast('请先填写名称','err');
-  const o=JSON.parse(JSON.stringify(DF));delete o._new;o.turns=DF.turns.map(t=>({say:t.say.trim(),ref:t.ref.trim(),emo:String(t.emoT||'').split(/[,,、\s]+/).filter(Boolean),must:drParse(t.mustT),idea:drParse(t.ideaT)}));
+  const o=JSON.parse(JSON.stringify(DF));delete o._new;o.role=o.role==='锚定演练'?'锚定演练':'练习演练';o.turns=DF.turns.map(t=>({say:t.say.trim(),ref:t.ref.trim(),emo:String(t.emoT||'').split(/[,,、\s]+/).filter(Boolean),must:drParse(t.mustT),idea:drParse(t.ideaT)}));
   if(fin){const h=drHard(o);if(h.length)return toast('不能定稿:'+h[0]+(h.length>1?'(共 '+h.length+' 项)':''),'err')}
   let d=DF.id&&drById(DF.id);o.st=fin?'已定稿':(d&&d.st==='已定稿'?'草稿':(d&&d.st==='已停用'?'已停用':'草稿'));
-  if(d){Object.assign(d,o)}else{o.id='D'+(Math.max(0,...S.drills.map(x=>+x.id.slice(1)))+1);o.created=today;o.stat={n:0,sum:0,pass:0};S.drills.push(o);d=o}
+  if(d){Object.assign(d,o)}else{o.id='D'+(Math.max(0,...S.drills.map(x=>+String(x.id).slice(1)).filter(Number.isFinite))+1);o.created=today;o.stat={n:0,sum:0,pass:0};S.drills.push(o);d=o}
   DF=null;UI.page='content';UI.tab.content='全部内容';UI.sel.cadv=false;(UI.sel.caf||(UI.sel.caf={})).k='演练';toast(fin?'已保存并定稿 '+d.id:'已保存草稿 '+d.id,'ok');render()};
 /* ================= 零售通:演练(对话式)=================
    进入:提升清单里"练一练"(有演练的点优先)/ 学堂首页「AI 实战」/ 学习中心。

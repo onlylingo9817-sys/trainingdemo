@@ -186,18 +186,18 @@ function kgLayout(){
   return {pos,edges,deg,W,H};
 }
 function kpNetworkSvg(){
-  const L=kgLayout();const q=(UI.sel.kgQ||'').trim().toLowerCase();const sel=UI.sel.kgId||'';
+  const L=kgLayout();const q=(UI.sel.kgQ||'').trim().toLowerCase();const sel=UI.sel.kgId||'';const scope=UI.sel.kgScope||'all';const topW=new Set(L.pos.slice().sort((a,b)=>kpWeak(b.k)-kpWeak(a.k)).slice(0,8).map(p=>p.k.id));
   const act=L.pos.length;
   const edges=L.edges.map(([a,b,type])=>{const pa=L.pos[a],pb=L.pos[b];
     return '<line x1="'+pa.x.toFixed(1)+'" y1="'+pa.y.toFixed(1)+'" x2="'+pb.x.toFixed(1)+'" y2="'+pb.y.toFixed(1)+'" stroke="'+(type==='pre'?'#b6bfcc':'#dfe4ea')+'" stroke-width="'+(type==='pre'?'1.1':'1')+'"'+(type==='rel'?' stroke-dasharray="3 4"':'')+' stroke-opacity=".75"/>'}).join('');
   const nodes=L.pos.map((p,i)=>{const k=p.k;const weak=kpWeak(k);const deg=L.deg[i]||0;const r=Math.min(26,10+Math.sqrt(weak)*1.5+deg*0.5);const color=kgColorOf(k);
-    const hit=q&&k.name.toLowerCase().includes(q);const dim=q&&!hit;const on=sel&&sel===k.id;
-    const showLabel=hit||on||deg>=4||weak>=20;
+    const hit=q&&k.name.toLowerCase().includes(q);const dim=(q&&!hit)||(scope==='gap'&&kpV12Health(k).level==='ok');const on=sel&&sel===k.id;
+    const showLabel=hit||on||topW.has(k.id);
     return '<g class="kg-node'+(hit?' hit':'')+(dim?' dim':'')+(on?' on':'')+'" data-id="'+k.id+'" data-act="kgPick" style="cursor:pointer">'
       +'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r.toFixed(1)+'" fill="'+color+'" fill-opacity="'+(dim?'.12':'.82')+'" stroke="#fff" stroke-width="1.6"><title>'+esc(k.name+' · '+kpAbText(k)+' · 薄弱 '+weak+' 人 · 关系 '+deg+' 条')+'</title></circle>'
       +(showLabel?'<text x="'+(p.x+r+5).toFixed(1)+'" y="'+(p.y+3.5).toFixed(1)+'" font-size="10.5" fill="'+(dim?'#c9ced6':'#344054')+'" style="paint-order:stroke;stroke:#fff;stroke-width:3">'+esc(k.name.length>11?k.name.slice(0,11)+'…':k.name)+'</text>':'')
       +'</g>'}).join('');
-  return '<div class="kg-net-wrap"><div class="kg-net-bar"><input id="kg_q" value="'+esc(UI.sel.kgQ||'')+'" placeholder="搜索知识点，命中会高亮…" oninput="A.kgQ(this)"><span class="hint">点击任意节点 → 看它的先学/后续/相关</span></div>'
+  return '<div class="kg-net-wrap"><div class="kg-net-bar"><input id="kg_q" value="'+esc(UI.sel.kgQ||'')+'" placeholder="搜索知识点，命中会高亮…" oninput="A.kgQ(this)"><select data-wc="kgScope" aria-label="显示范围"><option value="all" '+(scope==='all'?'selected':'')+'>全部知识点</option><option value="gap" '+(scope==='gap'?'selected':'')+'>只突出有缺口的点</option></select><span class="hint">点击任意节点 → 看它的先学/后续/相关</span></div>'
     +'<svg class="kg-net" viewBox="0 0 '+L.W+' '+L.H+'" width="100%" style="max-width:'+L.W+'px" data-nodes="'+act+'">'+edges+nodes+'</svg>'
     +'<div class="kg-legend">'+Object.keys(KG_COLORS).filter(d=>d!=='未分能力').map(d=>'<span><i style="background:'+KG_COLORS[d]+'"></i>'+d+'</span>').join('')+'<span><i class="ring"></i>越大=薄弱人数越多</span></div></div>';
 }
@@ -208,7 +208,7 @@ function kpGraphOverview(){
   return '<div class="kg-overview">'
    +'<div class="kg-ov-stats"><div><span>启用知识点</span><b>'+act.length+'</b></div><div><span>前置关系</span><b>'+act.reduce((n,k)=>n+(k.pre||[]).length,0)+'</b></div><div><span>相关关系</span><b>'+act.reduce((n,k)=>n+(k.rel||[]).length,0)+'</b></div><div><span>没有关系</span><b>'+act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length&&!S.kps.some(x=>(x.pre||[]).includes(k.id)||(x.rel||[]).includes(k.id))).length+'</b></div></div>'
    +kpNetworkSvg()
-   +'<div class="hint" style="margin-top:8px">这是全貌：颜色=能力维度，大小=薄弱人数，实线=先学后学，虚线=相关。搜索或点击节点可下钻到单点关系。</div></div>';
+   +'<div class="hint" style="margin-top:8px">这是全貌：颜色=能力维度，大小=薄弱人数，实线=先学后学，虚线=相关。默认只标出薄弱人数最多的 8 个点，其余点悬停或搜索查看名称；搜索或点击节点可下钻到单点关系。</div></div>';
 }
 function kpGraphView(){
   const act=S.kps.filter(k=>k.st==='启用');
@@ -282,6 +282,7 @@ function kpBatchPage(){
   return '<div class="kp-batch">'
    +'<div class="kp-panel"><div class="kp-ph"><h3>从 Excel / CSV 批量导入</h3><span class="hint">适合新车上市一次导入几十个知识点；先下载模板，按列填写后上传或直接粘贴</span></div>'
    +'<div class="kp-actions"><button class="btn" data-act="kpTpl">下载 CSV 模板</button><button class="btn" data-act="kpSample">载入示例 CSV</button><input type="file" accept=".csv,text/csv" id="kp_file" data-wc="kpImportFile" style="display:none"><button class="btn pri" data-act="kpPickFile">选择 CSV 文件</button></div>'
+   +(UI.sel.kpBusy?'<div class="ux-live" role="status" aria-live="polite"><b>'+esc(UI.sel.kpBusy)+'</b><div class="ux-skel" aria-busy="true"><i style="width:96%"></i><i style="width:74%"></i></div></div>':'')
    +'<div class="hint" style="margin:10px 0">列：名称 / 适用车型（多个用顿号）/ 标签（如 能源_外放电）/ 主要训练能力 / 负责人 / 同义词 / 状态。车型或标签不存在的行会被跳过并报告。</div>'
    +'<textarea id="kp_csv" style="width:100%;min-height:170px;font:12px/1.6 Menlo,monospace" placeholder="先点「载入示例 CSV」看格式；也可以直接把 Excel 里的列复制过来。\n\n名称,适用车型,标签,主要训练能力,负责人,同义词,状态">'+esc(UI.sel.kpCsvText||'')+'</textarea>'
    +'<div style="margin-top:10px"><button class="btn" data-act="kpAiAudit">AI 预检</button> <button class="btn pri" data-act="kpImportRun">校验并导入</button> <span class="hint">没有负责人会自动停用；不会覆盖已有同名同车型知识点。</span></div>'
@@ -310,16 +311,18 @@ function pgCatalog(){
   if(KP_TAB_ALIAS[t])t=KP_TAB_ALIAS[t];
   if(t==='题库'){UI.page='content';UI.tab.content='全部内容';UI.sel.cadv=false;UI.sel.caf=Object.assign(UI.sel.caf||{},{k:'题'});return pgContent()}
   if(t==='演练'){UI.page='content';UI.tab.content='全部内容';UI.sel.cadv=false;UI.sel.caf=Object.assign(UI.sel.caf||{},{k:'演练'});return pgContent()}
-  const head='<div class="ph"><h2>知识点 <span class="hint" style="font-weight:400">这里管「要讲什么、有没有讲的内容」。话术/课程/测评题 / 情景演练在内容中心造；先把清单补完整。</span></h2><div><button class="btn" data-act="kpOpenBatch">批量导入</button> <button class="btn" data-act="kpOpenBatch">新车克隆</button> <button class="btn pri" data-act="kpNew">新增知识点</button></div></div>';
-  let b='';
+  const head='<div class="ph"><h2>知识点 <span class="hint" style="font-weight:400">管理要教哪些知识点，以及每个点是否能讲、能考。讲解、题和演练在知识点详情里补齐。</span></h2><div class="ph-act"><button class="btn" data-act="kpOpenBatch">批量导入 / 新车克隆</button><button class="btn pri" data-act="kpNew">新增知识点</button></div></div>';
+  let b='';try{
   if(t==='总览')b=kpOverviewNew();
+  if(t==='知识图谱')b=kpGraphView();
   if(t===KP_TAB_LIB)b=kpLibrary();
   if(t===KP_TAB_BATCH)b=kpBatchPage();
   if(t==='候选')b=kpCands();
   if(t==='补学进度'&&typeof kpTasksPage==='function')b=kpTasksPage();
   if(t==='清河迁移')b=kpQh();
-  const cnt={候选:S.kpCand.filter(x=>x.st==='待确认').length};
-  return head+'<div class="tabs">'+KP_TABS.map(x=>'<div class="tab '+(t===x?'on':'')+'" data-act="tab" data-k="catalog" data-v="'+x+'">'+x+(cnt[x]?' <span class="dot" style="display:inline-block">'+cnt[x]+'</span>':'')+'</div>').join('')+'</div>'+b;
+  }catch(e){console.error(e);b=uxError({title:'这个页签暂时打不开',desc:'数据没有丢，可以重试，或先换一个页签。',detail:String(e&&e.message||e),act:'kpRetry',label:'重试'})}
+  const cnt={候选:S.kpCand.filter(x=>x.st==='待确认').length,补学进度:(typeof kpTaskStats==='function'?kpTaskStats().overdue:0)};
+  return head+'<div class="tabs">'+KP_TABS.map(x=>'<div class="tab '+(t===x?'on':'')+'" data-act="tab" data-k="catalog" data-v="'+x+'">'+x+(cnt[x]?' <span class="dot" style="display:inline-block">'+cnt[x]+'</span>':'')+'</div>').join('')+'</div>'+(typeof kpTabNote==='function'?kpTabNote(t):'')+b;
 }
 function kpBatchRefresh(){render();if(UI.drw&&/批量导入|新车克隆/.test(UI.drw.title)){UI.drw.body=kpBatchPage();renderDrawer()}}
 A.kpOpenBatch=()=>{UI.page='catalog';if(!KP_TABS.includes(UI.tab.catalog))UI.tab.catalog=KP_TAB_LIB;render();drawerOpen('批量导入 / 新车克隆',kpBatchPage(),'<button class="btn" data-act="drwClose">完成</button>')};
@@ -356,11 +359,61 @@ A.kpClonePreview=()=>{kpBatchCapture();const st=UI.sel.kpc||{};const from=st.fro
 A.kpCloneRun=()=>{kpBatchCapture();let st=UI.sel.kpc||{};if(!st.to){st={from:st.from||$('#kp_clone_from').value,to:st.to||($('#kp_clone_to').value||'').trim(),count:0};}if(!st.to)return toast('请填写新车型名称','err');if(kpCarPickHost().includes(st.to))return toast('这个车型已经有知识点了','err');const src=S.kps.filter(k=>k.st==='启用'&&kpCarsHas(k,st.from));if(!src.length)return toast('源车型没有可复制的知识点','err');kpEnsureCar(st.to);let n=Math.max(0,...S.kps.map(k=>+String(k.id).replace(/\D/g,'')||0));const ids=[];src.forEach(k=>{const cars=[...new Set(kpCars(k).concat(st.to))];const nk={id:'K'+(++n),name:k.name,type:k.type,tags:(k.tags||[]).slice(),car:cars[0],cars,syn:(k.syn||[]).slice(),owner:null,st:'停用',ext:[],created:today,hist:[{t:today,who:meShort(),act:'克隆自 '+k.id,note:'新车型骨架，待补负责人和讲解'}]};kpApplyMeta(nk,{cars,tags:nk.tags,abId:(k.dims&&k.dims.Dab||[])[0],owner:null});S.kps.push(nk);ids.push(nk.id)});UI.sel.kpc={from:st.from,to:st.to,count:0};toast('已克隆 '+ids.length+' 个知识点到「'+st.to+'」，全部停用待补','ok');UI.tab.catalog=KP_TAB_LIB;UI.sel.kpf={car:st.to};kpBatchRefresh()};
 A.kpQuickAdd=()=>{const name=($('#kp_multi_name')||{}).value||'';const tag=$('#kp_multi_tag')?$('#kp_multi_tag').value:'';const ab=$('#kp_multi_ab')?$('#kp_multi_ab').value:'';const owner=$('#kp_multi_owner')?$('#kp_multi_owner').value:'';const cars=[...document.querySelectorAll('.kp_multi_car:checked')].map(x=>x.value);if(!name.trim())return toast('请填写名称','err');if(!cars.length)return toast('至少选一个适用车型','err');if(S.kps.some(k=>k.name===name.trim()&&k.cars.some(c=>cars.includes(c))))return toast('同名同车型已经有知识点了','err');cars.forEach(kpEnsureCar);const id='K'+(Math.max(0,...S.kps.map(x=>+String(x.id).replace(/\D/g,'')||0))+1);const k={id,name:name.trim(),type:tag?'事实型':'技能型',tags:tag?[tag]:[],car:cars[0],cars,syn:[],owner:owner||null,st:'启用',ext:[],created:today,hist:[]};kpApplyMeta(k,{cars,tags:k.tags,abId:ab||null,owner:owner||null});S.kps.push(k);kpHist(k,'新增',owner?'':'没有负责人');toast('已建「'+name.trim()+'」，同时适用 '+cars.join('、'),'ok');UI.tab.catalog=KP_TAB_LIB;UI.sel.kpf={};kpBatchRefresh()};
 
-/* 编辑页:一套能力口径 + 多车型 */
-A.kpNew=()=>{KF={id:null,name:'',type:'事实型',cars:['通用车型'],tags:[],abId:(kpAbRows()[0]||{}).id||'',syn:'',owner:kpDefOwner(),more:true,pre:[],rel:[]};UI.page='kpform';render()};
-A.kpEdit=()=>{const k=kp(UI.kid);KF={id:k.id,name:k.name,type:k.type,cars:kpCars(k).slice(),tags:(k.tags||[]).slice(),abId:(k.dims&&k.dims.Dab||[])[0]||'',syn:(k.syn||[]).join('、'),owner:k.owner||'',more:true,pre:(k.pre||[]).slice(),rel:(k.rel||[]).slice()};UI.page='kpform';render()};
-A.kfCar=el=>{const v=el.value;if(el.checked){if(!KF.cars.includes(v))KF.cars.push(v)}else KF.cars=KF.cars.filter(x=>x!==v);if(!KF.cars.length)KF.cars=['通用车型'];render()};
-A.kfAb=el=>{KF.abId=el.value;render()};
+/* 编辑页：v1.2 完整结构 + 车系/版本树 */
+function kpFormAssess(k){
+  const a=k&&k.assess||{};
+  return {methods:a.methods||'客观题（单选/判断）',anchorQ:a.anchorQ==null?3:+a.anchorQ,practiceQ:a.practiceQ==null?5:+a.practiceQ,
+    anchorDrill:a.anchorDrill==null?0:+a.anchorDrill,pass:a.pass==null?70:+a.pass,validityDays:a.validityDays||180};
+}
+function kpFormFrom(k){
+  return {id:k?k.id:null,name:k?k.name:'',one:k?(k.one||''):'',cars:k?kpCars(k):['通用车型'],tags:[],
+    line:k?(k.line||'销售'):'销售',roles:k?(k.roles||['零售顾问']).slice():['零售顾问'],domain:k?(k.domain||'销售技能'):'产品知识',
+    typeV12:k?kpV12Type(k):'概念',batch:k?kpV12Batch(k):'B2-90天',stage:k?(k.stage||'不直接对应'):'不直接对应',
+    pri:k?(k.pri||'P1'):'P1',sellpoint:k?(k.sellpoint||''):(KP_SELLPOINT_LEAVES_V12[0]||''),
+    ability:k?(k.ability||''):'',abId:k?((k.dims&&k.dims.Dab||[])[0]||''):'',syn:k?(k.syn||[]).join('、'):'',
+    owner:k?(k.owner||''):kpDefOwner(),st:k?(k.st||'停用'):(kpDefOwner()?'启用':'停用'),statusV12:k?kpV12Status(k):'草案',
+    assess:kpFormAssess(k),reviewDue:k?(k.reviewDue||''):'',srcDoc:k?(k.srcDoc||''):'',more:true,
+    pre:k?(k.pre||[]).slice():[],rel:k?(k.rel||[]).slice():[]};
+}
+A.kpNew=()=>{KF=kpFormFrom(null);UI.page='kpform';render()};
+A.kpEdit=()=>{KF=kpFormFrom(kp(UI.kid));UI.page='kpform';render()};
+function kpCarExpand(cars){return [...new Set((cars||[]).flatMap(c=>c==='通用车型'?V23_CAR_LEAVES:(V23_CAR_TREE[c]||[c])))]}
+function kpCarOverlap(a,b){const B=new Set(kpCarExpand(b));return kpCarExpand(a).some(x=>B.has(x))}
+function kpCarSelectionText(cars){
+  return (cars||[]).map(c=>c==='通用车型'?'通用车型（全部版本）':V23_CAR_TREE[c]?c+' 全系（'+V23_CAR_TREE[c].length+' 个版本）':c).join('、');
+}
+function kpCarTreeHtml(){
+  const chosen=KF.cars||[];const fold=UI.sel.kpCarFold||(UI.sel.kpCarFold={});
+  const box=(c,child,disabled)=>'<label class="kp-car-option '+(child?'child':'')+'"><input type="checkbox" data-wc="kfCar" value="'+esc(c)+'" '+(chosen.includes(c)?'checked':'')+(disabled?' disabled':'')+'> <span>'+esc(c)+'</span>'+(!child&&V23_CAR_TREE[c]?'<small>车系 · 覆盖 '+V23_CAR_TREE[c].length+' 个版本</small>':'')+'</label>';
+  let h='<div class="kp-car-tree">'+box('通用车型',false,false);
+  Object.keys(V23_CAR_TREE).forEach(sr=>{
+    const kids=V23_CAR_TREE[sr];const closed=!!fold[sr];const inherited=chosen.includes(sr);
+    h+='<div class="kp-car-branch"><div class="kp-car-branch-head">'+box(sr,false,false)+'<button type="button" class="kp-car-fold" data-act="kpCarFold" data-v="'+esc(sr)+'">'+(closed?'展开':'收起')+'</button></div>'
+      +(closed?'':'<div class="kp-car-children">'+kids.map(v=>box(v,true,inherited)).join('')+'</div>')+'</div>';
+  });
+  const known=new Set(['通用车型'].concat(Object.keys(V23_CAR_TREE),Object.values(V23_CAR_TREE).flat()));
+  const extra=chosen.filter(c=>!known.has(c));if(extra.length)h+='<div class="kp-car-extra"><b>其他已选车型</b>'+extra.map(c=>box(c,false,false)).join('')+'</div>';
+  return h+'</div><div class="kp-car-selected"><b>已选：</b>'+esc(kpCarSelectionText(chosen)||'暂未选择')+'</div>';
+}
+A.kpCarFold=el=>{const f=UI.sel.kpCarFold||(UI.sel.kpCarFold={});f[el.dataset.v]=!f[el.dataset.v];render()};
+A.kfCar=el=>{
+  const v=el.value;let cars=(KF.cars||[]).slice();
+  if(v==='通用车型'){KF.cars=el.checked?['通用车型']:[];render();return}
+  cars=cars.filter(x=>x!=='通用车型');
+  const parent=Object.keys(V23_CAR_TREE).find(sr=>V23_CAR_TREE[sr].includes(v));
+  if(el.checked){
+    if(parent&&cars.includes(parent)){render();return}
+    if(!cars.includes(v))cars.push(v);
+    if(V23_CAR_TREE[v])cars=cars.filter(x=>!V23_CAR_TREE[v].includes(x));
+    if(parent){const siblings=V23_CAR_TREE[parent];if(siblings.every(x=>cars.includes(x)))cars=cars.filter(x=>!siblings.includes(x)).concat(parent)}
+  }else cars=cars.filter(x=>x!==v);
+  KF.cars=[...new Set(cars)];render();
+};
+A.kfRole=el=>{const v=el.value;KF.roles=KF.roles||[];if(el.checked&&!KF.roles.includes(v))KF.roles.push(v);if(!el.checked)KF.roles=KF.roles.filter(x=>x!==v);render()};
+A.kfDomain=el=>{KF.domain=el.value;if(KF.domain==='产品知识'){KF.ability='';KF.abId='';KF.sellpoint=KF.sellpoint||KP_SELLPOINT_LEAVES_V12[0]||''}else{KF.sellpoint='';if(!KF.ability){const a=kpAbRows()[0];KF.abId=a?a.id:'';KF.ability=a?a.name:''}}render()};
+A.kfAb=el=>{KF.abId=el.value;KF.ability=(dimVal('Dab',el.value)||{}).name||'';render()};
+A.kfTypeV12=el=>{KF.typeV12=el.value;const drill=['卖点','技能','流程'].includes(KF.typeV12);KF.assess.anchorDrill=drill?1:0;KF.assess.validityDays=KF.typeV12==='政策'?30:(drill?90:180);render()};
+A.kfAssess=el=>{KF.assess[el.dataset.k]=+el.value;render()};
 function kfRelPick(field){
   const cur=(KF[field]||[]).map(kp).filter(Boolean);
   const others=S.kps.filter(k=>k.id!==KF.id&&!(KF[field]||[]).includes(k.id));
@@ -370,35 +423,139 @@ function kfRelPick(field){
 A.kfRelAdd=el=>{const f=el.dataset.f;const id=el.value;if(!id)return;KF[f]=KF[f]||[];if(!KF[f].includes(id))KF[f].push(id);render()};
 A.kfRelDel=el=>{const f=el.dataset.f;KF[f]=(KF[f]||[]).filter(x=>x!==el.dataset.v);render()};
 A.kfType=el=>{KF.type=el.dataset.v;if(KF.type==='事实型'&&!KF.tags.length){const ab=kpAbRows().find(x=>x.name==='场景化讲车');if(ab)KF.abId=ab.id}render()};
+
+/* 用业务语言表达“怎样算学会”；锚 / 练仍只作为底层数据结构，不暴露给维护者 */
+function kpMasterySpec(type){
+  const specs={
+    '概念':['理解并说清','学员能准确解释含义、适用条件和边界，不是只会背名称。'],
+    '卖点':['能结合场景讲清价值','学员能把产品特点转化为客户收益，并在具体场景中讲明白。'],
+    '技能':['能在场景中独立做出来','学员能在实际对话或任务中独立完成关键动作，而不只是复述步骤。'],
+    '流程':['能按标准完整做完','学员能按顺序独立完成流程，不遗漏关键步骤和检查点。'],
+    '政策':['能准确说明条件与边界','学员能讲清适用对象、限制条件和有效口径，不作过度承诺。']
+  };
+  const s=specs[type]||specs['概念'];return {title:s[0],desc:s[1]};
+}
+function kpSpecKey(){
+  if(!KF)return '';
+  return JSON.stringify([KF.id||'',KF.name||'',KF.one||'',KF.cars||[],KF.roles||[],KF.domain||'',KF.typeV12||'',KF.srcDoc||'',KF.owner||'']);
+}
+function kpSpecEvaluate(){
+  const rows=[];const add=(s,t)=>rows.push({s,t});
+  const name=(KF.name||'').trim(),one=(KF.one||'').trim();
+  if(!name)add('warn','还没有名称：先写清要让学员掌握的一件具体事情。');
+  if(!one)add('warn','还没有写“学完要会什么”：缺少可判断的学习结果，暂时无法确认边界。');
+  else if(one.length<10)add('warn','学习结果过短：建议写清谁能做什么，以及需要做到什么程度。');
+  else if(!/能|讲清|识别|完成|判断|解释|说明|选择|处理|应对|掌握|理解|分清|回应|按|用/.test(one))add('warn','学习结果不够可观察：建议改成“能讲清 / 能完成 / 能判断”等可检验的描述。');
+  else add('ok','已经写明可观察的学习结果，可以据此设计教学和考核。');
+  if(/(课程|手册|资料|培训|考试|海报)$/.test(name))add('err','这更像课程、资料或活动，不是一个知识点；应放入内容中心或学习项目。');
+  else if(/大全|体系|全景|综合|概论|基础知识/.test(name))add('err','范围看起来过大：如果能拆成多个分别讲解、分别考核的内容，就不应合成一个知识点。');
+  else if(name)add('ok','名称指向明确主题，没有把课程、资料或车型直接当作知识点。');
+  if(/、|与|和/.test(name)&&!/方法与|标准与/.test(name))add('warn','名称包含并列对象：如果这些对象需要分别学习或考核，建议拆开；只有同一学习结果才保留在一起。');
+  const others=S.kps.filter(k=>k.id!==KF.id);
+  const exact=name&&others.find(k=>String(k.name||'').trim()===name);
+  if(exact){
+    if(kpCarOverlap(kpCars(exact),KF.cars||[]))add('err','与「'+exact.name+'」（'+(exact.code||exact.id)+'）同名且适用范围重叠，应维护原知识点，不要重复新增。');
+    else add('warn','已有同名知识点「'+exact.name+'」：如果只是车型不同，优先考虑合并为一个知识点并扩大适用范围。');
+  }else if(name){
+    const n=aiNorm(name);const similar=others.find(k=>{const x=aiNorm(k.name);return n.length>=6&&x.length>=6&&(n.includes(x)||x.includes(n))});
+    if(similar)add('warn','与现有「'+similar.name+'」名称接近：请确认学习结果不同；若只是说法不同，应补同义词而不是新建。');
+  }
+  if(!(KF.cars||[]).length)add('warn','还没有适用范围：至少选择车型或“通用车型”。');
+  else add('ok','适用范围已明确，可判断与现有知识点是否重叠。');
+  if(!(KF.roles||[]).length)add('warn','还没有适用岗位：无法判断谁需要学。');
+  if(!(KF.srcDoc||'').trim())add('warn','还没有依据资料 ID：新增前应能回查原始业务口径，或明确标记为待业务确认。');
+  else add('ok','已有依据资料，可回查业务口径。');
+  if(!KF.owner)add('warn','还没有业务负责人：入库后需要有人对定义和口径负责。');
+  const hasErr=rows.some(x=>x.s==='err'),hasWarn=rows.some(x=>x.s==='warn');
+  const decision=hasErr?(KF.id?'建议合并或重构':'不建议新增'):hasWarn?'补充信息后再评估':(KF.id?'建议保留为独立知识点':'建议添加');
+  return {key:kpSpecKey(),decision,level:hasErr?'err':hasWarn?'warn':'ok',rows};
+}
+function kpSpecReviewHtml(){
+  const r=UI.sel.kpSpecReview;const stale=r&&r.key!==kpSpecKey();
+  return '<div class="kp-review-panel"><div class="kp-review-head"><div><b>'+(KF.id?'AI 复核定义与边界':'新增前，先让 AI 判断一下')+'</b><div class="hint">检查是否单一、可教学、可考核、与现有点不重复；只给建议，不自动保存。</div></div><button type="button" class="btn '+(r?'':'pri')+'" data-act="kpSpecReview">'+(r?'重新评估':'运行 AI 评估')+'</button></div>'
+   +(r?'<div class="kp-review-result '+r.level+'"><div class="kp-review-decision"><b>'+esc(r.decision)+'</b><span class="tag warn">AI 评估 · 规则模拟 · 需人工确认</span></div>'+(stale?'<div class="chk warn"><b>!</b><span>表单内容已修改，以下结果可能已过期，请重新评估。</span></div>':'')+'<div class="kp-review-list">'+r.rows.map(x=>'<div class="kp-review-item '+x.s+'"><b>'+(x.s==='ok'?'✓':x.s==='err'?'×':'!')+'</b><span>'+esc(x.t)+'</span></div>').join('')+'</div><div class="hint">这是 Demo 中基于入库规范的可解释规则评估；正式接入 AI 后仍需业务负责人最终确认。</div></div>':'<div class="hint">建议先填名称、学完要会什么、适用范围和依据资料，再运行评估。</div>')+'</div>';
+}
+A.kpSpecReview=()=>{if(!KF)return;UI.sel.kpSpecReview=kpSpecEvaluate();aiLog('知识点定义与边界评估',(KF.name||'未命名')+' '+(KF.one||''),[{name:UI.sel.kpSpecReview.decision}],false);render();setTimeout(()=>{const e=document.querySelector('.kp-review-panel');if(e)e.scrollIntoView({block:'center'})},0)};
+A.kpSpecGuide=()=>openDlg('知识点入库规范','<div class="kp-spec-dialog"><div class="kp-spec-definition"><b>知识点 = 一个能独立讲、独立练、独立考的最小学习单元</b><p>先写“学员学完要会什么”，再判断它是否值得单独入库。车型、岗位和知识域是适用范围与分类，不是知识点本身。</p></div><h3>同时满足这 5 条，才建议新增</h3><ol><li><b>单一学习结果</b>：只讲一件事；能分别讲、分别考的内容应拆开。</li><li><b>对象与边界明确</b>：知道谁需要学、适用于哪些车型或业务环节。</li><li><b>可独立教学与考核</b>：能设计讲解、练习和明确的过关标准。</li><li><b>不与现有点重复</b>：同一学习结果即使适用多款车型，也优先共用一个点。</li><li><b>有依据、有负责人</b>：能回查原始资料，有人持续维护口径。</li></ol><h3>这些不应直接建成知识点</h3><div class="kp-spec-example err"><b>课程 / 资料 / 活动</b><span>如“SU7 培训课程”“政策手册”，应放内容中心或学习项目。</span></div><div class="kp-spec-example warn"><b>过宽主题，应拆分</b><span>如“产品知识大全”，应拆成能独立学习和考核的具体主题。</span></div><div class="kp-spec-example warn"><b>同一结果跨车型，应合并</b><span>讲法和考核相同，就建一个知识点并选择多个车型，不按车型复制。</span></div><div class="kp-spec-example ok"><b>合适的示例</b><span>“能向客户讲清 SU7 外放电的适用场景与限制”，学习结果和边界都可判断。</span></div><div class="hint">AI 只依据这些规范给出建议；最终是否新增、拆分或合并，由业务负责人确认。</div></div>','<button class="btn pri" data-act="close">知道了</button>');
+A.kpAssessAdv=()=>{UI.sel.kpAssessAdv=!UI.sel.kpAssessAdv;render()};
+
 function pgKpForm(){
   if(!KF){UI.page='catalog';return pgCatalog()}
-  const cars=kpCarPickHost().concat(['通用车型']);const ab=kpAbRows();
-  const tags=tagOptions({});
-  const dup=S.kps.find(k=>k.id!==KF.id&&k.name===KF.name.trim()&&k.cars.some(c=>KF.cars.includes(c)));
-  const carBox='<div class="kp-checks">'+cars.map(c=>'<label class="kp-check"><input type="checkbox" data-wc="kfCar" value="'+esc(c)+'" '+(KF.cars.includes(c)?'checked':'')+'> '+esc(kpCarPickLabel(c))+'</label>').join('')+'</div>';
-  const tagBox=tagPickerHtml('kfTag',KF.tags,{})+'<div class="tag-ai-slot">'+(typeof aiKpFormAdviceHtml==='function'?aiKpFormAdviceHtml():'')+'</div>';
-  const more='<div class="kp-more">'+FR('标签',tagBox,{h:'可以是车上部位，也可以是政策、卖点、场景等；一个点可挂多个标签'})
-   +FR('同义词','<input type="text" data-kf="syn" value="'+esc(KF.syn)+'" placeholder="用户会怎么说，如 后备箱、装得下" style="width:100%;max-width:460px">',{h:'用于搜索和内容挂载推荐'})
-   +FR('负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'没有负责人不能启用'})
-   +FR('先学（前置知识点）',kfRelPick('pre'),{h:'在这里维护学习顺序：学这个点之前，学员应先掌握哪些点。图谱的箭头由此生成'})
-   +FR('相关知识点',kfRelPick('rel'),{h:'常一起讲/互相引用，没有先后顺序；只用于检索和推荐，不代表先学后学'})+'</div>';
+  const product=KF.domain==='产品知识';const ab=kpAbRows();const mastery=kpMasterySpec(KF.typeV12);
+  const dup=S.kps.find(k=>k.id!==KF.id&&k.name===KF.name.trim()&&kpCarOverlap(kpCars(k),KF.cars));
+  const sel=(key,arr)=>'<select data-wc="kfset" data-k="'+key+'">'+arr.map(x=>'<option '+(KF[key]===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>';
+  const num=key=>'<input type="number" min="0" data-wc="kfAssess" data-k="'+key+'" value="'+esc(KF.assess[key])+'">';
+  const roles='<div class="kp-checks">'+KP_DICT_V12.roles.map(r=>'<label class="kp-check"><input type="checkbox" data-wc="kfRole" value="'+esc(r)+'" '+(KF.roles.includes(r)?'checked':'')+'> '+esc(r)+'</label>').join('')+'</div>';
+  const classify=product?FR('卖点分类','<select data-wc="kfset" data-k="sellpoint">'+phOpt('cls')+KP_SELLPOINT_LEAVES_V12.map(x=>'<option '+(KF.sellpoint===x&&!phOn('cls')?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{req:1,h:'产品知识不占能力项，用卖点分类参与统计与筛选'}):
+    FR('能力项','<select data-wc="kfAb">'+phOpt('cls')+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id&&!phOn('cls')?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select>'+(typeof aiKpAbilityAdviceHtml==='function'?aiKpAbilityAdviceHtml():''),{req:1,h:'非产品知识必填；能力项决定归到画像哪一维，并与诊断和效果页使用同一口径'});
+  const carExtra='<div class="kp-car-add"><input id="kf_newcar" placeholder="其他 / 新车型名称"><button type="button" class="btn sm" data-act="kfAddCar">添加并选中</button></div>';
   const dockHtml='<!--DOCK_START--><div class="dock"><span class="sp"></span><button class="btn" data-act="kfCancel">取消</button><button class="btn pri" data-act="kfSave">保存</button></div><!--DOCK_END-->';
-  return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+(KF.id?'编辑 '+KF.id:'新增知识点'))+dockHtml+'<div class="ph"><h2>'+(KF.id?'编辑知识点':'新增知识点')+' <span class="hint" style="font-weight:400">必填：名称、适用车型、知识类型；其他可以后补</span></h2></div>'
-   +'<div class="card frm">'+FR('名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="一个能单独讲一次、单独出一道题的点，如：6.6kW 外放电" style="width:100%;max-width:460px">',{req:1,h:'太粗就拆，太细就并'})
-   +FR('适用车型',carBox+'<div style="margin-top:8px"><input type="text" id="kf_newcar" placeholder="没有你要的车型？输入新车型名称" style="width:220px"> <button class="btn sm" data-act="kfAddCar">新增车型</button></div>',{req:1,h:'可以多选：车系（覆盖全系）、版本（只覆盖该版本）或通用车型。同一个卖点适用多款车时建一个点就够了'})
-   +FR('知识类型','<div class="rels">'+[['事实型','产品知识'],['技能型','销售动作']].map(x=>'<span class="'+(KF.type===x[0]?'on':'')+'" data-act="kfType" data-v="'+x[0]+'">'+x[1]+'</span>').join('')+'</div>',{req:1,h:'决定「怎么测」：产品知识用客观题，销售动作用演练。它不影响下面的能力项'})
-   +FR('主要训练能力','<select data-wc="kfAb">'+ab.map(x=>'<option value="'+x.id+'" '+(KF.abId===x.id?'selected':'')+'>'+esc(x.root+' · '+x.name)+'</option>').join('')+'</select>'+(typeof aiKpAbilityAdviceHtml==='function'?aiKpAbilityAdviceHtml():''),{req:1,h:'决定「归到画像哪一维」：和岗位画像用同一套能力项，诊断、个人画像、效果看板才对得上。和上面的知识类型是两个维度'})
-   +more
-   +((KF.type==='事实型'&&!KF.tags.length)?'<div class="chk rec"><b>·</b><span>产品知识建议挂至少一个标签，否则标签筛选里容易漏掉它</span></div>':'')
-   +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」适用这些车型，不要重复建</span></div>':'')
-   +'</div>';
+  const drill=KF.assess.anchorDrill>0;
+  return crumb('<a data-act="go" data-p="catalog">知识点</a> / '+(KF.id?'编辑 '+KF.id:'新增知识点'))+dockHtml+'<div class="ph"><h2>'+(KF.id?'编辑知识点':'新增知识点')+' <span class="hint" style="font-weight:400">先确认定义与边界，再说明谁需要学、怎样才算学会</span></h2></div>'
+   +'<div class="card frm kp-form-v12"><section id="kfs1"><h3>1. 定义与边界</h3>'
+   +'<div class="kp-definition-guide"><div><b>一个能独立讲、独立练、独立考的最小学习单元</b><div class="hint">不是课程、资料、车型或泛泛主题；太粗就拆，同一学习结果重复就合并。</div></div><button type="button" class="btn sm" data-act="kpSpecGuide">查看入库规范</button></div>'
+   +FR('知识点名称','<input type="text" data-kf="name" value="'+esc(KF.name)+'" placeholder="写清一件具体要学的事，如：SU7 外放电的适用场景与限制" style="width:100%;max-width:680px">',{req:1,h:'避免“大全、体系、综合培训”等无法独立考核的过宽名称'})
+   +FR('学完要会什么','<textarea data-kf="one" style="width:100%;max-width:680px;min-height:70px" placeholder="用“能讲清 / 能完成 / 能判断”描述可检验的学习结果">'+esc(KF.one)+'</textarea>',{h:'这是判断颗粒度和设计考核的依据，不写宣传口号'})+'</section>'
+   +'<section id="kfs2"><h3>2. 谁需要、用在哪里</h3>'
+   +FR('适用车型',kpCarTreeHtml()+carExtra,{req:1,h:'选车系覆盖全系；选版本只覆盖该版本；同一学习结果适用多款车时，共用一个知识点'})
+   +FR('业务线',sel('line',KP_DICT_V12.businessLines))+FR('适用岗位',roles,{req:1,h:'至少选择一个岗位；可勾选兼用岗位'})
+   +FR('知识域','<select data-wc="kfDomain">'+phOpt('domain')+KP_DICT_V12.domains.map(x=>'<option '+(KF.domain===x&&!phOn('domain')?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{req:1})
+   +FR('知识点类型','<select data-wc="kfTypeV12">'+phOpt('type')+KP_DICT_V12.types.map(x=>'<option '+(KF.typeV12===x&&!phOn('type')?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{req:1,h:'类型决定「怎么测」；能力项决定归到画像哪一维，产品知识改用卖点分类。切换类型会带出默认掌握标准与复核周期'})
+   +classify+FR('建议学习阶段',sel('batch',KP_DICT_V12.batches))+FR('主要业务环节',sel('stage',KP_DICT_V12.stages))+FR('优先级',sel('pri',['P0','P1']))+'</section>'
+   +kpSpecReviewHtml()
+   +'<section id="kfs3"><h3>3. 怎样算学会</h3><div class="kp-mastery"><div class="kp-mastery-title"><b>'+esc(mastery.title)+'</b><span class="tag">'+esc(KF.typeV12)+'</span></div><p>'+esc(mastery.desc)+'</p>'
+   +'<div class="kp-mastery-grid"><div><span>核心考核</span><b>'+KF.assess.anchorQ+' 道核心题</b><small>用于判断是否掌握，复测也按这个标准。</small></div><div><span>巩固练习</span><b>'+KF.assess.practiceQ+' 道练习题</b><small>帮助熟悉和纠错，不直接计入过关。</small></div><div><span>'+ (drill?'场景过关':'应用要求')+'</span><b>'+(drill?KF.assess.anchorDrill+' 场情景演练':'不强制情景演练')+'</b><small>'+(drill?'确认能在实际场景做出来，不只是答对题。':'以核心考核为准；业务需要时可增加情景演练。')+'</small></div></div>'
+   +'<button type="button" class="link" data-act="kpAssessAdv">'+(UI.sel.kpAssessAdv?'收起题量与演练设置':'高级：调整题量与演练')+'</button></div>'
+   +'<div class="kp-assess-grid">'+FR('过关分数',num('pass'),{h:'核心考核达到这个分数，才算通过。'})+FR('成绩复核周期（天）',num('validityDays'),{h:'到期后重新确认是否仍然掌握；政策类通常需要更短周期。'})+'</div>'
+   +(UI.sel.kpAssessAdv?'<div class="kp-assess-advanced"><div class="hint">通常按知识点类型使用默认配置，只有考核设计人员需要调整。</div><div class="kp-assess-grid">'+FR('核心考核题（过关 / 复测）',num('anchorQ'),{h:'决定“是否掌握”，不是日常练习题。'})+FR('巩固练习题（不计过关）',num('practiceQ'),{h:'用于学习过程中的练习和纠错。'})+FR('过关情景演练',num('anchorDrill'),{h:'判断能否在真实或模拟业务场景中做出来。'})+'</div></div>':'')+'</section>'
+   +'<section id="kfs4"><h3>4. 谁负责、何时复核</h3>'
+   +FR('业务负责人','<select data-wc="kfset" data-k="owner"><option value="">暂不指定（保存后停用）</option>'+kpOwners().map(x=>'<option '+(KF.owner===x?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select>',{h:'对定义、业务口径和后续更新负责；没有负责人不能启用'})
+   +FR('是否启用',sel('st',['启用','停用']))+FR('依据核对状态',sel('statusV12',KP_DICT_V12.statuses),{h:'业务口径是否已与负责人核对；不等同于内容中心里的“内容审核”'})
+   +FR('下次复核日期','<input type="date" data-kf="reviewDue" value="'+esc(KF.reviewDue)+'">')
+   +FR('依据资料 ID','<input type="text" data-kf="srcDoc" value="'+esc(KF.srcDoc)+'" placeholder="原始资料编号（document_id）" style="width:100%;max-width:460px">',{h:'用于回查原始业务口径；暂时没有可留空，但 AI 会提示补充'})
+   +FR('大家还可能怎么称呼','<input type="text" data-kf="syn" value="'+esc(KF.syn)+'" placeholder="同义词，如：后备箱、装得下" style="width:100%;max-width:460px">',{h:'用于搜索和内容挂载推荐；同义词不同不代表要新建知识点'})+'</section>'
+   +'<section id="kfs5"><h3>5. 学习先后与关联</h3>'
+   +FR('学习本点前应先掌握',kfRelPick('pre'),{h:'只有确实影响学习顺序时才维护；不要随意串联'})
+   +FR('可以一起学，但没有先后',kfRelPick('rel'),{h:'常一起讲或互相引用，没有先后顺序'})+'</section>'
+   +(dup?'<div class="chk must"><b>!</b><span>已经有「'+esc(dup.name)+'」覆盖相同车型，不要重复建</span></div>':'')+'</div>';
 }
-A.kfSave=()=>{const n=(KF.name||'').trim();if(!n)return toast('请填写名称','err');if(!KF.cars.length)return toast('至少选一个适用车型','err');if(!KF.abId)return toast('请选择主要训练能力','err');
-  /* v1.2：标签已取消，不再强制 */if(S.kps.some(k=>k.id!==KF.id&&k.name===n&&k.cars.some(c=>KF.cars.includes(c))))return toast('已有同名同车型的知识点','err');
-  const syn=String(KF.syn||'').split(/[、,，\s]+/).filter(Boolean);KF.cars.forEach(kpEnsureCar);let k;
-  if(KF.id){k=kp(KF.id);if(!k.domain)k.domain='销售技能';if(!k.line)k.line='销售';if(!k.roles)k.roles=['零售顾问'];if(!k.typeV12)k.typeV12=KF.type==='事实型'?'概念':'技能';if(!k.batch)k.batch='B2-90天';if(!k.stage)k.stage='不直接对应';if(!k.statusV12)k.statusV12='草案';Object.assign(k,{name:n,type:KF.type,tags:KF.tags.slice(),syn,owner:KF.owner||null});kpApplyMeta(k,{cars:KF.cars,tags:KF.tags,abId:KF.abId,owner:KF.owner||null,pre:KF.pre,rel:KF.rel});if(!k.owner&&k.st==='启用'){k.st='停用';kpHist(k,'停用','没有负责人')}kpHist(k,'编辑')}
-  else{const id='K'+(Math.max(0,...S.kps.map(x=>+String(x.id).replace(/\D/g,'')||0))+1);const abName=(dimVal('Dab',KF.abId)||{}).name||'';k={id,name:n,type:KF.type,tags:KF.tags.slice(),car:KF.cars[0],cars:KF.cars.slice(),syn,owner:KF.owner||null,st:KF.owner?'启用':'停用',ext:[],created:today,hist:[],line:'销售',roles:['零售顾问'],alsoRoles:[],carScope:[],scopeLevel:KF.cars.length>1?'多车系':'通用',domain:'销售技能',ability:abName,sellpoint:'',typeV12:KF.type==='事实型'?'概念':'技能',batch:'B2-90天',stage:'不直接对应',assess:{methods:'客观题（单选/判断）',anchorQ:0,practiceQ:0,anchorDrill:0,pass:70,validityDays:180},behavior:'暂无（仅知识测评）',ownerRole:'销售培训负责人',statusV12:'草案',specVer:1,reviewDue:'',srcDoc:'',legacy:'',legacyV11:'',demoSeed:'gap',pri:'P1'};kpApplyMeta(k,{cars:KF.cars,tags:KF.tags,abId:KF.abId,owner:KF.owner||null,pre:KF.pre,rel:KF.rel});S.kps.push(k);kpHist(k,'新增',KF.owner?'':'没有负责人，先停用')}
-  KF=null;UI.kid=k.id;UI.page='kp';toast(k.st==='启用'?'已保存并启用':'已保存，待指定负责人后启用','ok');render()};
+A.kfSave=()=>{
+  const n=(KF.name||'').trim();if(!n)return toast('请填写名称','err');if(!KF.cars.length)return toast('至少选一个适用车型','err');
+  if(!KF.roles||!KF.roles.length)return toast('至少选择一个适用岗位','err');
+  const product=KF.domain==='产品知识';if(product&&!KF.sellpoint)return toast('产品知识请选择卖点分类','err');
+  if(!product&&!KF.abId)return toast('非产品知识请选择能力项','err');
+  if(S.kps.some(k=>k.id!==KF.id&&k.name===n&&kpCarOverlap(kpCars(k),KF.cars)))return toast('已有同名且适用车型重叠的知识点','err');
+  const a=Object.assign({},KF.assess);if(a.pass<1||a.pass>100)return toast('过关线应在 1–100 之间','err');
+  if(a.validityDays<1)return toast('成绩有效期应大于 0 天','err');
+  if(['anchorQ','practiceQ','anchorDrill'].some(x=>a[x]<0))return toast('考核数量不能小于 0','err');
+  const syn=String(KF.syn||'').split(/[、,，\s]+/).filter(Boolean);const abName=product?'':((dimVal('Dab',KF.abId)||{}).name||KF.ability||'');
+  const owner=KF.owner||null;const enabled=!!owner&&KF.st==='启用'&&KF.statusV12!=='停用';
+  const old=KF.id?kp(KF.id):null;let id=old?old.id:'';let code=old?(old.code||old.taxCode||''):'';
+  if(!old){
+    id=typeof aiNextKpId==='function'?aiNextKpId():'K'+(Math.max(0,...S.kps.map(x=>+String(x.id).replace(/\D/g,'')||0))+1);
+    let seq=S.kps.filter(x=>String(x.code||'').startsWith('KP-CUS-')).length+1;code='KP-CUS-'+String(seq).padStart(2,'0');
+    while(S.kps.some(x=>x.code===code))code='KP-CUS-'+String(++seq).padStart(2,'0');
+  }
+  const candidate={id,code,name:n,domain:KF.domain,ability:abName,sellpoint:product?KF.sellpoint:'',typeV12:KF.typeV12,
+    batch:KF.batch,stage:KF.stage,cars:KF.cars.slice(),roles:KF.roles.slice(),assess:a};
+  const invalid=typeof kpV12ValidateKp==='function'?kpV12ValidateKp(candidate):[];if(invalid.length)return toast(invalid[0],'err');
+  const k=old||{id,code,taxCode:code,created:today,hist:[],ext:[],specVer:1,legacy:'',legacyV11:'',demoSeed:'gap',simulated:false,
+    behavior:'暂无（仅知识测评）',ownerRole:'销售培训负责人',alsoRoles:[]};
+  kpApplyMeta(k,{cars:KF.cars,tags:[],syn,abId:product?null:KF.abId,owner,pre:KF.pre,rel:KF.rel});
+  Object.assign(k,{code,taxCode:code,name:n,one:(KF.one||'').trim(),type:product?'事实型':'技能型',line:KF.line,roles:KF.roles.slice(),domain:KF.domain,
+    ability:abName,dim:abName,sellpoint:product?KF.sellpoint:'',typeV12:KF.typeV12,batch:KF.batch,stage:KF.stage,pri:KF.pri,
+    assess:a,owner,st:enabled?'启用':'停用',statusV12:KF.statusV12,reviewDue:KF.reviewDue||'',srcDoc:KF.srcDoc||'',
+    scopeLevel:KF.cars.includes('通用车型')?'通用':KF.cars.some(c=>V23_CAR_TREE[c])?'车系':KF.cars.length>1?'多车型':'车型'});
+  k.dims.Ddomain=[dimIdByName('Ddomain',k.domain)].filter(Boolean);k.dims.Dab=abName?[dimIdByName('Dab',abName)].filter(Boolean):[];
+  k.dims.Dsell=k.sellpoint?[dimIdByName('Dsell',k.sellpoint)].filter(Boolean):[];k.dims.Dflow=k.stage?[dimIdByName('Dflow',k.stage)].filter(Boolean):[];
+  if(!old)S.kps.push(k);
+  let t=(S.tax||[]).find(x=>x.kpId===k.id||x.code===k.code);
+  const tax={kpId:k.id,code:k.code,name:k.name,one:k.one,type:k.typeV12,domain:k.domain,ab:k.ability,ability:k.ability,sellpoint:k.sellpoint,
+    cars:k.cars.slice(),line:k.line,roles:k.roles.slice(),batch:k.batch,stage:k.stage,stages:[k.stage],pri:k.pri,status:k.statusV12,assess:k.assess,doc:k.srcDoc||''};
+  if(t)Object.assign(t,tax);else{S.tax=S.tax||[];S.tax.push(Object.assign({legacy:[],src:k.ownerRole||'手工维护'},tax))}
+  kpHist(k,old?'编辑':'新增',k.code+' · '+k.domain+' · '+kpCarSelectionText(k.cars));if(k.st==='停用'&&!owner)kpHist(k,'保持停用','没有负责人');
+  if(typeof kpV12ValidateAll==='function')kpV12ValidateAll();KF=null;UI.kid=k.id;UI.page='kp';toast(k.st==='启用'?'已保存并启用':'已保存，当前为停用状态','ok');render();
+};
 
 
 A.kfAddCar=()=>{const n=((($('#kf_newcar')||{}).value)||'').trim();if(!n)return toast('请输入车型名称','err');if(!S.cfg.tax.car.includes(n))kpEnsureCar(n);if(!KF.cars.includes(n))KF.cars=KF.cars.filter(x=>x!=='通用车型').concat([n]);toast('已新增车型「'+n+'」并选中','ok');render()};
