@@ -80,6 +80,11 @@ function cRowMatch(row,q,kw){
   if(q.pub&&row.isC&&row.pub!==q.pub)return false;
   if(q.car&&row.isC&&!row.car.includes(q.car))return false;
   if(q.car&&!row.isC&&typeof kpAssetFitsCar==='function'&&!kpAssetFitsCar(row.raw||{carScope:row.car},q.car))return false;
+  if(q.course){
+    if(row.k==='题'){const qq=row.raw||{};const picked=((content(q.course)||{}).picks||{}).qs||[];if(qq.src!==q.course&&picked.indexOf(row.id)<0)return false}
+    else if(row.k==='演练'){const dd=row.raw||{};const picked=((content(q.course)||{}).picks||{}).drills||[];if(dd.src!==q.course&&picked.indexOf(row.id)<0)return false}
+    else if(row.id!==q.course)return false;
+  }
   if(q.used&&!(row.use>0))return false;
   if(q.mine&&row.raw&&row.raw.creator&&row.raw.creator!==meFull())return false;
   if(q.exp){
@@ -89,15 +94,31 @@ function cRowMatch(row,q,kw){
   if(kw&&!(String(row.title||'').includes(kw)||row.id===kw))return false;
   return true;
 }
+function cZoneNow(){
+  const q=UI.sel.cq||{};
+  if(UI.sel.cZone==='all'||UI.sel.cZone==='c'||UI.sel.cZone==='q'||UI.sel.cZone==='d')return UI.sel.cZone;
+  if(q.kind==='题')return 'q';
+  if(q.kind==='演练')return 'd';
+  if(q.kind==='话术'||q.kind==='课程')return 'c';
+  return 'c';
+}
 function cListU(V){
   cNormState();
   const q=UI.sel.cq||(UI.sel.cq={});const kw=(UI.sel.cqs||'').trim();
+  const zone=cZoneNow();
   const preset=UI.sel.cPreset||(q.kp==='未挂载'?'unmounted':q.exp==='即将到期'?'expiring':q.st==='审核中'?'review':q.pub==='未上架'?'tostage':q.mine?'mine':'');
   if(preset&&preset!==UI.sel.cPreset)UI.sel.cPreset=preset;
-  const all=cAll().map(cRowOf);
+  let all=cAll().map(cRowOf);
+  if(zone==='c')all=all.filter(r=>r.k==='话术'||r.k==='课程');
+  else if(zone==='q')all=all.filter(r=>r.k==='题');
+  else if(zone==='d')all=all.filter(r=>r.k==='演练');
   const rows=all.filter(r=>cRowMatch(r,q,kw))
     .sort((x,y)=>CSTATE.indexOf(x.st)-CSTATE.indexOf(y.st)||(x.title||'').localeCompare(y.title||'','zh'));
   const pg=lstPage('call',rows,20);const picked=lstPicked('call');
+  UI.sel.cRowIds=rows.map(r=>r.id);
+  const zoneBar='<div class="kp-view-bar"><span>工作区</span>'
+    +[['c','课程与话术'],['q','题库'],['d','演练库'],['all','全部类型']].map(z=>'<button type="button" class="kp-view '+(zone===z[0]?'on':'')+'" data-act="cZone" data-v="'+z[0]+'">'+z[1]+'</button>').join('')
+    +'<span class="hint">默认分开管。搜全部类型时再把课和题放在一起。</span></div>';
   const viewBar='<div class="ux-viewbar"><span>常用视图</span>'+C_VIEWS.map(v=>{
     const n=all.filter(r=>{const t={};if(v[0]==='all')return true;if(v[0]==='unmounted')return r.isC&&!r.kp.length;if(v[0]==='review')return r.st==='审核中';if(v[0]==='tostage')return r.isC&&r.st==='已定稿'&&r.pub==='未上架';if(v[0]==='expiring')return r.isC&&expState(r.raw)==='即将到期';if(v[0]==='mine')return r.st==='草稿';return true}).length;
     return '<button type="button" class="kp-view '+(preset===v[0]?'on':'')+'" data-act="cPreset" data-v="'+v[0]+'">'+v[1]+' '+n+'</button>';
@@ -108,15 +129,21 @@ function cListU(V){
     +'<div class="fi2"><label>知识点</label><select data-wc="cqset" data-k="kp"><option value="">全部</option><option '+(q.kp==='未挂载'?'selected':'')+'>未挂载</option>'+S.kps.map(k=>'<option value="'+k.id+'" '+(q.kp===k.id?'selected':'')+'>'+esc(kpLabel(k))+'</option>').join('')+'</select></div>'
     +so('st','状态',['草稿','审核中','已定稿','已停用','已归档'])
     +so('pub','上架',PSTATE)+so('car','适用车型',['通用车型'].concat(V23_CAR_LEAVES))
+    +(zone==='q'||zone==='d'?'<div class="fi2"><label>'+(zone==='q'?'来源或选用课程':'来源或选用课程')+'</label><select data-wc="cqset" data-k="course"><option value="">全部</option>'+S.contents.filter(c=>c.kind==='课程'||c.kind==='话术').map(c=>'<option value="'+c.id+'" '+(q.course===c.id?'selected':'')+'>'+esc((c.title||'').slice(0,22))+'</option>').join('')+'</select></div>':'')
     +'<div class="fi2" style="align-self:end"><button class="btn pri sm" data-act="cqSearch">查询</button> <button class="btn sm" data-act="cqReset">重置</button></div></div></div>';
   const sortSel='<div class="fi2"><label>排序</label><select data-wc="cqs2">'
     +[['updated:desc','最近更新'],['use:desc','引用次数多'],['down:desc','点踩率高'],['expire:asc','最快到期']].map(x=>'<option value="'+x[0]+'" '+((UI.sel.cqs2||'updated:desc')===x[0]?'selected':'')+'>'+x[1]+'</option>').join('')+'</select></div>';
-  const tool='<div class="ux-toolbar">'+viewBar+'<span style="flex:1"></span>'+sortSel
+  const tool='<div class="ux-toolbar">'+zoneBar+viewBar+'<span style="flex:1"></span>'+sortSel
     +'<span class="hint">共 '+rows.length+' 条</span>'
+    +(zone==='q'||zone==='d'?'<button class="btn sm" data-act="cSelZone">全选这 '+rows.length+' 条</button>':'')
     +'<div class="fi2"><label>每页</label><select data-wc="casize">'+[20,50,100].map(n=>'<option '+(pg.size===n?'selected':'')+'>'+n+'</option>').join('')+'</select></div>'
     +lstCsvBtn(['性质','ID','标题','知识点','适用车型','状态','上架','使用','负责人'],[['性质','ID','标题','知识点','适用车型','状态','上架','使用','负责人']].concat(rows.map(r=>[r.k,r.id,r.title,(r.kp||[]).map(id=>(kp(id)||{}).name||'').join('、'),(r.car||[]).join('、'),r.st,r.pub||'',r.use||0,r.who||''])),'内容清单')
     +'</div>';
-  const batch=picked.length?'<div class="lst-batch"><b>已选 '+picked.length+' 条</b><button class="btn sm" data-act="cBulkSubmit">批量提交审核</button><button class="btn sm" data-act="lstSelClear" data-k="clist">清空选择</button></div>':'';
+  const batch=picked.length?'<div class="lst-batch"><b>已选 '+picked.length+' 条</b>'
+    +(zone==='c'?'<button class="btn sm" data-act="cBulkSubmit">批量提交审核</button>':'')
+    +(zone==='q'?'<button class="btn sm" data-act="cBulkQRole" data-role="锚题">设为核心测评</button><button class="btn sm" data-act="cBulkQRole" data-role="练习题">改为巩固练习</button>':'')
+    +(zone==='q'||zone==='d'?'<select id="c_pick_course"><option value="">加入课程选用…</option>'+S.contents.filter(c=>c.kind==='课程'||c.kind==='话术').map(c=>'<option value="'+c.id+'">'+esc((c.title||'').slice(0,18))+'</option>').join('')+'</select><button class="btn sm pri" data-act="cBulkPickCourse">加入选用</button>':'')
+    +'<button class="btn sm" data-act="lstSelClear" data-k="call">清空选择</button></div>':'';
   const narrow=(typeof window!=='undefined')&&window.innerWidth<1100;/* 窄屏：让出「引用·使用 / 负责人」两列，保证标题与状态不被挤没 */
   const cols=narrow?[36,0,110,86,160,72]:[36,0,116,92,140,96,70,72];
   const head='<tr><th style="width:36px"><input type="checkbox" data-act="lstSelAll" data-k="call" data-ids="'+esc(JSON.stringify(pg.rows.map(r=>r.id)))+'" '+(pg.rows.length&&pg.rows.every(r=>picked.includes(r.id))?'checked':'')+'></th>'

@@ -7,7 +7,7 @@ A.roleSwitch({value:'hq'});closeDlg();A.reset();
 UI.kid='K12';A.kpOpen({dataset:{id:'K12'}});
 CK('详情页明确三类核心资源',/核心讲解/.test(tx())&&/核心测评题/.test(tx())&&/过关情景演练/.test(tx()));
 CK('详情页说明场景不是独立对象',/场景属于演练，不单独维护“核心场景”/.test(tx()));
-CK('核心讲解有直达内容编辑入口',!!document.querySelector('[data-act="cEdit"]')&&/编辑 \/ 设为核心/.test(tx()));
+CK('核心讲解有直达内容编辑入口',!!document.querySelector('[data-act="cEdit"]')&&/编辑正文/.test(tx()));
 const lecture=kpV12MainLecture(kp('K12'));A.cEdit({dataset:{id:lecture.id}});
 CK('核心讲解在内容编辑页维护',UI.page==='cedit'&&/核心讲解/.test(tx())&&C.kpRole.K12==='主讲解');
 /* 新建题默认巩固；切换为核心并定稿后才进入核心数量 */

@@ -22,6 +22,8 @@ const oldQKp=kp('K12'),newQKp=kp('K6'),oldQN=kpV12AnchorQn(oldQKp),newQN=kpV12An
 const qRole=q0.role,qState=q0.st;q0.src=kpMounted(oldQKp)[0].id;
 CK('测试来源讲解确实未挂到目标点',!kpMounted(newQKp).some(c=>c.id===q0.src));
 A.kpAssetMove({dataset:{kind:'q',id:qid}});
+CK('改挂前说明会移出原知识点且尚未搬走',/确认后会从那里移出/.test((document.querySelector('#dlg')||{}).innerText||'')&&q0.kp!=='K6');
+A.kpAssetMove({dataset:{kind:'q',id:qid,ok:'1'}});
 CK('已有题移入后新旧核心数量同步变化',q0.kp==='K6'&&kpV12AnchorQn(oldQKp)===oldQN-1&&kpV12AnchorQn(newQKp)===newQN+1,oldQN+'→'+kpV12AnchorQn(oldQKp)+' / '+newQN+'→'+kpV12AnchorQn(newQKp));
 CK('题目用途定稿状态和作答统计保留',q0.role===qRole&&q0.st===qState&&JSON.stringify(q0.stat)===qStat);
 CK('题目历史作答不改写',JSON.stringify(S.ansLog.filter(a=>a.q===qid))===qLog);
@@ -30,12 +32,14 @@ CK('目标点没有来源讲解时自动清空',q0.src===''&&/来源讲解已清
 CK('移入后题目退出可添加列表并出现在详情',!kpAssetCands().some(q=>q.id===qid)&&!dtx().includes(qid)&&tx().includes(q0.stem));
 /* 已有演练：同一套交互与规则 */
 A.drwClose();A.kpDrillExisting();
-CK('演练抽屉复用同一套单归属说明',/只能属于一个知识点/.test(dtx())&&/移到这个点/.test(dtx())&&/D_V12_K57/.test(dtx()));
+CK('演练抽屉复用同一套单归属说明',/只能属于一个知识点/.test(dtx())&&/改挂到这个点/.test(dtx())&&/D_V12_K57/.test(dtx()));
 const did='D_V12_K57',d0=drById(did),dStat=JSON.stringify(d0.stat),dLog=JSON.stringify(S.ansLog.filter(a=>a.q===did));
 const oldDKp=kp('K57'),newDKp=kp('K6'),oldDN=kpV12AnchorDrillN(oldDKp),newDN=kpV12AnchorDrillN(newDKp);
 const dRole=d0.role,dScene=d0.scene,dState=d0.st;d0.src=kpMounted(oldDKp)[0].id;
 CK('演练测试来源确实未挂到目标点',!kpMounted(newDKp).some(c=>c.id===d0.src));
 A.kpAssetMove({dataset:{kind:'d',id:did}});
+CK('演练改挂前同样先确认',/确认后会从那里移出/.test((document.querySelector('#dlg')||{}).innerText||'')&&d0.kp!=='K6');
+A.kpAssetMove({dataset:{kind:'d',id:did,ok:'1'}});
 CK('已有演练移入后新旧过关数量同步变化',d0.kp==='K6'&&kpV12AnchorDrillN(oldDKp)===oldDN-1&&kpV12AnchorDrillN(newDKp)===newDN+1,oldDN+'→'+kpV12AnchorDrillN(oldDKp)+' / '+newDN+'→'+kpV12AnchorDrillN(newDKp));
 CK('演练用途场景定稿状态和练习统计保留',d0.role===dRole&&d0.scene===dScene&&d0.st===dState&&JSON.stringify(d0.stat)===dStat);
 CK('演练历史作答不改写',JSON.stringify(S.ansLog.filter(a=>a.q===did))===dLog);

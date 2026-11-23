@@ -92,8 +92,8 @@ const CK4=['话术','课程','题','演练'];
 function cAll(){
   const rows=[];
   S.contents.filter(visC).forEach(c=>rows.push({k:c.kind,id:c.id,title:c.title,kp:(c.kps||[]).slice(),st:c.st,pub:pubOf(c),sub:(c.kind==='话术'&&c.car?c.car:c.type)+' · v'+c.ver,who:cShort(c.creator),use:c.views||0,raw:c}));
-  S.qs.forEach(q=>rows.push({k:'题',id:q.id,title:q.stem,kp:[q.kp],st:q.st,pub:null,sub:q.type+' · 难度 '+q.lv,who:q.owner,use:q.stat.n,raw:q}));
-  S.drills.forEach(d=>rows.push({k:'演练',id:d.id,title:d.name,kp:[d.kp],st:d.st,pub:null,sub:d.scene+' · '+d.turns.length+' 回合',who:d.owner,use:d.stat.n,raw:d}));
+  S.qs.forEach(q=>rows.push({k:'题',id:q.id,title:q.stem,kp:q.kp?[q.kp]:[],st:q.st,pub:null,sub:q.type+' · 难度 '+q.lv,who:q.owner,use:q.stat.n,raw:q}));
+  S.drills.forEach(d=>rows.push({k:'演练',id:d.id,title:d.name,kp:d.kp?[d.kp]:[],st:d.st,pub:null,sub:d.scene+' · '+d.turns.length+' 回合',who:d.owner,use:d.stat.n,raw:d}));
   return rows}
 const cOpenAct=r=>r.k==='题'?['qOpen','编辑']:r.k==='演练'?['drOpen','编辑']:['cView','查看'];
 /* cAllList 已于 v1.3 删除：内容中心统一由 z_tables.js 的 cListU() 渲染（简版/高级两套列表合并） */

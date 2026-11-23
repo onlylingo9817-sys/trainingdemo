@@ -678,7 +678,9 @@ A.qSave=function(el){
     const blocked=!String(QF.stem||'').trim()||(fin&&typeof qCheckHard==='function'&&qCheckHard(QF).length);
     if(!blocked)kpCommitScope(QF, QF.stem);
   }
-  return __qSaveScope(el);
+  const r=__qSaveScope(el);
+  if(UI.page!=='qform')kpReturnIf();
+  return r;
 };
 const __drSaveScope=A.drSave;
 A.drSave=function(el){
@@ -688,7 +690,9 @@ A.drSave=function(el){
     const blocked=!String(DF.name||'').trim()||(fin&&typeof drHard==='function'&&drHard(Object.assign({},DF,{turns:draft})).length);
     if(!blocked)kpCommitScope(DF, kpDrillFormText(DF));
   }
-  return __drSaveScope(el);
+  const r=__drSaveScope(el);
+  if(UI.page!=='dform')kpReturnIf();
+  return r;
 };
 const __loadNowScope=loadNow;
 loadNow=function(){const ok=__loadNowScope();if(ok)kpBackfillScopes(false);return ok};
@@ -719,6 +723,20 @@ drPick=function(mid,kid,car){
 };
 qzStartPack=function(p){
   const need=(p.steps||[]).find(s=>!s.done);const n=need?packStepNeed(need):3;
+  if(p.arranged){
+    const s=p.steps[R.packStep!=null?R.packStep:-1]||need;
+    if(s&&(s.t==='课中'||s.t==='课后'||s.t==='考试')){
+      const issue=planIssue(s,p.id+(s.id||''),kpPaperCar(p.kp));
+      if(!issue.ids.length)return toast(issue.note||'这次安排里没有可以做的题','warn');
+      if(issue.short)toast(issue.note,'warn');
+      return qzStart(s.t==='考试'?'exam':'pack',p.kp,issue.ids);
+    }
+  }
+  if(p.pick&&p.pick.qIds&&p.pick.qIds.length){
+    const ids=p.pick.qIds.map(id=>qById(id)).filter(q=>q&&q.st==='已定稿').map(q=>q.id);
+    if(!ids.length)return toast('选用的题还没有定稿，定稿后才会出现在这次练习里','warn');
+    return qzStart(R.quizCtx&&R.quizCtx.learn?'pack':(need&&need.t==='复测'?'retest':'pack'),p.kp,ids);
+  }
   const target=kpPaperCar(p.kp);
   const all=qsOf(p.kp,'已定稿').filter(q=>kpAssetFitsCar(q,target));
   const ids=all.slice(0,Math.max(1,Math.min(n,all.length))).map(q=>q.id);
@@ -787,6 +805,498 @@ function kpTasksPage(){
     +T.map(t=>'<tr><td>'+esc(t.name||t.mid)+'</td><td>'+esc(t.store||'')+'</td><td>'+esc(t.role||'')+'</td><td style="white-space:normal;min-width:180px"><b>'+esc(t.kpCode||'')+'</b><div class="hint">'+esc(t.kpName||'')+'</div></td><td>v'+esc(t.specVer||1)+'</td><td>'+esc(t.level)+'</td><td><span class="tag '+(t.state==='逾期'?'err':['已复测','已关闭'].includes(t.state)?'ok':'warn')+'">'+esc(t.state)+'</span></td><td>'+esc(t.due||'')+'</td><td class="hint">'+esc(t.retestedAt||t.confirmedAt||t.readAt||'—')+'</td></tr>').join('')
     +'</table></div></div>';
 }
+
+/* ---------- 资源关系：归属 / 来源 / 选用，以及从知识点进出编辑 ---------- */
+function kpPicks(c){
+  if(!c)return {qs:[],drills:[]};
+  if(!c.picks||typeof c.picks!=='object')c.picks={qs:[],drills:[]};
+  if(!Array.isArray(c.picks.qs))c.picks.qs=[];
+  if(!Array.isArray(c.picks.drills))c.picks.drills=[];
+  return c.picks;
+}
+function kpReturnIf(){
+  const kid=UI.sel&&UI.sel.returnKp;
+  const cid=UI.sel&&UI.sel.returnCid;
+  if(kid&&kp(kid)){delete UI.sel.returnKp;delete UI.sel.returnCid;UI.kid=kid;UI.page='kp';render();const m=$('#main');if(m)m.scrollTop=0;return true}
+  if(cid&&content(cid)){delete UI.sel.returnCid;delete UI.sel.returnKp;UI.cid=cid;UI.ctab='内容';UI.page='cdetail';render();const m=$('#main');if(m)m.scrollTop=0;return true}
+  return false;
+}
+function kpMarkReturn(){
+  if(UI.page==='kp'&&UI.kid)UI.sel.returnKp=UI.kid;
+  else if(UI.page==='cdetail'&&UI.cid)UI.sel.returnCid=UI.cid;
+}
+const __goBack=A.go;
+A.go=function(el){
+  if(UI.sel&&(UI.sel.returnKp||UI.sel.returnCid)&&(UI.page==='cedit'||UI.page==='qform'||UI.page==='dform')&&el.dataset.p==='content'){
+    return kpReturnIf();
+  }
+  return __goBack(el);
+};
+const __qOpenBack=A.qOpen;
+A.qOpen=function(el){kpMarkReturn();return __qOpenBack(el)};
+const __drOpenBack=A.drOpen;
+A.drOpen=function(el){kpMarkReturn();return __drOpenBack(el)};
+const __cEditBack=A.cEdit;
+A.cEdit=function(el){kpMarkReturn();return __cEditBack(el)};
+const __cSaveBack=A.cSave;
+A.cSave=function(el){const r=__cSaveBack(el);if(UI.page!=='cedit')kpReturnIf();return r};
+const __kpContentNewBack=A.kpContentNew;
+A.kpContentNew=function(){if(UI.kid)UI.sel.returnKp=UI.kid;return __kpContentNewBack()};
+const __qCancelBack=A.qCancel;
+A.qCancel=function(){const back=UI.sel&&(UI.sel.returnKp||UI.sel.returnCid);__qCancelBack();if(back)kpReturnIf()};
+const __drCancelBack=A.drCancel;
+A.drCancel=function(){const back=UI.sel&&(UI.sel.returnKp||UI.sel.returnCid);__drCancelBack();if(back)kpReturnIf()};
+function kpNextAssetId(prefix,list){
+  const n=Math.max(0,...(list||[]).map(x=>+String(x.id).replace(/\D/g,'')||0));
+  return prefix+(n+1);
+}
+A.kpLecRole=el=>{
+  const k=kp(UI.kid),c=content(el.dataset.id);if(!k||!c)return;
+  c.kpRole=c.kpRole||{};
+  const cur=(c.kpRole[k.id])||(c.mainKp===k.id?'主讲解':'补充材料');
+  if(cur==='主讲解'){c.kpRole[k.id]='补充材料';if(c.mainKp===k.id)c.mainKp='';toast('已改为补充材料','ok')}
+  else{
+    (S.contents||[]).forEach(x=>{if(x===c||!(x.kps||[]).includes(k.id))return;x.kpRole=x.kpRole||{};if((x.kpRole[k.id]||(x.mainKp===k.id?'主讲解':''))==='主讲解'){x.kpRole[k.id]='补充材料';if(x.mainKp===k.id)x.mainKp=''}});
+    c.kpRole[k.id]='主讲解';c.mainKp=k.id;toast('已设为核心讲解','ok');
+  }
+  render();
+};
+A.kpQRole=el=>{
+  const q=qById(el.dataset.id);if(!q||q.kp!==UI.kid)return;
+  q.role=q.role==='锚题'?'练习题':'锚题';
+  toast(q.role==='锚题'?'已改为核心测评':'已改为巩固练习','ok');render();
+};
+A.kpQUnlink=el=>{
+  const q=qById(el.dataset.id);if(!q||q.kp!==UI.kid)return;
+  q.kp='';toast('已解除关联。题目还在题库，没有挂到别的知识点','ok');render();
+};
+A.kpDRole=el=>{
+  const d=drById(el.dataset.id);if(!d||d.kp!==UI.kid)return;
+  d.role=d.role==='锚定演练'?'练习演练':'锚定演练';
+  toast(d.role==='锚定演练'?'已改为过关演练':'已改为巩固演练','ok');render();
+};
+A.kpDUnlink=el=>{
+  const d=drById(el.dataset.id);if(!d||d.kp!==UI.kid)return;
+  d.kp='';toast('已解除关联。演练还在演练库，没有挂到别的知识点','ok');render();
+};
+const __kpAssetMoveBack=A.kpAssetMove;
+A.kpAssetMove=function(el){
+  if(el.dataset.ok==='1'){closeDlg();return __kpAssetMoveBack(el)}
+  const isQ=el.dataset.kind==='q';
+  const x=isQ?qById(el.dataset.id):drById(el.dataset.id);if(!x)return;
+  const old=kp(x.kp);
+  openDlg('改挂到当前知识点','<div style="line-height:1.8">这'+(isQ?'道题':'场演练')+'现在属于「'+(old?esc(old.name):'未挂载')+'」。确认后会从那里移出，只保留一个知识点，不复制。</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="kpAssetMove" data-ok="1" data-kind="'+el.dataset.kind+'" data-id="'+esc(el.dataset.id)+'">确认改挂</button>');
+};
+function kpCourseOutline(c){
+  const b=(c&&c.body)||{};
+  const lines=String(b.outline||'').split(/\n/).map(s=>s.replace(/^\s*\d+[\.、]\s*/,'').trim()).filter(s=>s&&s.length>1);
+  if(lines.length)return lines;
+  if(b.spin)return ['S','P','I','N'].map(k=>String(b.spin[k]||'').replace(/\s+/g,' ').trim()).filter(Boolean).map(s=>s.slice(0,42));
+  const ls=String(b.lines||'').split(/\n/).map(s=>s.trim()).filter(Boolean);
+  return ls.slice(0,8);
+}
+function kpCoursePickCard(c){
+  const picks=kpPicks(c);
+  const srcQs=S.qs.filter(q=>q.src===c.id);
+  const srcDs=S.drills.filter(d=>d.src===c.id);
+  const rowQ=(id,from)=>{
+    const q=qById(id);if(!q)return '';
+    const owner=kp(q.kp);
+    return '<tr><td style="white-space:normal"><a class="link" data-act="cCourseEditQ" data-id="'+q.id+'" data-cid="'+c.id+'">'+esc(q.stem)+'</a>'+(q.demoGen?' <span class="tag warn">演示生成</span>':'')+'</td><td>'+(q.role==='锚题'?'核心测评':'巩固练习')+'</td><td>'+(owner?esc(owner.name):'<span class="hint">未挂知识点</span>')+'</td><td class="hint">'+esc(from)+'</td><td>'+(from==='选用'?'<a class="link err" data-act="cPickDel" data-cid="'+c.id+'" data-kind="q" data-id="'+q.id+'">移出选用</a>':'<a class="link" data-act="cPickAdd" data-cid="'+c.id+'" data-kind="q" data-id="'+q.id+'">加入选用</a>')+'</td></tr>';
+  };
+  const rowD=(id,from)=>{
+    const d=drById(id);if(!d)return '';
+    const owner=kp(d.kp);
+    return '<tr><td style="white-space:normal"><a class="link" data-act="cCourseEditD" data-id="'+d.id+'" data-cid="'+c.id+'">'+esc(d.name)+'</a></td><td>'+(d.role==='锚定演练'?'过关演练':'巩固演练')+'</td><td>'+(owner?esc(owner.name):'<span class="hint">未挂知识点</span>')+'</td><td class="hint">'+esc(from)+'</td><td>'+(from==='选用'?'<a class="link err" data-act="cPickDel" data-cid="'+c.id+'" data-kind="d" data-id="'+d.id+'">移出选用</a>':'<a class="link" data-act="cPickAdd" data-cid="'+c.id+'" data-kind="d" data-id="'+d.id+'">加入选用</a>')+'</td></tr>';
+  };
+  const useQs=picks.qs.map(id=>rowQ(id,'选用')).join('');
+  const useDs=picks.drills.map(id=>rowD(id,'选用')).join('');
+  const provQs=srcQs.filter(q=>!picks.qs.includes(q.id)).map(q=>rowQ(q.id,'来源')).join('');
+  const provDs=srcDs.filter(d=>!picks.drills.includes(d.id)).map(d=>rowD(d.id,'来源')).join('');
+  return '<div class="card"><h3>本课怎么用 <span class="hint">配套题库、默认安排、某一次学习包，是三件不同的事</span></h3>'
+    +'<div class="hint" style="line-height:1.7;margin-bottom:8px">知识归属在知识点上，一道题仍只属于一个点。来源表示根据这门课写出的草稿，不等于已经拿来上课。下面这份选用是<b>配套题库</b>：可以很多，给以后反复用。学员不会因此被要求全部做完。核心测评 / 巩固练习是知识点上的用途，和学习包里的课中、课后、结业不是一回事。</div>'
+    +'<div style="margin-bottom:8px"><button class="btn sm" data-act="cPickOpen" data-id="'+c.id+'" data-kind="q">放入配套题</button> <button class="btn sm" data-act="cPickOpen" data-id="'+c.id+'" data-kind="d">放入配套演练</button> <button class="btn sm" data-act="cGenOpen" data-id="'+c.id+'">按大纲出演示草稿</button> <button class="btn sm pri" data-act="cPackFrom" data-id="'+c.id+'">按默认安排建学习包</button></div>'
+    +(useQs||useDs?'<div class="tw"><table class="t"><tr><th>配套</th><th>知识点用途</th><th>仍属于</th><th></th><th></th></tr>'+useQs+useDs+'</table></div>':'<div class="hint">配套还是空的。先放入可复用的题和演练，再决定一次课只用其中哪些。</div>')
+    +(provQs||provDs?'<div class="hint" style="margin-top:8px">根据这门课写出、但还没放进配套的草稿</div><div class="tw"><table class="t"><tr><th>来源草稿</th><th>知识点用途</th><th>仍属于</th><th></th><th></th></tr>'+provQs+provDs+'</table></div>':'')
+    +kpPlanSection(c)
+    +'</div>';
+}
+A.cCourseEditQ=el=>{UI.sel.returnCid=el.dataset.cid;A.qOpen({dataset:{id:el.dataset.id}})};
+A.cCourseEditD=el=>{UI.sel.returnCid=el.dataset.cid;A.drOpen({dataset:{id:el.dataset.id}})};
+A.cPickAdd=el=>{
+  const c=content(el.dataset.cid);if(!c)return;const picks=kpPicks(c);
+  const key=el.dataset.kind==='d'?'drills':'qs';
+  if(!picks[key].includes(el.dataset.id))picks[key].push(el.dataset.id);
+  toast('已加入本课选用，知识点归属没变','ok');render();
+};
+A.cPickDel=el=>{
+  const c=content(el.dataset.cid);if(!c)return;const picks=kpPicks(c);
+  const key=el.dataset.kind==='d'?'drills':'qs';
+  picks[key]=picks[key].filter(id=>id!==el.dataset.id);
+  toast('已移出选用。题或演练还在，归属的知识点也没变','ok');render();
+};
+A.cPickOpen=el=>{
+  const c=content(el.dataset.id);if(!c)return;
+  const isD=el.dataset.kind==='d';
+  const picks=kpPicks(c);
+  const have=isD?picks.drills:picks.qs;
+  const rows=(isD?S.drills:S.qs).filter(x=>x.st!=='已停用'&&!have.includes(x.id));
+  UI.sel.pickCourse={id:c.id,kind:isD?'d':'q'};
+  const body='<div class="hint" style="margin-bottom:8px">勾选后加入「'+esc(c.title)+'」的选用。不会把它们改挂到这门课的知识点。</div>'
+    +'<div style="max-height:360px;overflow:auto">'+rows.slice(0,80).map(x=>{const owner=kp(x.kp);return '<label style="display:flex;gap:8px;padding:6px 0;border-top:1px solid #f2f3f5"><input type="checkbox" class="c_pick_one" value="'+x.id+'"><span>'+esc(isD?x.name:x.stem)+'<br><span class="hint">'+x.id+' · '+(owner?esc(owner.name):'未挂知识点')+'</span></span></label>'}).join('')+'</div>'
+    +(rows.length>80?'<div class="hint">先显示 80 条。题库工作区可以按课程筛出更多再批量加入。</div>':'');
+  openDlg(isD?'选用已有演练':'选用已有题',body,'<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="cPickOpenOk">加入选用</button>',true);
+};
+A.cPickOpenOk=()=>{
+  const st=UI.sel.pickCourse||{};const c=content(st.id);if(!c)return;
+  const picks=kpPicks(c);const key=st.kind==='d'?'drills':'qs';let n=0;
+  [...document.querySelectorAll('.c_pick_one:checked')].forEach(el=>{if(!picks[key].includes(el.value)){picks[key].push(el.value);n++}});
+  closeDlg();toast(n?'已选用 '+n+' 条，知识点归属没变':'没有新勾选','ok');render();
+};
+A.cGenOpen=el=>{
+  const c=content(el.dataset.id);if(!c)return;
+  const lines=kpCourseOutline(c);
+  const kps=(c.kps||[]).map(kp).filter(Boolean);
+  if(!kps.length)return toast('先把这门课挂到至少一个知识点，出草稿时才能指定考哪个点','warn');
+  if(!lines.length)return toast('这门课还没有大纲或正文要点，写上要点再出草稿','warn');
+  UI.sel.genCourse=c.id;
+  const body='<div class="tag warn" style="display:block;margin-bottom:8px;white-space:normal">演示生成：按大纲条目套成草稿题，不是对课程的理解。生成后请改题干和选项。</div>'
+    +'<div class="f"><label>考哪个知识点</label><select id="cg_kp">'+kps.map(k=>'<option value="'+k.id+'">'+esc(k.name)+'</option>').join('')+'</select><div class="fh">只列出这门课已经挂上的点</div></div>'
+    +'<div class="f"><label>用途</label><select id="cg_role"><option value="练习题">巩固练习</option><option value="锚题">核心测评</option></select></div>'
+    +'<div class="hint" style="margin:6px 0">勾选要出草稿的条目（默认不全选，避免一次堆很多模板题）</div>'
+    +lines.map((line,i)=>'<label style="display:flex;gap:8px;padding:4px 0"><input type="checkbox" class="cg_line" value="'+i+'"><span>'+esc(line)+'</span></label>').join('');
+  openDlg('按大纲出演示草稿',body,'<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="cGenDo">生成勾选的草稿</button>',true);
+};
+A.cGenDo=()=>{
+  const c=content(UI.sel.genCourse);if(!c)return;
+  const lines=kpCourseOutline(c);
+  const kid=($('#cg_kp')||{}).value;
+  const role=($('#cg_role')||{}).value==='锚题'?'锚题':'练习题';
+  const idx=[...document.querySelectorAll('.cg_line:checked')].map(el=>+el.value);
+  if(!kid||!kp(kid))return toast('请选择知识点','err');
+  if(!idx.length)return toast('先勾选要出草稿的大纲条目','err');
+  const made=[];
+  idx.forEach(i=>{
+    const line=lines[i];if(!line)return;
+    const id=kpNextAssetId('Q',S.qs);
+    const stem='【演示生成】'+line;
+    S.qs.push({id,kp:kid,type:'单选',stem,opts:['按本课这一条的讲法','只报一个参数','跳过这个要点','改讲别的内容'],ans:[0],
+      why:'演示生成：题目来自「'+c.title+'」的大纲条目「'+line+'」。这不是对课程的理解，请改题干、选项和解析后再定稿。',
+      lv:1,src:c.id,st:'草稿',role,owner:(kp(kid)||{}).owner||'',created:today,stat:{n:0,ok:0},demoGen:true,carScope:kpInferSeries(line+' '+(c.title||'')),carScopeManual:false});
+    made.push(id);
+  });
+  closeDlg();
+  if(!made.length)return toast('没有生成草稿','err');
+  toast('已写入 '+made.length+' 道演示草稿。来源是这门课，还没有加入选用。','ok');
+  render();
+};
+const PLAN_LABEL={学:'学习',课中:'课中练习',课后:'课后巩固',演练:'演练',考试:'结业考核'};
+function kpSavedPlan(c){return c&&c.plan&&Array.isArray(c.plan.steps)&&c.plan.steps.length?c.plan:null}
+function kpPlanCar(c){
+  const kid=(c&&c.kps||[])[0];
+  return kid&&typeof kpPaperCar==='function'?kpPaperCar(kid):'';
+}
+function kpDefaultPlan(c){
+  const picks=kpPicks(c);
+  const car=kpPlanCar(c);
+  let ready=(picks.qs||[]).map(qById).filter(q=>q&&q.st==='已定稿');
+  if(car){const fit=ready.filter(q=>kpAssetFitsCar(q,car));if(fit.length)ready=fit}
+  const anchors=ready.filter(q=>q.role==='锚题');
+  const practice=ready.filter(q=>q.role!=='锚题');
+  const inIds=(practice.length?practice:ready).slice(0,2).map(q=>q.id);
+  const examIds=(anchors.length?anchors:ready).slice(0,2).map(q=>q.id);
+  return {saved:false,steps:[
+    {id:'learn',t:'学',req:true,contentId:c.id},
+    {id:'in',t:'课中',req:true,mode:'fixed',qIds:inIds,pool:[],n:inIds.length},
+    {id:'after',t:'课后',req:false,mode:'draw',qIds:[],pool:picks.qs.slice(),n:3},
+    {id:'drill',t:'演练',req:!!picks.drills.length,drillIds:picks.drills.slice(0,1),qIds:[],pool:[],n:0},
+    {id:'exam',t:'考试',req:true,mode:'fixed',qIds:examIds,pool:[],n:examIds.length}
+  ]};
+}
+function kpMaterializePlan(c){
+  if(!kpSavedPlan(c))c.plan=kpDefaultPlan(c);
+  c.plan.saved=true;
+  return c.plan;
+}
+function kpCopyPlan(c){
+  const src=kpSavedPlan(c)||kpDefaultPlan(c);
+  const bankQs=kpPicks(c).qs.slice();
+  const bankDs=kpPicks(c).drills.slice();
+  const steps=src.steps.map(s=>({
+    id:s.id||s.t,t:s.t,req:s.req!==false,mode:s.mode||(s.t==='课后'?'draw':'fixed'),
+    qIds:(s.qIds||[]).slice(),
+    pool:s.t==='课后'?((s.pool&&s.pool.length)?s.pool.slice():bankQs.slice()):(s.pool||[]).slice(),
+    drillIds:(s.drillIds||[]).slice(),
+    contentId:s.contentId||c.id,n:s.n!=null?s.n:(s.t==='课后'?3:0),
+    done:false,skip:false
+  }));
+  return {steps,bank:{qs:bankQs,drills:bankDs,contentId:c.id}};
+}
+function planStepsOf(owner,id){
+  if(owner==='pack'){const p=S.packs.find(x=>x.id===id);return p?p.steps:null}
+  const c=content(id);if(!c)return null;
+  return kpMaterializePlan(c).steps;
+}
+function planIssue(step,seed,car){
+  if(!step)return {ids:[],asked:0,have:0,short:false,note:'没有这个环节'};
+  if(step.t==='学')return {ids:[],kind:'learn',note:''};
+  if(step.t==='演练'){
+    const ids=(step.drillIds||[]).map(drById).filter(d=>d&&d.st==='已定稿').map(d=>d.id);
+    return {ids,asked:ids.length,have:ids.length,short:false,kind:'drill',note:ids.length?'':'这次没有指定可练的演练'};
+  }
+  const draw=step.mode==='draw';
+  const raw=draw?(step.pool&&step.pool.length?step.pool:(step.qIds||[])):(step.qIds||[]);
+  let pool=raw.map(qById).filter(q=>q&&q.st==='已定稿');
+  const before=pool.length;
+  if(car&&typeof kpAssetFitsCar==='function')pool=pool.filter(q=>kpAssetFitsCar(q,car));
+  const asked=draw?(+step.n||0):pool.length;
+  let ids;
+  if(draw){
+    ids=pool.slice().sort((a,b)=>hsh(String(seed)+a.id)-hsh(String(seed)+b.id)).slice(0,Math.min(asked,pool.length)).map(q=>q.id);
+  }else ids=pool.map(q=>q.id);
+  const short=draw&&pool.length<asked;
+  let note='';
+  if(!ids.length)note=before&&car?'按当前车系，指定的题都不能用，没有拿别的题来凑':'指定的题还没有定稿，没有拿别的题来凑';
+  else if(short)note='想出 '+asked+' 道，候选里已定稿只有 '+pool.length+' 道，这次只出这 '+pool.length+' 道';
+  else if(draw)note='从 '+pool.length+' 道候选里出 '+ids.length+' 道，其余配套题不会铺给学员';
+  else note='固定 '+ids.length+' 道';
+  return {ids,asked,have:pool.length,short,kind:'quiz',note};
+}
+function kpPlanSection(c){
+  const saved=!!kpSavedPlan(c);
+  const steps=(saved?c.plan.steps:kpDefaultPlan(c).steps);
+  const packs=(S.packs||[]).filter(p=>p.fromCourse===c.id);
+  const editing=packs.find(p=>p.id===(UI.sel&&UI.sel.editPack));
+  return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">'
+    +'<h3 style="margin:0 0 6px">默认安排 <span class="hint">'+(saved?'已保存。建学习包时复制这一份，之后各改各的':'还没单独保存。建包时就用下面这份少量安排，点调整后才会记到这门课上')+'</span></h3>'
+    +'<div class="hint" style="line-height:1.7;margin-bottom:8px">课程负责「有哪些题可以复用」和「默认一次课怎么上」。学习包负责「这一次学什么、练什么、考什么」。这里不是实时继承：已经建好的包不会跟着变。要更新某个包，去那个包里点「再次从课程带入」。</div>'
+    +planEditorHtml('course',c.id,steps,kpPicks(c))
+    +(packs.length?'<div class="hint" style="margin-top:10px">从这门课建出的学习包</div><div class="tw"><table class="t"><tr><th>学习包</th><th>本次安排</th><th></th></tr>'
+      +packs.map(p=>'<tr><td>'+esc(p.name)+'</td><td class="hint">'+esc((p.steps||[]).map(s=>(PLAN_LABEL[s.t]||s.t)+(s.req===false?'·选修':'')).join(' → '))+'</td><td><button class="btn sm" data-act="planOpen" data-id="'+p.id+'">调整本次安排</button></td></tr>').join('')
+      +'</table></div>':'')
+    +(editing?('<div class="card" style="margin-top:10px;background:#f7f9fc"><h3>本次安排 · '+esc(editing.name)+'</h3>'
+      +'<div class="hint" style="line-height:1.7;margin-bottom:8px">只影响这个学习包。不会删课程配套，不会改题的核心测评 / 巩固练习，也不会改另一个包。这是建包时复制的初始安排，不是跟着课程变。</div>'
+      +'<div style="margin-bottom:8px"><button class="btn sm" data-act="planReimport" data-id="'+editing.id+'">再次从课程带入</button> <button class="btn sm" data-act="planClose">返回只看课程</button></div>'
+      +planEditorHtml('pack',editing.id,editing.steps,editing.bank||{qs:[],drills:[]})
+      +'</div>'):'')
+    +'</div>';
+}
+function planEditorHtml(owner,id,steps){
+  return '<div class="tw"><table class="t"><tr><th>顺序</th><th>环节</th><th>必/选</th><th>这次怎么用</th><th></th></tr>'
+    +(steps||[]).map((s,i)=>{
+      const car=owner==='pack'?kpPaperCar((S.packs.find(x=>x.id===id)||{}).kp):kpPlanCar(content(id));
+      const issue=planIssue(s,id+(s.id||i),car);
+      let how='看这门课的正文';
+      if(s.t==='演练')how='指定 '+(s.drillIds||[]).length+' 场';
+      else if(s.t==='课中'||s.t==='课后'||s.t==='考试'){
+        const draw=s.mode==='draw';
+        how=(draw?'抽题':'固定题')+' · '+esc(issue.note||'');
+      }
+      const qBtns=(s.t==='课中'||s.t==='考试'||s.t==='课后')
+        ?'<button class="btn sm" data-act="planMode" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'" data-v="'+(s.mode==='draw'?'fixed':'draw')+'">'+(s.mode==='draw'?'改为固定题':'改为抽题')+'</button> '
+          +(s.mode==='draw'?'<input id="plan_n_'+owner+'_'+i+'" value="'+(s.n||0)+'" style="width:54px"> <button class="btn sm" data-act="planSetN" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'">就抽这些</button> ':'')
+          +'<button class="btn sm" data-act="planPick" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'" data-k="'+(s.mode==='draw'?'pool':'qIds')+'">'+(s.mode==='draw'?'改候选池':'点选题目')+'</button>'
+        :'';
+      const dBtn=s.t==='演练'?'<button class="btn sm" data-act="planPick" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'" data-k="drillIds">点选演练</button>':'';
+      return '<tr><td>'+(i+1)+'</td><td>'+(PLAN_LABEL[s.t]||esc(s.t))+'</td><td><button class="btn sm" data-act="planReq" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'">'+(s.req===false?'选修':'必修')+'</button></td><td style="white-space:normal">'+how+'<div style="margin-top:6px">'+qBtns+dBtn+'</div></td><td style="white-space:nowrap"><button class="btn sm" data-act="planMove" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'" data-v="-1">上移</button> <button class="btn sm" data-act="planMove" data-owner="'+owner+'" data-id="'+id+'" data-i="'+i+'" data-v="1">下移</button></td></tr>';
+    }).join('')
+    +'</table></div><div class="hint">候选来自配套（课程）或建包时复制的题单（学习包），不会到别的题库里抓题来凑数。上面表格不把全部配套题摊开。</div>';
+}
+A.planReq=el=>{const steps=planStepsOf(el.dataset.owner,el.dataset.id);const s=steps&&steps[+el.dataset.i];if(!s)return;s.req=s.req===false;toast(s.req?'这个环节改为必修':'这个环节改为选修','ok');render()};
+A.planMove=el=>{const steps=planStepsOf(el.dataset.owner,el.dataset.id);if(!steps)return;const i=+el.dataset.i;const j=i+(+el.dataset.v||0);if(j<0||j>=steps.length)return;const x=steps.splice(i,1)[0];steps.splice(j,0,x);render()};
+A.planMode=el=>{const steps=planStepsOf(el.dataset.owner,el.dataset.id);const s=steps&&steps[+el.dataset.i];if(!s)return;s.mode=el.dataset.v==='draw'?'draw':'fixed';if(s.mode==='draw'&&!(s.pool||[]).length){const bank=el.dataset.owner==='pack'?(S.packs.find(p=>p.id===el.dataset.id)||{}).bank:null;s.pool=(bank&&bank.qs?bank.qs:(content(el.dataset.id)?kpPicks(content(el.dataset.id)).qs:[])).slice()}if(s.mode==='draw'&&!s.n)s.n=3;toast(s.mode==='draw'?'改为从候选池抽题':'改为点名固定题','ok');render()};
+A.planSetN=el=>{const steps=planStepsOf(el.dataset.owner,el.dataset.id);const s=steps&&steps[+el.dataset.i];if(!s)return;const n=+$('#plan_n_'+el.dataset.owner+'_'+el.dataset.i).value;if(!Number.isFinite(n)||n<0)return toast('抽题数量要是数字','err');s.mode='draw';s.n=Math.round(n);const issue=planIssue(s,el.dataset.id+(s.id||''));toast(issue.note||('这次抽 '+s.n+' 道'),issue.short?'warn':'ok');render()};
+A.planPick=el=>{
+  const owner=el.dataset.owner,id=el.dataset.id,i=+el.dataset.i,key=el.dataset.k;
+  const steps=planStepsOf(owner,id);const s=steps&&steps[i];if(!s)return;
+  const pack=owner==='pack'?S.packs.find(p=>p.id===id):null;
+  const course=owner==='course'?content(id):content(pack&&pack.fromCourse);
+  const bank=pack&&pack.bank?pack.bank:(course?{qs:kpPicks(course).qs,drills:kpPicks(course).drills}:{qs:[],drills:[]});
+  const list=key==='drillIds'?(bank.drills||[]):(bank.qs||[]);
+  const chosen=new Set(s[key]||[]);
+  UI.sel.planPick={owner,id,i,key};
+  const rows=list.map(xid=>{
+    const x=key==='drillIds'?drById(xid):qById(xid);if(!x)return '';
+    const title=key==='drillIds'?x.name:x.stem;
+    const extra=key==='drillIds'?'':(x.st!=='已定稿'?' · 未定稿，不会发给学员':'');
+    return '<label style="display:flex;gap:8px;padding:6px 0;border-top:1px solid #f2f3f5"><input type="checkbox" class="plan_one" value="'+x.id+'" '+(chosen.has(x.id)?'checked':'')+'><span>'+esc(title)+'<br><span class="hint">'+x.id+extra+'</span></span></label>';
+  }).join('');
+  openDlg(key==='pool'?'改候选池':key==='drillIds'?'点选这次的演练':'点选这次的题','<div class="hint" style="margin-bottom:8px">只在配套里点。点选不会把题移出配套，也不会改知识点用途。</div><div style="max-height:360px;overflow:auto">'+(rows||'<div class="hint">配套是空的。</div>')+'</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="planPickOk">用这些</button>',true);
+};
+A.planPickOk=()=>{
+  const st=UI.sel.planPick||{};const steps=planStepsOf(st.owner,st.id);const s=steps&&steps[st.i];if(!s)return;
+  const ids=[...document.querySelectorAll('.plan_one:checked')].map(el=>el.value);
+  s[st.key]=ids;
+  closeDlg();toast('已更新这一环节。配套题还在，知识点用途也没变','ok');render();
+};
+A.planOpen=el=>{UI.sel.editPack=el.dataset.id;render()};
+A.planClose=()=>{if(UI.sel)delete UI.sel.editPack;render()};
+A.planReimport=el=>{
+  const p=S.packs.find(x=>x.id===el.dataset.id);const c=p&&content(p.fromCourse);if(!p||!c)return;
+  if(el.dataset.ok!=='1')return openDlg('再次从课程带入','<div style="line-height:1.8">用这门课<b>现在的默认安排</b>覆盖「'+esc(p.name)+'」的环节顺序、必选修、固定题、抽题数量和演练。这个包里已经改过的本次安排会丢掉，完成进度也会清掉。<br>课程配套题、题的核心测评 / 巩固练习、其他学习包都不变。这不是自动同步。</div>','<button class="btn" data-act="close">取消</button><button class="btn pri" data-act="planReimport" data-id="'+p.id+'" data-ok="1">覆盖这个包</button>');
+  const snap=kpCopyPlan(c);
+  p.steps=snap.steps;p.bank=snap.bank;p.planCopied=true;
+  closeDlg();toast('已用课程当前的默认安排覆盖这个包','ok');render();
+};
+A.cPackFrom=el=>{
+  const c=content(el.dataset.id);if(!c)return;
+  const picks=kpPicks(c);
+  if(!picks.qs.length&&!picks.drills.length)return toast('先把题或演练放进配套，再建学习包','warn');
+  const snap=kpCopyPlan(c);
+  const kid=(c.kps||[])[0]||'';
+  const mid=(S.lrn&&S.lrn[0]&&S.lrn[0].mid)||'';
+  const used=[];
+  snap.steps.forEach(s=>{(s.qIds||[]).forEach(id=>{if(!used.includes(id))used.push(id)})});
+  const drills=(snap.steps.find(s=>s.t==='演练')||{}).drillIds||[];
+  const pk={id:'PKC'+(S.packs.length+1),tpl:'course',mid,mids:mid?[mid]:[],kp:kid,name:'本次学习 · '+c.title,steps:snap.steps,bank:snap.bank,fromCourse:c.id,arranged:true,planCopied:true,due:addDays(today,7),status:'进行中',ts:today,audience:1,
+    pick:{contentId:c.id,qIds:used,drillIds:drills.slice()}};
+  S.packs.unshift(pk);
+  UI.sel.editPack=pk.id;
+  toast('已复制一份初始安排。改这个包不会改课程，也不是实时跟着课程变','ok');
+  render();
+};
+const __packEnsureFlow=packEnsure;
+packEnsure=function(p,n,mid){
+  const pk=__packEnsureFlow(p,n,mid);if(!pk)return pk;
+  if(pk.arranged||(pk.pick&&pk.pick.contentId))return pk;
+  const raw=String((n.cfg&&n.cfg.course)||n.packCourse||'').split(' · ')[0];
+  const c=raw&&content(raw);
+  if(c&&(kpPicks(c).qs.length||kpPicks(c).drills.length||kpSavedPlan(c))){
+    const snap=kpCopyPlan(c);
+    pk.steps=snap.steps;pk.bank=snap.bank;pk.fromCourse=c.id;pk.arranged=true;pk.planCopied=true;pk.name='本次学习 · '+c.title;
+  }
+  return pk;
+};
+function planLocked(p,i){return (p.steps||[]).slice(0,i).some(s=>!s.done)}
+function planFinish(p){
+  const req=(p.steps||[]).filter(s=>s.req!==false);
+  if(req.length&&req.every(s=>s.done)){p.status='已完成';p.doneTs=today}
+}
+function planPackGo(p,i){
+  const s=p.steps[i];if(!s||s.done)return;
+  if(planLocked(p,i))return toast('先做完上面的环节。选修可以跳过','warn');
+  R.packStep=i;
+  if(s.t==='学'){
+    const cid=s.contentId||(p.bank&&p.bank.contentId)||p.fromCourse;
+    const c=content(cid);
+    if(!c)return toast('这门课不在了','warn');
+    R.sheet={zone:c.id};R.page='adapt';R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,step:i,slot:'学'};
+    return renderRN();
+  }
+  if(s.t==='演练'){
+    const issue=planIssue(s,p.id+(s.id||''));
+    const d=issue.ids.map(drById).find(x=>x&&(typeof drUsable!=='function'||drUsable(x)));
+    if(!d)return toast(issue.note||'这次没有可练的演练','warn');
+    R.page='drill';DZ={id:d.id,i:0,step:'intro',text:'',hint:false,log:[],chg:{},packId:p.id};return renderRN();
+  }
+  const issue=planIssue(s,p.id+(s.id||''),kpPaperCar(p.kp));
+  if(!issue.ids.length)return toast(issue.note||'这次没有可做的题','warn');
+  s.issued=issue.ids.slice();
+  if(issue.short)toast(issue.note,'warn');
+  R.quizCtx={mode:s.t==='考试'?'exam':'pack',packId:p.id,kp:p.kp,step:i,slot:s.t,issued:issue.ids.slice()};
+  return qzStart(s.t==='考试'?'exam':'pack',p.kp,issue.ids);
+}
+A.planLearnDone=el=>{
+  const p=S.packs.find(x=>x.id===el.dataset.id);const s=p&&p.steps[+el.dataset.i];if(!s)return;
+  if(planLocked(p,+el.dataset.i))return toast('先做完上面的环节','warn');
+  s.done=true;s.ts=today;planFinish(p);toast('这节已学完','ok');renderRN();
+};
+A.planSkip=el=>{
+  const p=S.packs.find(x=>x.id===el.dataset.id);const s=p&&p.steps[+el.dataset.i];if(!s)return;
+  if(s.req!==false)return toast('必修不能跳过','warn');
+  if(planLocked(p,+el.dataset.i))return toast('先做完上面的环节','warn');
+  s.skip=true;s.done=true;s.ts=today;planFinish(p);toast('已跳过这个选修环节','ok');
+  if(document.body.dataset.end==='rn')renderRN();else render();
+};
+function planPackHtml(p){
+  const rows=(p.steps||[]).map((s,i)=>{
+    const issue=(s.t==='课中'||s.t==='课后'||s.t==='考试'||s.t==='演练')?planIssue(s,p.id+(s.id||''),kpPaperCar(p.kp)):null;
+    const lock=planLocked(p,i);
+    const go=s.t==='学'?'去学习':s.t==='演练'?'去演练':s.t==='考试'?'开始结业考核':s.t==='课后'?'做课后巩固':'做课中练习';
+    const btn=s.done?'<span class="rst2 ok">'+(s.skip?'已跳过':'已完成')+'</span>'
+      :(lock?'<span class="rst2 lock">先做上面的环节</span>'
+        :'<button class="rb" data-act="rxPackGo" data-id="'+p.id+'" data-i="'+i+'">'+go+'</button>'+(s.t==='学'?' <button class="rb gh" data-act="planLearnDone" data-id="'+p.id+'" data-i="'+i+'">学完这节</button>':'')+(s.req===false?' <button class="rb gh" data-act="planSkip" data-id="'+p.id+'" data-i="'+i+'">跳过</button>':''));
+    const hint=s.t==='学'?'看这门课，学完再往下。不会把配套题全部摊开。'
+      :s.t==='演练'?('这次练：'+((s.drillIds||[]).map(id=>{const d=drById(id);return d?d.name:id}).join('、')||'还没指定'))
+      :(issue?issue.note:'');
+    return '<div class="rx-step '+(s.done?'done':'')+'"><div class="rx-step-h"><b>'+(i+1)+'. '+(PLAN_LABEL[s.t]||s.t)+'</b>'+(s.req===false?'<span class="rst2">选修</span>':'<span class="rst2">必修</span>')+btn+'</div><div class="rx-step-b">'+esc(hint)+(s.t==='考试'&&s.score!=null?' · 得分 '+s.score:'')+'</div></div>';
+  }).join('');
+  return rnav('学习包',true)+'<div class="rx-wrap"><div class="rx-hero"><b>'+esc(p.name)+'</b><div class="rx-meta">按本次安排 · 配套 '+((p.bank&&p.bank.qs)||[]).length+' 道不会全做</div></div>'
+    +'<div class="rx-note">这是建包时复制的安排，不是跟着课程变。必修按顺序做，选修可以跳过。题不够时会直接说明，不会拿无关题来凑。</div>'
+    +rows+'<div style="height:30px"></div></div>';
+}
+const __rxPackGoFlow=A.rxPackGo;
+A.rxPackGo=function(el){
+  const p=S.packs.find(x=>x.id===el.dataset.id);const i=+el.dataset.i;const s=p&&p.steps[i];
+  if(p&&p.arranged&&s)return planPackGo(p,i);
+  const pick=p&&p.pick;
+  if(p&&s&&pick){
+    if(s.t==='学'&&pick.contentId){const c=content(pick.contentId);if(!c)return toast('选用的内容不在了','warn');R.packQuizKp=p.kp;R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,learn:true};R.sheet={zone:c.id};R.page='adapt';return renderRN()}
+    if(s.t==='练题'&&pick.qIds&&pick.qIds.length){const ids=pick.qIds.map(qById).filter(q=>q&&q.st==='已定稿').map(q=>q.id);if(!ids.length)return toast('选用的题还没有定稿','warn');R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,need:ids.length};return qzStart('pack',p.kp,ids)}
+    if(s.t==='演练'&&pick.drillIds&&pick.drillIds.length){const d=pick.drillIds.map(drById).find(x=>x&&drUsable(x));if(!d)return toast('选用的演练还不能练','warn');R.page='drill';DZ={id:d.id,i:0,step:'intro',text:'',hint:false,log:[],chg:{},packId:p.id};return renderRN()}
+    if(s.t==='复测'&&pick.qIds&&pick.qIds.length){const all=pick.qIds.map(qById).filter(q=>q&&q.st==='已定稿');const ids=(all.filter(q=>q.role==='锚题').length?all.filter(q=>q.role==='锚题'):all).map(q=>q.id);if(!ids.length)return toast('选用的题还没有定稿','warn');R.quizCtx={mode:'pack',packId:p.id,kp:p.kp,retest:true};return qzStart('retest',p.kp,ids)}
+  }
+  return __rxPackGoFlow(el);
+};
+const __rxPackHtmlFlow=rxPackHtml;
+rxPackHtml=function(){
+  const p=(S.packs||[]).find(x=>x.id===R.packId);
+  if(p&&p.arranged){
+    const isCtrl=(typeof personOf==='function'&&(personOf(ME.mid)||{}).group==='对照批');
+    if(!isCtrl)return planPackHtml(p);
+  }
+  const html=__rxPackHtmlFlow();
+  if(!p||!p.pick||p.arranged)return html;
+  const note='<div class="rx-note">这次用的是指定资源：内容 '+(p.pick.contentId||'—')+'，题 '+((p.pick.qIds||[]).length)+' 道，演练 '+((p.pick.drillIds||[]).length)+' 场。不会再按知识点另抽一批。</div>';
+  return html.replace('<div class="rx-wrap">','<div class="rx-wrap">'+note);
+};
+const __rxPackOnQuizPlan=rxPackOnQuiz;
+rxPackOnQuiz=function(packId,qid,ok){
+  const ctx=R.quizCtx||{};
+  if(ctx.packId===packId&&(ctx.slot==='课中'||ctx.slot==='课后'||ctx.slot==='考试')){
+    const p=S.packs.find(x=>x.id===packId);const s=p&&p.steps[ctx.step];
+    if(s&&s.t!=='考试'){s._ev=s._ev||{};s._ev[qid]=1;if(Object.keys(s._ev).length>=(s.issued||[]).length&&(s.issued||[]).length){s.done=true;s.ts=today;planFinish(p)}}
+    return false;
+  }
+  return __rxPackOnQuizPlan(packId,qid,ok);
+};
+const __qzNextPlan=A.qzNext;
+A.qzNext=function(){
+  const finishing=!!(QZ&&QZ.shown&&QZ.i+1>=QZ.ids.length);
+  const ctx=Object.assign({},(QZ&&QZ.ctx)||{});
+  const log=QZ&&QZ.log?QZ.log.slice():[];
+  const r=__qzNextPlan();
+  if(finishing&&ctx.slot==='考试'&&ctx.packId){
+    const p=S.packs.find(x=>x.id===ctx.packId);const s=p&&p.steps[ctx.step];
+    if(p&&s&&!s.done){
+      const right=log.filter(x=>x.ok).length;
+      s.score=log.length?Math.round(right/log.length*100):0;s.done=true;s.ts=today;planFinish(p);
+      toast('结业考核 '+right+'/'+log.length+' 题答对','ok');
+    }
+  }
+  return r;
+};
+A.rSheetDrill=el=>{if(typeof dzStart==='function')dzStart(el.dataset.id)};
+A.cBulkQRole=el=>{
+  const role=el.dataset.role==='锚题'?'锚题':'练习题';let n=0;
+  lstPicked('call').forEach(id=>{const q=qById(id);if(q){q.role=role;n++}});
+  toast('已把 '+n+' 道题改为'+(role==='锚题'?'核心测评':'巩固练习')+'。知识点归属没变','ok');render();
+};
+A.cBulkPickCourse=()=>{
+  const cid=($('#c_pick_course')||{}).value;const c=content(cid);if(!c)return toast('先选要加入的课程','err');
+  const picks=kpPicks(c);let n=0;
+  lstPicked('call').forEach(id=>{
+    if(qById(id)){if(!picks.qs.includes(id)){picks.qs.push(id);n++}}
+    else if(drById(id)){if(!picks.drills.includes(id)){picks.drills.push(id);n++}}
+  });
+  toast(n?'已把 '+n+' 条加入「'+c.title+'」的选用，没有改挂知识点':'选中的已经在选用里','ok');render();
+};
+A.cSelZone=()=>{
+  const s=UI.sel.call||(UI.sel.call={page:1,size:20});s.pick={};
+  (UI.sel.cRowIds||[]).forEach(id=>{s.pick[id]=true});
+  toast('已选中当前筛选的 '+(UI.sel.cRowIds||[]).length+' 条','ok');render();
+};
+A.cZone=el=>{UI.sel.cZone=el.dataset.v;const q=UI.sel.cq||(UI.sel.cq={});if(el.dataset.v==='q')q.kind='题';else if(el.dataset.v==='d')q.kind='演练';else if(el.dataset.v==='c')q.kind='';else delete q.kind;if(UI.sel.call)UI.sel.call.page=1;render()};
 
 /* ---------- 覆盖：v23Seed 收尾（68 条 / 人员 / 任务 / 校验） ---------- */
 const __v23SeedOrigV12=v23Seed;
