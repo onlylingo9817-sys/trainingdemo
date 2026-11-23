@@ -25,12 +25,14 @@ src/
   index.html          页面骨架，按顺序加载脚本
   styles/app.css      v23 既有样式
   styles/v23.css      v23 新增页面样式
-  scripts/            32 个脚本，按 index.html 顺序执行
+  scripts/            35 个脚本，按 index.html 顺序执行
 tests/                交互回归探针（按 tools/run-tests.js 的清单执行）
 tools/dev-server.js   零依赖开发服务器
 tools/build-single-file.js  可选单文件导出
-tools/run-tests.js    批量回归测试
+tools/run-tests.js    批量回归测试（84 组）
 docs/HANDOFF-v23.md   产品决策、历史改造与踩坑记录
+docs/KP-UX-v1.3.md    知识点模块的 UX 诊断、布局与交互 / UI 规范
+docs/KP-ARCH-STATUS.md 知识点架构现状与问题清单（对外讨论用）
 assets/spin_raw.txt   SPIN 话术清洗稿
 ```
 

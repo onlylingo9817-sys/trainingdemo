@@ -7,3 +7,5 @@ dist/
 docs/screens/
 # 汇报材料为二进制产物，按需本地生成
 docs-report/
+# QA 截图按需生成，不入库
+review-shots/
