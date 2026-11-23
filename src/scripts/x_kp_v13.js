@@ -127,11 +127,38 @@ function kpV13Score(text){
 }
 function kpV13Route(mig, text){
   const ids=kpV13Ids(mig);
-  const scored=kpV13Score(text);
+  const s=String(text||'');
+  const code=mig&&mig.code||'';
+  const pend=(why)=>({id:'',status:'待整理',how:'待整理',why:why,candidates:ids.slice()});
+  const done=(id,why)=>({id:id,status:'已迁移',how:'按正文',why:why,candidates:[]});
+  if(/外放电/.test(s))return pend('写的是外放电功率和设备，不是选补能方案，也不是充电开始结束');
+  if(/哨兵/.test(s))return pend('哨兵耗电不落在电池防护、被动安全或辅助驾驶边界里');
+  if(/低速照明/.test(s))return pend('低速照明的开启车速，对不上现有安全类学习结果');
+  if(/私人影院|户外电影|大屏/.test(s))return done('XM-P10','正文是座舱大屏显示，不是手机或车家互联');
+  if(/省钱经济账|经济账/.test(s))return done('XM-O02','标题是用车成本，不是亏电工况判断');
+  if(/各自适合谁/.test(s))return done('XM-P13','正文写的是哪款车适合谁');
+  if(/三代同堂|电动侧踏|上车得扶/.test(s))return done('XM-S06','客户已经说出上下车限制，这一场是在讲适配，不是再做需求摘要');
+  if(mig&&/转资源场景/.test(mig.action)&&/对比/.test(s+' '+(mig.name||'')))return done('XM-S07','对比场景归比较方法；金额、空间、续航只是这次引用的资料');
+  if(code==='KP-DLV-03')return done('XM-D02','交付时怎么教会用户是这一题的结果，充电和开门只是可引用的操作');
+  if(/主动\s*[\/、]\s*被动|主动、被动/.test(s))return pend('同一条把主动、被动和冗余放在一起，没有拆开的题目');
+  if(/增程动力与纯电续航/.test(s))return pend('模板只重复旧标题，分不清是增程取舍、电驱还是续航口径');
+  if(/智能座舱与生态/.test(s)&&!/大屏|语音|手机|互联/.test(s))return pend('模板同时写座舱和生态，没有具体任务');
+  if(/安全卖点/.test(s)&&!/电池|气囊|车身|主动安全|AEB/.test(s))return pend('只写了安全卖点，分不清电池、车身还是主动安全');
+  const scored=kpV13Score(s);
   const best=scored[0], second=scored[1];
-  if(best&&(!second||best.n>second.n))return {id:best.id,status:'已迁移',how:'按主题'};
-  if(ids.length===1)return {id:ids[0],status:'已迁移',how:'一对一'};
-  return {id:'',status:'待整理',how:'主题不明显',candidates:ids};
+  if(best&&(!second||best.n>second.n))return {id:best.id,status:'已迁移',how:'按主题',why:'',candidates:[]};
+  if(ids.length===1)return {id:ids[0],status:'已迁移',how:'一对一',why:'',candidates:[]};
+  return pend('题干没有分出迁移表里的哪一个学习结果');
+}
+function kpV13Apply(obj, kind, route){
+  obj.kpMap=route.status;obj.kpHow=route.how||'';obj.kpWhy=route.why||'';obj.kpCandidates=route.candidates||[];
+  if(route.status!=='已迁移'||!route.id){
+    if(kind==='c'){obj.kps=[];obj.mainKp='';obj.kpRole={}}
+    else obj.kp='';
+    return;
+  }
+  if(kind==='c'){obj.kps=[route.id];obj.mainKp=route.id;obj.kpRole={[route.id]:'主讲解'}}
+  else obj.kp=route.id;
 }
 function kpResText(obj, kind){
   if(kind==='q')return [obj.stem,obj.why,obj.id].join(' ');
@@ -150,13 +177,19 @@ function kpMigrateOne(obj, kind, oldById){
   if(!old||String(old.code||'').indexOf('KP-')!==0)return;
   const mig=KP_V13_DATA.mig.find(m=>m.code===old.code);
   const route=kpV13Route(mig, kpResText(obj, kind));
-  obj.kpWas=oldId;obj.kpCodeWas=old.code;obj.kpMap=route.status;obj.kpHow=route.how||'';
+  obj.kpWas=oldId;obj.kpCodeWas=old.code;
   if(!obj.yearScope)obj.yearPending=true;
-  const guess=route.id||(route.candidates||[])[0]||'';
-  if(kind==='c'){
-    if(!guess){obj.kps=[];obj.mainKp='';obj.kpRole={};obj.kpCandidates=route.candidates||[];}
-    else{obj.kps=[guess];obj.mainKp=guess;obj.kpRole={[guess]:'主讲解'};obj.kpCandidates=route.candidates||[];}
-  }else{obj.kp=guess;obj.kpCandidates=route.candidates||[];}
+  kpV13Apply(obj, kind, route);
+}
+function kpV13RefinePending(){
+  function redo(obj, kind){
+    if(!obj||obj.kpMap!=='待整理'||obj.kpHow==='人工确认'||!obj.kpCodeWas)return;
+    const mig=KP_V13_DATA.mig.find(m=>m.code===obj.kpCodeWas);
+    kpV13Apply(obj, kind, kpV13Route(mig, kpResText(obj, kind)));
+  }
+  (S.contents||[]).forEach(c=>redo(c,'c'));
+  (S.qs||[]).forEach(q=>redo(q,'q'));
+  (S.drills||[]).forEach(d=>redo(d,'d'));
 }
 function kpV13MapId(oldId, oldById){
   const old=oldById[oldId];if(!old)return oldId;
@@ -213,7 +246,7 @@ function kpV13Train(){
   }
 }
 function kpMigrateV13(force){
-  if(!force&&S.cfg&&S.cfg.kpInit==='v13'&&(S.kps||[]).some(k=>k.code==='XM-B01')){kpV13Train();return}
+  if(!force&&S.cfg&&S.cfg.kpInit==='v13'&&(S.kps||[]).some(k=>k.code==='XM-B01')){kpV13RefinePending();kpV13Train();return}
   const old=(S.kps||[]).slice();const oldById={};old.forEach(k=>{oldById[k.id]=k});
   const alias={};
   KP_V13_DATA.mig.forEach(m=>{const prev=old.find(k=>k.code===m.code);const ids=kpV13Ids(m);if(prev&&ids[0]){(alias[ids[0]]||(alias[ids[0]]=[])).push(prev.id)}});
@@ -241,6 +274,7 @@ k.syn=[k.name].concat(migs.map(m=>m.name)).concat(extraSyn[k.id]||[]);if(typeof 
   const ordered=(S.contents||[]).slice().sort((a,b)=>((typeof kpIsPlaceholder==='function'&&kpIsPlaceholder(a))?1:0)-((typeof kpIsPlaceholder==='function'&&kpIsPlaceholder(b))?1:0));
   const seen={};
   ordered.forEach(c=>{
+    if(c.kpMap==='待整理')return;
     const id=c.mainKp;if(!id)return;
     c.kpRole=c.kpRole||{};
     if(seen[id]){c.kpRole[id]='补充材料';if(c.mainKp===id)c.mainKp=(c.kps||[]).find(x=>x!==id)||''}
@@ -257,10 +291,12 @@ kpV12ValidateKp=function(k){return __kpValidateV13(k)};
 const __hasLectureV13=kpV12HasLecture;
 kpV12HasLecture=function(k, includePlaceholder){
   const year=(typeof UI!=='undefined'&&UI&&UI.sel&&UI.sel.kpOv&&UI.sel.kpOv.year)||'';
-    if(!year)return __hasLectureV13(k, includePlaceholder);
   return (S.contents||[]).some(c=>{
+    if(c.kpMap==='待整理')return false;
     if(!(c.kps||[]).includes(k.id))return false;
+    if(!year&&((c.kpRole&&c.kpRole[k.id])||'主讲解')!=='主讲解')return false;
     if(typeof isPub==='function'&&!isPub(c))return false;
+    if(typeof expState==='function'&&expState(c)==='已过期')return false;
     if(!includePlaceholder&&typeof kpIsPlaceholder==='function'&&kpIsPlaceholder(c))return false;
     return kpYearFits(c, year);
   });
@@ -268,7 +304,11 @@ kpV12HasLecture=function(k, includePlaceholder){
 const __kpMatchV13=kpV12ListMatch;
 kpV12ListMatch=function(k,f){if(f&&f.grp&&(k.group||'其他')!==f.grp)return false;return __kpMatchV13(k,f)};
 const __qPickV13=qPick;
-qPick=function(mid,kid,n,mode,car){const list=__qPickV13(mid,kid,n,mode,car)||[];const year=(typeof R!=='undefined'&&R&&R.diagYear)||'';return year?list.filter(q=>kpYearFits(q,year)):list};
+qPick=function(mid,kid,n,mode,car){let list=(__qPickV13(mid,kid,n,mode,car)||[]).filter(q=>q.kpMap!=='待整理');const year=(typeof R!=='undefined'&&R&&R.diagYear)||'';return year?list.filter(q=>kpYearFits(q,year)):list};
+const __anchorQnV13=kpV12AnchorQn;
+kpV12AnchorQn=function(k){return (S.qs||[]).filter(q=>q.kp===k.id&&q.st==='已定稿'&&q.role==='锚题'&&q.kpMap!=='待整理').length};
+const __anchorDrV13=kpV12AnchorDrillN;
+kpV12AnchorDrillN=function(k){return (S.drills||[]).filter(d=>d.kp===k.id&&d.st==='已定稿'&&d.role==='锚定演练'&&d.kpMap!=='待整理').length};
 const __kpLibraryV13=kpLibrary;
 kpLibrary=function(){
   const f=kpLibFilter();
@@ -285,15 +325,57 @@ kpLibrary=function(){
     +'<div class="fi2"><label>优先级</label><select data-wc="kpset" data-k="pri"><option value="">全部</option>'+['P0','P1'].map(x=>'<option value="'+x+'" '+(f.pri===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'
     +'<div class="fi2"><label>覆盖年款</label><select data-wc="kpOv" data-k="year"><option value="">不按年款收紧</option>'+KP_YEARS.map(y=>'<option value="'+y+'" '+((UI.sel.kpOv||{}).year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div>'
     +'</div><div class="kp-filter-actions"><button class="btn sm" data-act="kpFlat">全部列表</button><button class="btn sm" data-act="kpFclr">清除筛选</button><span class="hint">筛选后 '+rows.length+' / '+(S.kps||[]).length+' 条 · 分组就是知识域，空组不占屏</span></div>'
-    +(pending?'<div class="tag warn" style="display:block;margin-top:8px;white-space:normal">待整理 '+pending+' 条：主题对不上，没有猜挂到某个知识点。</div>':'')
+    +(pending?'<button type="button" class="tag warn" data-act="kpPendOpen" style="display:block;margin-top:8px;white-space:normal;text-align:left;width:100%;cursor:pointer">待整理 '+pending+' 条，点开逐条看原因并改归属。未确认的不计入核心讲解和核心考核。</button>':'')
     +'</div>';
   const body=groups.map(gr=>{
     const open=UI.sel.kpFold[gr.g]!==false;
     const items=gr.list.map(k=>'<div class="kp-grow"><div class="t"><a class="link" data-act="kpOpen" data-id="'+k.id+'"><b>'+esc(k.name)+'</b></a><div class="hint">'+esc(k.code)+' · '+esc(k.pri)+' · '+esc(k.one||'')+'</div></div><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a></div>').join('');
     return '<div class="kp-group"><button type="button" data-act="kpFold" data-g="'+esc(gr.g)+'">'+(open?'▾':'▸')+' '+esc(gr.g)+' · '+gr.list.length+'</button>'+(open?items:'')+'</div>';
   }).join('');
-  return bar+'<div class="kp-groups">'+body+'</div>'+base;
+  return bar+kpPendingHtml()+'<div class="kp-groups">'+body+'</div><div class="kp-wide-list">'+base+'</div>';
 };
+function kpPendingRows(){
+  const rows=[];
+  (S.contents||[]).forEach(x=>{if(x.kpMap==='待整理')rows.push({kind:'c',obj:x,title:x.title||x.id})});
+  (S.qs||[]).forEach(x=>{if(x.kpMap==='待整理')rows.push({kind:'q',obj:x,title:x.stem||x.id})});
+  (S.drills||[]).forEach(x=>{if(x.kpMap==='待整理')rows.push({kind:'d',obj:x,title:x.name||x.id})});
+  return rows;
+}
+function kpPendingHtml(){
+  if(!UI.sel||!UI.sel.kpPend)return '';
+  const rows=kpPendingRows();
+  const oldName=code=>{const m=KP_V13_DATA.mig.find(x=>x.code===code);return m?m.name:''};
+  const openAct=r=>r.kind==='q'?'qOpen':r.kind==='d'?'drOpen':'cView';
+  const kindName=r=>r.kind==='q'?'题':r.kind==='d'?'演练':'内容';
+  const opts=(S.kps||[]).filter(k=>String(k.code||'').indexOf('XM-')===0).map(k=>'<option value="'+k.id+'">'+esc(k.code+' '+k.name)+'</option>').join('');
+  const body=rows.map(r=>{
+    const o=r.obj;const cands=o.kpCandidates||[];
+    const picks=cands.map(id=>{const k=kp(id);return '<button type="button" class="btn sm" data-act="kpPendTo" data-kind="'+r.kind+'" data-id="'+esc(o.id)+'" data-to="'+id+'">归到 '+(k?esc(k.code):id)+'</button>'}).join(' ');
+    return '<div class="kp-pend" style="padding:10px 0;border-top:1px solid #f0f1f4"><b>'+kindName(r)+'</b> <a class="link" data-act="'+openAct(r)+'" data-id="'+esc(o.id)+'">'+esc(r.title)+'</a>'
+      +'<div class="hint">旧点 '+esc(o.kpCodeWas||'')+' '+esc(oldName(o.kpCodeWas))+'</div>'
+      +'<div class="hint">'+esc(o.kpWhy||'题干没有分出学习结果')+'</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">'+picks
+      +'<select data-wc="kpPendSet" data-kind="'+r.kind+'" data-id="'+esc(o.id)+'"><option value="">改挂到其他知识点</option>'+opts+'</select></div></div>';
+  }).join('');
+  return '<div class="card"><h3>待整理 '+rows.length+' 条 <button type="button" class="btn sm" data-act="kpPendOpen">收起</button></h3><div class="hint">这些还没有确认归属，不算核心讲解，也不进学员默认核心考核。能看清主题的再点归属。</div>'+body+'</div>';
+}
+function kpPendObj(kind,id){
+  const list=kind==='q'?S.qs:kind==='d'?S.drills:S.contents;
+  return (list||[]).find(x=>x.id===id);
+}
+function kpPendAssign(kind,id,to){
+  const obj=kpPendObj(kind,id);const k=kp(to);
+  if(!obj||!k)return toast('没有这个知识点','err');
+  obj.kpMap='已迁移';obj.kpHow='人工确认';obj.kpWhy='';obj.kpCandidates=[];
+  if(kind==='c'){
+    const taken=(S.contents||[]).some(c=>c.id!==obj.id&&(c.kps||[]).includes(k.id)&&((c.kpRole||{})[k.id]==='主讲解')&&c.kpMap!=='待整理');
+    obj.kps=[k.id];obj.kpRole={[k.id]:taken?'补充材料':'主讲解'};obj.mainKp=taken?'':k.id;
+  }else obj.kp=k.id;
+  toast('已归到「'+k.name+'」','ok');render();
+}
+A.kpPendOpen=()=>{UI.sel.kpPend=!UI.sel.kpPend;render()};
+A.kpPendTo=el=>kpPendAssign(el.dataset.kind,el.dataset.id,el.dataset.to);
+A.kpPendSet=el=>{if(el.value)kpPendAssign(el.dataset.kind,el.dataset.id,el.value)};
 A.kpFold=el=>{const g=el.dataset.g;UI.sel.kpFold=UI.sel.kpFold||{};UI.sel.kpFold[g]=UI.sel.kpFold[g]===false;render()};
 A.kpFlat=()=>{kpLibFilter().flat=1;render()};
 A.kpOv=el=>{UI.sel.kpOv=UI.sel.kpOv||{};UI.sel.kpOv[el.dataset.k]=el.value;render()};
@@ -313,6 +395,14 @@ if(typeof rxPackHtml==='function'){
   };
 }
 A.trainObs=el=>{const p=(S.packs||[]).find(x=>x.id===el.dataset.id);if(!p)return;p.observe=p.observe||[];p.observe.push({dim:($('#ob_dim')||{}).value||'',grade:($('#ob_grade')||{}).value||'未观察',note:($('#ob_note')||{}).value||'',kp:p.kp,at:typeof today!=='undefined'?today:'',sim:true});toast('已记下实操观察，没有改题目成绩','ok');if(typeof renderRN==='function')renderRN()};
+A.navToggle=()=>{document.body.classList.toggle('nav-open')};
+document.addEventListener('click',function(e){
+  const t=e.target;
+  if(!t||!t.closest)return;
+  if(t.closest('.menu-toggle'))return;
+  if(!document.body.classList.contains('nav-open'))return;
+  document.body.classList.remove('nav-open');
+});
 function kpCanon(id){const k=typeof kp==='function'?kp(id):null;return k?k.id:id}
 const __kpOpenV13=A.kpOpen;
 A.kpOpen=function(el){const id=kpCanon((el&&el.dataset&&el.dataset.id)||UI.kid);if(el&&el.dataset){el.dataset.id=id;return __kpOpenV13(el)}return __kpOpenV13({dataset:{id}})};
