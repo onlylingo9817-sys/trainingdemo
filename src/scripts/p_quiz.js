@@ -103,6 +103,7 @@ function pgQForm(){
   return crumb('<a data-act="go" data-p="content">内容中心</a> / 题 / '+(QF._new?'新增':QF.id))+dockHtml+'<div class="ph"><h2>'+(QF._new?'新增题目':'编辑 '+QF.id)+'</h2></div>'
    +'<div class="card frm">'+FR('知识点','<select data-wc="qfset" data-k="kp">'+S.kps.map(k=>'<option value="'+k.id+'" '+(QF.kp===k.id?'selected':'')+'>'+esc(kpLabel(k))+'</option>').join('')+'</select>',{req:1,h:'题挂在知识点上;诊断时每个知识点抽题'})
    +FR('这道题用于','<select data-wc="qfset" data-k="role"><option value="练习题" '+(QF.role!=='锚题'?'selected':'')+'>巩固练习（不计过关）</option><option value="锚题" '+(QF.role==='锚题'?'selected':'')+'>核心测评（用于过关 / 复测）</option></select>',{req:1,h:'只有已定稿的核心测评题计入过关与复测；巩固练习用于反复练手。新建默认巩固练习。'})
+   +FR('适用车系',typeof kpScopeFieldHtml==='function'?kpScopeFieldHtml(QF,QF.stem,'qScope'):'<span class="hint">通用</span>',{h:'绑到车系，不拆到具体版本。通用题各车系都能抽到。'})
    +FR('题型','<div class="rels">'+Q_TYPES.map(x=>'<span class="'+(QF.type===x?'on':'')+'" data-act="qType" data-v="'+x+'">'+x+'</span>').join('')+'</div>',{req:1})
    +FR('题干','<textarea class="w" data-qf="stem" style="min-height:70px">'+esc(QF.stem)+'</textarea>',{req:1,h:'只考话术 / 课程原文里明确有的事实;不要出原文里没有的数字'})
    +FR('选项与答案',oh+(!isJ&&opts.length<6?'<a class="link" data-act="qOptAdd">+ 增加选项</a>':''),{req:1})

@@ -68,7 +68,7 @@ A.cTagInfo=()=>openDlg('标签树怎么处理','<div style="line-height:1.9">内
 function cRowOf(r){
   const isC=r.k==='话术'||r.k==='课程';const o=r.raw||{};
   return {k:r.k,id:r.id,title:r.title,st:r.st,kp:r.kp||[],pub:r.pub||'',who:r.who||'',use:r.use||0,
-    car:isC?carListOf(o):['通用车型'],exp:isC&&o.expire?o.expire:'',raw:o,isC};
+    car:carListOf(o),exp:isC&&o.expire?o.expire:'',raw:o,isC};
 }
 function cRowMatch(row,q,kw){
   if(q.kind&&row.k!==q.kind)return false;
@@ -79,6 +79,7 @@ function cRowMatch(row,q,kw){
   }
   if(q.pub&&row.isC&&row.pub!==q.pub)return false;
   if(q.car&&row.isC&&!row.car.includes(q.car))return false;
+  if(q.car&&!row.isC&&typeof kpAssetFitsCar==='function'&&!kpAssetFitsCar(row.raw||{carScope:row.car},q.car))return false;
   if(q.used&&!(row.use>0))return false;
   if(q.mine&&row.raw&&row.raw.creator&&row.raw.creator!==meFull())return false;
   if(q.exp){
@@ -123,12 +124,12 @@ function cListU(V){
   const row=r=>{
     const act=r.k==='题'?['qOpen','编辑']:r.k==='演练'?['drOpen','编辑']:['cView','查看'];
     const kpCell=r.kp.length?r.kp.slice(0,3).map(id=>{const k=kp(id);return k?'<a class="link kp-mini" data-act="kpOpen" data-id="'+k.id+'">'+esc(k.name.length>8?k.name.slice(0,8)+'…':k.name)+'</a>':''}).join('')+(r.kp.length>3?'<span class="hint">+'+r.kp.length+'</span>':''):'<span class="tag err">未挂载</span>';
-    const carCell=carChipsHtml(r.isC?r.car:['通用车型'],2);
+    const carCell=carChipsHtml(r.car,2);
     const statusCell='<div class="c-status"><div>'+kindBadge(r.k)+' <span class="tag '+(r.st==='已定稿'?'ok':r.st==='审核中'?'warn':r.st==='已归档'?'':'blue')+'">'+esc(r.st)+'</span></div>'
       +(r.isC?'<div class="sub">'+pubchip(r.pub)+expDotHtml(r.raw)+(typeof rvChip==='function'?rvChip('content',r.id):'')+'</div>':'')+'</div>';
     const useCell=r.isC?('<span class="hint" title="被 '+contentUse(r.id)+' 个学习项目引用">用 '+(r.use||0)+' · 引 '+contentUse(r.id)+'</span>'):('<span class="hint">用 '+(r.use||0)+'</span>');
     return '<tr><td><input type="checkbox" data-act="lstSel" data-k="call" data-id="'+r.id+'" '+(picked.includes(r.id)?'checked':'')+'></td>'
-      +'<td class="c-title"><a class="link" data-act="'+act[0]+'" data-id="'+r.id+'">'+esc(r.title)+'</a><div class="hint">'+r.id+' · '+esc(r.k==='题'?'题':r.k==='演练'?'演练':(r.raw.type||r.k))+(r.isC?' · v'+r.raw.ver:'')+'</div></td>'
+      +'<td class="c-title"><a class="link" data-act="'+act[0]+'" data-id="'+r.id+'">'+esc(r.title)+'</a>'+(r.isC&&typeof kpPlaceholderTag==='function'?kpPlaceholderTag(r.raw):'')+'<div class="hint">'+r.id+' · '+esc(r.k==='题'?'题':r.k==='演练'?'演练':(r.raw.type||r.k))+(r.isC?' · v'+r.raw.ver:'')+'</div></td>'
       +'<td>'+kpCell+'</td><td>'+carCell+'</td><td>'+statusCell+'</td>'+(narrow?'':'<td>'+useCell+'</td><td>'+(r.who?esc(r.who):'<span class="hint">—</span>')+'</td>')
       +'<td><a class="link" data-act="'+act[0]+'" data-id="'+r.id+'">'+act[1]+'</a></td></tr>';
   };
