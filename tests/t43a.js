@@ -34,11 +34,11 @@ CK('车系树可折叠',UI.sel.kpCarFold.SU7===true&&!kpCarTreeHtml().includes('
 A.kpCarFold({dataset:{v:'SU7'}});CK('车系树可重新展开',!UI.sel.kpCarFold.SU7&&kpCarTreeHtml().includes('value="SU7 Pro"'));
 /* 默认 6 列、完整字段、更多筛选、常用视图 */
 UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;UI.sel.kpf={};render();
-CK('知识点列表默认精简 6 列',document.querySelectorAll('.kp-list.compact tr:first-child th').length===6,/精简视图/.test(html())?'6 列':'列数 '+document.querySelectorAll('.kp-list tr:first-child th').length);
+CK('知识点列表默认有管理列',['知识点','适用范围','分类','能讲 / 能考 / 能练','负责人','操作'].every(t=>document.querySelector('.kp-list.compact tr').innerText.indexOf(t)>=0),document.querySelectorAll('.kp-list.compact tr:first-child th').length+' 列');
 CK('车型筛选按车系分组且支持通用车型',document.querySelectorAll('select[data-k="car"] optgroup').length===4&&!!document.querySelector('select[data-k="car"] option[value="通用车型"]'));
 CK('更多筛选默认收起',!!document.querySelector('.kp-more-filters')&&document.querySelector('.kp-more-filters').hidden);
 A.kpMore();CK('更多筛选可展开',!document.querySelector('.kp-more-filters').hidden);
-A.kpFull();CK('完整字段切换为 12 列',document.querySelectorAll('.kp-list.full tr:first-child th').length===12,document.querySelectorAll('.kp-list tr:first-child th').length+' 列');
+A.kpFull();CK('显示岗位和批次后主要列还在',document.querySelector('.kp-list.full tr').children.length===8&&/岗位/.test(document.querySelector('.kp-list.full tr').innerText)&&/适用范围/.test(document.querySelector('.kp-list.full tr').innerText));
 A.kpFull();
 const viewRows=v=>S.kps.filter(x=>kpV12ListMatch(x,{view:v}));
 CK('我负责的视图只保留本人知识点',viewRows('mine').every(x=>x.owner===meShort()),viewRows('mine').length+' 条');

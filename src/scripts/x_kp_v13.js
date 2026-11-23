@@ -301,38 +301,145 @@ kpV12HasLecture=function(k, includePlaceholder){
     return kpYearFits(c, year);
   });
 };
+function kpRowStatus(k){
+  const year=(typeof UI!=='undefined'&&UI.sel&&UI.sel.kpOv&&UI.sel.kpOv.year)||'';
+  const a=kpV12Assess(k);
+  const needQ=a.anchorQ||0;
+  const needD=['卖点','技能','流程'].includes(kpV12Type(k))?(a.anchorDrill||0):0;
+  const aq=kpV12AnchorQn(k),ad=kpV12AnchorDrillN(k);
+  const lecture=kpV12HasLecture(k,false);
+  const ph=kpV12HasLecture(k,true);
+  const pend=(S.contents||[]).filter(c=>c.kpMap==='待整理'&&(c.kpCandidates||[]).indexOf(k.id)>=0).length
+    +(S.qs||[]).filter(q=>q.kpMap==='待整理'&&(q.kpCandidates||[]).indexOf(k.id)>=0).length
+    +(S.drills||[]).filter(d=>d.kpMap==='待整理'&&(d.kpCandidates||[]).indexOf(k.id)>=0).length;
+  const teach=lecture?(year?year+' 能讲':'能讲'):(ph&&!lecture?'仅占位，不算能讲':(year?year+' 缺讲解':'缺讲解'));
+  const exam=needQ?(aq>=needQ?'能考 '+aq+'/'+needQ:'缺题 '+aq+'/'+needQ):'不要求题';
+  const drill=needD?(ad>=needD?'能练 '+ad+'/'+needD:'缺演练 '+ad+'/'+needD):'不要求演练';
+  return {teach,exam,drill,pend,lecture,needQ,needD,aq,ad,missTeach:!lecture,missQ:!!needQ&&aq<needQ,missD:!!needD&&ad<needD,gap:!lecture||(!!needQ&&aq<needQ)||(!!needD&&ad<needD)};
+}
+function kpGapScore(k){const s=kpRowStatus(k);return (s.missTeach?4:0)+(s.missQ?2:0)+(s.missD?1:0)+(s.pend?0:0)}
 const __kpMatchV13=kpV12ListMatch;
-kpV12ListMatch=function(k,f){if(f&&f.grp&&(k.group||'其他')!==f.grp)return false;return __kpMatchV13(k,f)};
+kpV12ListMatch=function(k,f){
+  if(!f)return __kpMatchV13(k,f);
+  if(f.grp&&(k.group||'其他')!==f.grp)return false;
+  const pass=Object.assign({},f);
+  if(pass.owner==='未分配'){if(k.owner)return false;pass.owner=''}
+  if(!__kpMatchV13(k,pass))return false;
+  if(f.gap){const s=kpRowStatus(k);
+    if(f.gap==='缺讲解'&&!s.missTeach)return false;
+    if(f.gap==='缺题'&&!s.missQ)return false;
+    if(f.gap==='缺演练'&&!s.missD)return false;
+    if(f.gap==='待整理'&&!s.pend)return false;
+    if(f.gap==='有缺口'&&!s.gap)return false;
+  }
+  return true;
+};
 const __qPickV13=qPick;
 qPick=function(mid,kid,n,mode,car){let list=(__qPickV13(mid,kid,n,mode,car)||[]).filter(q=>q.kpMap!=='待整理');const year=(typeof R!=='undefined'&&R&&R.diagYear)||'';return year?list.filter(q=>kpYearFits(q,year)):list};
 const __anchorQnV13=kpV12AnchorQn;
 kpV12AnchorQn=function(k){return (S.qs||[]).filter(q=>q.kp===k.id&&q.st==='已定稿'&&q.role==='锚题'&&q.kpMap!=='待整理').length};
 const __anchorDrV13=kpV12AnchorDrillN;
 kpV12AnchorDrillN=function(k){return (S.drills||[]).filter(d=>d.kp===k.id&&d.st==='已定稿'&&d.role==='锚定演练'&&d.kpMap!=='待整理').length};
-const __kpLibraryV13=kpLibrary;
+function kpScopeCell(k){
+  const cars=kpCars(k)||[];
+  const uni=cars.indexOf('通用车型')>=0;
+  const shown=uni?[]:cars;
+  const carTxt=uni?'通用':(shown.slice(0,2).join('、')+(shown.length>2?'等'+shown.length+'个':''));
+  const year=(UI.sel.kpOv||{}).year||'';
+  const yearTxt=year?('当前看 '+year):'年款看资源，未标≠通用';
+  return '<td class="kp-scope"><b>'+esc(carTxt)+'</b><div class="hint" title="'+esc(cars.join('、')||'未标车型')+'">'+esc(yearTxt)+'</div></td>';
+}
+function kpClassCell(k){
+  const kind=k.ability||(k.sellpoint?('卖点·'+k.sellpoint):kpV12Type(k));
+  return '<td class="kp-class"><b>'+esc(k.group||k.domain||'—')+'</b><div class="hint">'+esc(kind)+' · '+esc(kpV12Type(k))+'</div></td>';
+}
+function kpStatusCell(k){
+  const s=kpRowStatus(k);
+  const tag=(ok,txt)=>'<div class="kp-st '+(ok?'ok':'gap')+'">'+esc(txt)+'</div>';
+  return '<td class="kp-status">'+tag(s.lecture,s.teach)+tag(!s.missQ,s.exam)+tag(!s.missD,s.drill)+(s.pend?'<div class="kp-st wait">待整理 '+s.pend+'，不计覆盖</div>':'')+'</td>';
+}
+function kpGoalHtml(k){
+  const full=k.out||k.one||'';
+  const open=UI.sel.kpGoal&&UI.sel.kpGoal[k.id];
+  return '<div class="kp-goal'+(open?' open':'')+'" title="'+esc(full)+'">'+esc(full||'还没有写学习结果')+'</div>'+(full.length>42?'<button type="button" class="link kp-goal-btn" data-act="kpGoal" data-id="'+k.id+'">'+(open?'收起':'展开')+'</button>':'');
+}
+function kpOwnerCell(k){
+  const people=typeof kpOwners==='function'?kpOwners():[];
+  return '<td class="kp-owner"><select data-wc="kpRowOwner" data-id="'+k.id+'" aria-label="负责人"><option value="">未分配</option>'+people.map(n=>'<option '+(k.owner===n?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></td>';
+}
+function kpActCell(k){
+  return '<td class="kp-ops"><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a><a class="link" data-act="kpEditRow" data-id="'+k.id+'">编辑</a><details class="kp-ops-more"><summary>更多</summary><button type="button" data-act="kpRowMount" data-id="'+k.id+'">补讲解</button><button type="button" data-act="kpRowQuiz" data-id="'+k.id+'">补题</button><button type="button" data-act="kpRowDrill" data-id="'+k.id+'">补演练</button></details></td>';
+}
+function kpNameCell(k){
+  return '<td class="kp-name-cell"><a class="link" data-act="kpOpen" data-id="'+k.id+'"><b>'+esc(k.name)+'</b></a> <span class="tag '+(k.pri==='P0'?'pri':'')+'">'+esc(k.pri||'—')+'</span>'+(typeof rvChip==='function'?rvChip('kp',k.id):'')+'<div class="hint">'+esc(k.code||k.id)+'</div>'+kpGoalHtml(k)+'</td>';
+}
+function kpExtraCells(k,full){
+  if(!full)return '';
+  return '<td>'+esc((k.roles||[]).join('、')||'—')+'</td><td>'+esc(k.batch||'—')+'</td>';
+}
+function kpRichRow(k,full){
+  return '<tr class="kp-click" data-act="kpOpen" data-id="'+k.id+'">'+kpNameCell(k)+kpScopeCell(k)+kpClassCell(k)+kpStatusCell(k)+kpOwnerCell(k)+kpActCell(k)+kpExtraCells(k,full)+'</tr>';
+}
+function kpRichHead(full){
+  return '<tr><th>知识点</th><th>适用范围</th><th>分类</th><th>能讲 / 能考 / 能练</th><th>负责人</th><th>操作</th>'+(full?'<th>岗位</th><th>批次</th>':'')+'</tr>';
+}
+function kpCard(k){
+  const s=kpRowStatus(k);
+  const cars=kpCars(k)||[];
+  const uni=cars.indexOf('通用车型')>=0;
+  return '<article class="kp-card"><div class="kp-card-h"><a class="link" data-act="kpOpen" data-id="'+k.id+'"><b>'+esc(k.name)+'</b></a> <span class="tag '+(k.pri==='P0'?'pri':'')+'">'+esc(k.pri||'—')+'</span>'+(typeof rvChip==='function'?rvChip('kp',k.id):'')+'</div><div class="hint">'+esc(k.code||k.id)+' · '+esc(uni?'通用':cars.slice(0,2).join('、'))+' · '+esc((UI.sel.kpOv||{}).year||'年款看资源')+' · '+(k.owner?esc(k.owner):'未分配')+'</div><div class="kp-card-st">'+esc(s.teach)+' · '+esc(s.exam)+' · '+esc(s.drill)+(s.pend?' · 待整理 '+s.pend:'')+'</div><div class="kp-ops"><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a><a class="link" data-act="kpEditRow" data-id="'+k.id+'">编辑</a><button type="button" class="link" data-act="kpRowQuiz" data-id="'+k.id+'">补题</button><button type="button" class="link" data-act="kpRowDrill" data-id="'+k.id+'">补演练</button></div>'+kpGoalHtml(k)+'</article>';
+}
+function kpSortRows(rows,sort){
+  const list=rows.slice();
+  if(sort==='name')list.sort((a,b)=>a.name.localeCompare(b.name,'zh')||a.code.localeCompare(b.code));
+  else if(sort==='pri')list.sort((a,b)=>String(a.pri).localeCompare(String(b.pri))||a.code.localeCompare(b.code));
+  else list.sort((a,b)=>kpGapScore(b)-kpGapScore(a)||a.code.localeCompare(b.code));
+  return list;
+}
 kpLibrary=function(){
-  const f=kpLibFilter();
-  const base=__kpLibraryV13();
-  if(f.flat)return base;
-  const rows=(S.kps||[]).filter(k=>kpV12ListMatch(k,f));
+  const f=kpLibFilter();const full=!!f.full;const flat=!!f.flat;
+  const sort=f.sort||'gap';
+  const rows=kpSortRows((S.kps||[]).filter(k=>kpV12ListMatch(k,f)),sort);
   const order=[...new Set((S.kps||[]).map(k=>k.group||'其他'))];
   UI.sel.kpFold=UI.sel.kpFold||{};
+  UI.kpOrder=flat?rows.map(k=>k.id):order.reduce((a,g)=>a.concat(rows.filter(k=>(k.group||'其他')===g).map(k=>k.id)),[]);
+  const std=(S.kps||[]).filter(k=>String(k.code||'').indexOf('XM-')===0).length;
+  const extra=(S.kps||[]).length-std;
   const pending=(S.qs||[]).filter(x=>x.kpMap==='待整理').length+(S.drills||[]).filter(x=>x.kpMap==='待整理').length+(S.contents||[]).filter(x=>x.kpMap==='待整理').length;
-  const groups=order.map(g=>({g,list:rows.filter(k=>(k.group||'其他')===g)})).filter(x=>x.list.length);
-  const bar='<div class="card kp-filter-card"><div class="filg kp-filter-primary">'
+  const year=(UI.sel.kpOv||{}).year||'';
+  const carOpts='<option value="">全部车型</option><option value="通用车型" '+(f.car==='通用车型'?'selected':'')+'>通用</option>'+Object.keys(V23_CAR_TREE).map(sr=>'<optgroup label="'+esc(sr)+'"><option value="'+esc(sr)+'" '+(f.car===sr?'selected':'')+'>'+esc(sr)+' 全系</option>'+V23_CAR_TREE[sr].map(v=>'<option value="'+esc(v)+'" '+(f.car===v?'selected':'')+'>'+esc(v)+'</option>').join('')+'</optgroup>').join('');
+  const owners=(typeof kpOwners==='function'?kpOwners():[]);
+  const sel=(key,label,arr)=>'<div class="fi2"><label>'+label+'</label><select data-wc="kpset" data-k="'+key+'"><option value="">全部</option>'+arr.map(x=>'<option value="'+esc(x)+'" '+(String(f[key])===String(x)?'selected':'')+'>'+esc(x)+'</option>').join('')+'</select></div>';
+  const views=[['mine','我负责的'],['p0gap','P0 缺讲解'],['assess','考核不全'],['review','政策 / 待复核']];
+  const viewBar='<div class="kp-view-bar"><span>常用视图</span>'+views.map(v=>'<button type="button" class="kp-view '+(f.view===v[0]?'on':'')+'" data-act="kpView" data-v="'+v[0]+'">'+v[1]+'</button>').join('')+(f.view?'<button type="button" class="link" data-act="kpView" data-v="'+f.view+'">取消视图</button>':'')+'</div>';
+  const bar='<div class="card kp-filter-card">'+viewBar+'<div class="filg kp-filter-primary">'
     +'<div class="fi2"><label>搜索</label><input data-wc="kpq" value="'+esc(f.q||'')+'" placeholder="编号 / 名称 / 学习结果 / 旧编号"></div>'
-    +'<div class="fi2"><label>领域</label><select data-wc="kpset" data-k="grp"><option value="">全部领域</option>'+order.map(g=>'<option value="'+esc(g)+'" '+(f.grp===g?'selected':'')+'>'+esc(g)+'</option>').join('')+'</select></div>'
-    +'<div class="fi2"><label>优先级</label><select data-wc="kpset" data-k="pri"><option value="">全部</option>'+['P0','P1'].map(x=>'<option value="'+x+'" '+(f.pri===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div>'
-    +'<div class="fi2"><label>覆盖年款</label><select data-wc="kpOv" data-k="year"><option value="">不按年款收紧</option>'+KP_YEARS.map(y=>'<option value="'+y+'" '+((UI.sel.kpOv||{}).year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div>'
-    +'</div><div class="kp-filter-actions"><button class="btn sm" data-act="kpFlat">全部列表</button><button class="btn sm" data-act="kpFclr">清除筛选</button><span class="hint">筛选后 '+rows.length+' / '+(S.kps||[]).length+' 条 · 分组就是知识域，空组不占屏</span></div>'
-    +(pending?'<button type="button" class="tag warn" data-act="kpPendOpen" style="display:block;margin-top:8px;white-space:normal;text-align:left;width:100%;cursor:pointer">待整理 '+pending+' 条，点开逐条看原因并改归属。未确认的不计入核心讲解和核心考核。</button>':'')
+    +'<div class="fi2"><label>适用车型</label><select data-wc="kpset" data-k="car">'+carOpts+'</select></div>'
+    +'<div class="fi2"><label>年款</label><select data-wc="kpOv" data-k="year"><option value="">不限年款</option>'+KP_YEARS.map(y=>'<option value="'+y+'" '+(year===y?'selected':'')+'>'+y+'</option>').join('')+'</select></div>'
+    +sel('grp','领域',order)+sel('pri','优先级',['P0','P1'])
+    +'<div class="fi2"><label>负责人</label><select data-wc="kpset" data-k="owner"><option value="">全部</option><option value="未分配" '+(f.owner==='未分配'?'selected':'')+'>未分配</option>'+owners.map(n=>'<option '+(f.owner===n?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></div>'
+    +sel('gap','缺口',['缺讲解','缺题','缺演练','待整理','有缺口'])
+    +'<div class="fi2"><label>排序</label><select data-wc="kpset" data-k="sort"><option value="gap" '+(sort==='gap'?'selected':'')+'>缺口优先（不含优先级）</option><option value="name" '+(sort==='name'?'selected':'')+'>名称</option><option value="pri" '+(sort==='pri'?'selected':'')+'>优先级</option></select></div>'
+    +'</div><div class="filg kp-more-filters" '+(f.more?'':'hidden')+'>'
+    +sel('line','业务线',KP_DICT_V12.businessLines)+sel('role','岗位',KP_DICT_V12.roles)+sel('domain','知识域',KP_DICT_V12.domains)+sel('ability','能力项',KP_DICT_V12.abilities)+sel('sellpoint','卖点分类',KP_SELLPOINT_LEAVES_V12)
+    +'</div><div class="kp-filter-actions"><button class="btn sm" data-act="kpMore">'+(f.more?'收起筛选':'更多筛选')+'</button><button class="btn sm" data-act="kpFlat">'+(flat?'按领域分组':'全部列表')+'</button><button class="btn sm" data-act="kpFoldAll" data-v="1">全部展开</button><button class="btn sm" data-act="kpFoldAll" data-v="0">全部收起</button><button class="btn sm" data-act="kpFull">'+(full?'收起岗位批次':'显示岗位批次')+'</button><button class="btn sm" data-act="kpFclr">清除筛选</button>'
+    +lstCsvBtn(['编号','名称','优先级','领域','车型','能讲','能考','能练','负责人'],[['编号','名称','优先级','领域','车型','能讲','能考','能练','负责人']].concat(rows.map(k=>{const s=kpRowStatus(k);return [k.code,k.name,k.pri,k.group||k.domain,(kpCars(k)||[]).join('、'),s.teach,s.exam,s.drill,k.owner||'未分配']})),'知识点库')
+    +'<span class="hint">筛选后 '+rows.length+' / '+(S.kps||[]).length+' 条 · 标准 '+std+' · 自建 '+extra+(year?' · 完备按 '+esc(year):'')+' · 第 1 / 1 页</span></div>'
+    +(pending?'<button type="button" class="tag warn" data-act="kpPendOpen" style="display:block;margin-top:8px;white-space:normal;text-align:left;width:100%;cursor:pointer">待整理 '+pending+' 条。未确认的不计入能讲、能考。</button>':'')
     +'</div>';
-  const body=groups.map(gr=>{
-    const open=UI.sel.kpFold[gr.g]!==false;
-    const items=gr.list.map(k=>'<div class="kp-grow"><div class="t"><a class="link" data-act="kpOpen" data-id="'+k.id+'"><b>'+esc(k.name)+'</b></a><div class="hint">'+esc(k.code)+' · '+esc(k.pri)+' · '+esc(k.one||'')+'</div></div><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a></div>').join('');
-    return '<div class="kp-group"><button type="button" data-act="kpFold" data-g="'+esc(gr.g)+'">'+(open?'▾':'▸')+' '+esc(gr.g)+' · '+gr.list.length+'</button>'+(open?items:'')+'</div>';
-  }).join('');
-  return bar+kpPendingHtml()+'<div class="kp-groups">'+body+'</div><div class="kp-wide-list">'+base+'</div>';
+  const tableOf=list=>'<div class="tw kp-desk"><table class="t kp-list compact kp-manage'+(full?' full':'')+'">'+kpRichHead(full)+list.map(k=>kpRichRow(k,full)).join('')+'</table></div><div class="kp-cards">'+list.map(kpCard).join('')+'</div>';
+  let body;
+  if(flat)body='<div class="card"><h3>全部列表 <span class="hint">'+rows.length+' 条，与分组用同一套列</span></h3>'+(rows.length?tableOf(rows):'<div class="hint">没有符合条件的知识点。</div>')+'</div>';
+  else{
+    const groups=order.map(g=>{const list=rows.filter(k=>(k.group||'其他')===g);return {g,list}}).filter(x=>x.list.length);
+    body=groups.map(gr=>{
+      const open=UI.sel.kpFold[gr.g]!==false;
+      const miss=gr.list.filter(k=>kpRowStatus(k).missTeach).length;
+      const qmiss=gr.list.filter(k=>kpRowStatus(k).missQ).length;
+      return '<section class="kp-group"><button type="button" data-act="kpFold" data-g="'+esc(gr.g)+'">'+(open?'▾':'▸')+' '+esc(gr.g)+' · '+gr.list.length+' <span class="hint">缺讲解 '+miss+' · 缺题 '+qmiss+'</span></button>'+(open?tableOf(gr.list):'')+'</section>';
+    }).join('')||'<div class="hint">没有符合条件的知识点。</div>';
+  }
+  return bar+kpPendingHtml()+'<div class="kp-groups">'+body+'</div>';
 };
 function kpPendingRows(){
   const rows=[];
@@ -377,7 +484,23 @@ A.kpPendOpen=()=>{UI.sel.kpPend=!UI.sel.kpPend;render()};
 A.kpPendTo=el=>kpPendAssign(el.dataset.kind,el.dataset.id,el.dataset.to);
 A.kpPendSet=el=>{if(el.value)kpPendAssign(el.dataset.kind,el.dataset.id,el.value)};
 A.kpFold=el=>{const g=el.dataset.g;UI.sel.kpFold=UI.sel.kpFold||{};UI.sel.kpFold[g]=UI.sel.kpFold[g]===false;render()};
-A.kpFlat=()=>{kpLibFilter().flat=1;render()};
+A.kpFoldAll=el=>{const open=el.dataset.v==='1';UI.sel.kpFold={};if(!open)(S.kps||[]).forEach(k=>{UI.sel.kpFold[k.group||'其他']=false});render()};
+A.kpFlat=()=>{const f=kpLibFilter();f.flat=f.flat?0:1;render()};
+A.kpGoal=el=>{UI.sel.kpGoal=UI.sel.kpGoal||{};UI.sel.kpGoal[el.dataset.id]=!UI.sel.kpGoal[el.dataset.id];render()};
+A.kpRowOwner=el=>{const k=kp(el.dataset.id);if(!k)return;k.owner=el.value||null;if(!k.owner&&k.st==='启用')k.st='停用';kpHist(k,k.owner?'指定负责人':'取消负责人',k.owner||'未分配');toast(k.owner?'负责人改为 '+k.owner:'已标成未分配','ok');render()};
+function kpListRemember(){const m=$('#main');UI.sel.kpFromList=true;UI.sel.kpListScroll=m?m.scrollTop:0}
+function kpListRestore(){UI.page='catalog';UI.tab.catalog=(typeof KP_TAB_LIB!=='undefined'?KP_TAB_LIB:'知识点库');const y=UI.sel.kpListScroll||0;render();const m=$('#main');if(m)m.scrollTop=y}
+A.kpRowMount=el=>{UI.kid=el.dataset.id;A.kpMountDrawer()};
+A.kpRowQuiz=el=>{UI.kid=el.dataset.id;A.kpQuizDrawer()};
+A.kpRowDrill=el=>{UI.kid=el.dataset.id;A.kpDrillDrawer()};
+const __editRowV13=A.kpEditRow;
+A.kpEditRow=function(el){kpListRemember();UI.kid=el.dataset.id;UI.sel.kpFromList=true;return A.kpEdit()};
+const __kfCancelV13=A.kfCancel;
+A.kfCancel=function(){const back=UI.sel&&UI.sel.kpFromList;const r=__kfCancelV13.apply(this,arguments);if(back){UI.sel.kpFromList=false;kpListRestore()}return r};
+const __kfSaveV13=A.kfSave;
+A.kfSave=function(){const back=UI.sel&&UI.sel.kpFromList;const r=__kfSaveV13.apply(this,arguments);if(back&&!KF){UI.sel.kpFromList=false;kpListRestore()}return r};
+const __retV13=typeof kpReturnIf==='function'?kpReturnIf:null;
+if(__retV13)kpReturnIf=function(){if(UI.sel&&UI.sel.kpFromList){UI.sel.kpFromList=false;kpListRestore();return true}return __retV13()};
 A.kpOv=el=>{UI.sel.kpOv=UI.sel.kpOv||{};UI.sel.kpOv[el.dataset.k]=el.value;render()};
 const __pgKpV13=pgKp;
 pgKp=function(){
@@ -405,7 +528,13 @@ document.addEventListener('click',function(e){
 });
 function kpCanon(id){const k=typeof kp==='function'?kp(id):null;return k?k.id:id}
 const __kpOpenV13=A.kpOpen;
-A.kpOpen=function(el){const id=kpCanon((el&&el.dataset&&el.dataset.id)||UI.kid);if(el&&el.dataset){el.dataset.id=id;return __kpOpenV13(el)}return __kpOpenV13({dataset:{id}})};
+A.kpOpen=function(el,ev){
+  const t=ev&&ev.target;
+  if(t&&t.closest&&t.closest('a,button,select,summary,input,textarea,label')&&!(t.closest('a[data-act="kpOpen"],button[data-act="kpOpen"]')))return;
+  const id=kpCanon((el&&el.dataset&&el.dataset.id)||UI.kid);
+  if(el&&el.dataset){el.dataset.id=id;return __kpOpenV13(el,ev)}
+  return __kpOpenV13({dataset:{id}},ev);
+};
 ['kpQRole','kpDRole','kpQUnlink','kpDUnlink','kpLecRole'].forEach(name=>{
   const prev=A[name];if(typeof prev!=='function')return;
   A[name]=function(el){const cur=kp(UI.kid);if(cur)UI.kid=cur.id;return prev(el)};
