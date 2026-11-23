@@ -4,7 +4,7 @@
 const TRYS=[
  ['培训部 · 工作台 / 知识点 / 内容中心','hq',[
   ['t0','打开「工作台」,挑一条紧急待办,点「去处理」落到对应对象',()=>UI.__seen&&UI.__seen.wb,'所有待办(缺讲解、待审核、反馈、候选…)都汇在这里'],
-  ['t1','打开「知识点 → 总览」,找出「缺口最大的一个标签」',()=>UI.__seen&&UI.__seen.ov,'总览里有按标签树的热力图，点一行会跳到列表'],
+  ['t1','打开「知识点 → 总览」,找出「缺口最大的一个领域」',()=>UI.__seen&&UI.__seen.ov,'总览里有「各领域进展」表，点一行会跳到该领域的知识点列表'],
   ['t2','在看板里筛出「没有负责人」的知识点,给其中一个指定负责人并启用',()=>S.kps.some(k=>k.hist&&k.hist.some(h=>h.act==='指定负责人')),'知识点详情页右侧「管理」'],
   ['t3','给一条「未挂载」的内容挂上知识点',()=>S.contents.some(c=>(c.hist||[]).some(h=>h.act==='挂载知识点'&&h.t.slice(0,10)===today)),'内容中心 → 知识点筛「未挂载」→ 点详情顶部链路条里的「去挂」'],
   ['t4','新增一个知识点(看看是不是只需要填三项)',()=>S.kps.some(k=>(k.hist||[]).some(h=>h.act==='新增')),'右上角「新增知识点」'],
@@ -55,7 +55,7 @@ const WELCOME_HTML='<div style="line-height:1.9;font-size:13.5px"><p><b>这是�
  +'<p><b>两个端:</b>顶部切换「学堂后台」(培训部 / 区域老师用)和「零售通」(一线学员用)。右上角下拉可以换身份。</p>'
  +'<p style="color:#98a2b3;font-size:12.5px">体验完请点「看全部反馈 → 导出 CSV」发回给我们。刷新页面会丢失反馈。</p></div>';
 function welcome(){openDlg('欢迎来体验',WELCOME_HTML,'<button class="btn" data-act="close">先自己看看</button><button class="btn pri" data-act="welcomeGo">打开体验任务</button>')}
-function pageHelpText(){const map={workbench:'先看这边：把待办按「紧急」处理完，点「去处理」会自动跳到对应对象。',catalog:'先看「总览」的四指标和车型×卖点/能力热力图；补清单去「知识点库」，或用页头的「批量导入 / 新车克隆」。',kp:'这里看一个点的资料齐不齐；缺的项点「去补」会到内容中心。',content:'这里是做讲课材料的地方：话术、课程、题、演练；做完要挂知识点、审核定稿。',publish:'这里决定内容在零售通给谁看；只能上架已定稿的内容。',projects:'这里组织一场培训：选人、配学习任务、排线下班次。',effect:'这里回答「培训有没有用」：先看就绪度，再看错题和调优。',config:'这里改规则和标准；一线日常不用常来。'};return map[UI.page]||''}
+function pageHelpText(){const map={workbench:'先看这边：把待办按「紧急」处理完，点「去处理」会自动跳到对应对象。',catalog:'先看「总览」的四指标、各领域进展和车型×领域热力图；补清单去「知识点库」，或用页头的「批量导入 / 新车克隆」。',kp:'这里看一个点的资料齐不齐；缺的项点「去补」会到内容中心。',content:'这里是做讲课材料的地方：话术、课程、题、演练；做完要挂知识点、审核定稿。',publish:'这里决定内容在零售通给谁看；只能上架已定稿的内容。',projects:'这里组织一场培训：选人、配学习任务、排线下班次。',effect:'这里回答「培训有没有用」：先看就绪度，再看错题和调优。',config:'这里改规则和标准；一线日常不用常来。'};return map[UI.page]||''}
 function pageHelp(){return pageHelpText()}
 A.pageHelp=()=>{const h=pageHelp();openDlg('这页怎么用',h?'<div style="font-size:13.5px;line-height:1.8">'+esc(h)+'</div>':'<div class="hint">当前页没有额外说明。</div>','<button class="btn pri" data-act="close">知道了</button>')};
 A.welcomeGo=()=>{closeDlg();UI.gdOpen=true;gdRender()};

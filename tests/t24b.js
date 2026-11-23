@@ -14,7 +14,7 @@ CK('按知识域筛选后列表收敛',n1>0&&n1<n0,n0+' → '+n1);
 A.kpset({dataset:{k:'domain'},value:''});render();
 CK('不再有左侧标签树',document.querySelectorAll('#main .tag-row').length===0);
 UI.tab.catalog='总览';render();
-CK('总览有车型×卖点/能力两张热力图',/车型 × 卖点分类/.test(tx())&&/车型 × 能力项/.test(tx()));
+CK('总览有各领域进展和车型×领域热力图',/各领域进展/.test(tx())&&/车型 × 领域/.test(tx()));
 CK('总览有四项指标',/覆盖度/.test(tx())&&/可授课率/.test(tx())&&/可考核率/.test(tx())&&/时效健康度/.test(tx()));
 UI.page='catalog';UI.tab.catalog='补学进度';render();
 CK('补学进度页存在',/任务明细/.test(tx()));

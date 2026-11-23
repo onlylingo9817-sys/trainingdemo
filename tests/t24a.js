@@ -12,7 +12,7 @@ CK('知识点支持多车型字段',S.kps.every(k=>Array.isArray(k.cars)&&k.cars
 CK('多车型统计按车型分开',(()=>{const d=S.kps.filter(k=>k.domain==='产品知识');return V23_CAR_LEAVES.length===12&&d.some(k=>k.cars.length>1)&&d.some(k=>k.cars.includes('通用车型'))})() ,V23_CAR_LEAVES.join('/'));
 /* 3. 知识点页:三件事 */
 UI.page='catalog';UI.tab.catalog='总览';render();const ov=tx();
-CK('总览第一屏是四指标与热力图',/覆盖度/.test(ov)&&/车型 × 卖点分类/.test(ov)&&/补学进度/.test(ov),'热力图='+/车型 × 卖点分类/.test(ov)+' 补学='+/补学进度/.test(ov));
+CK('总览第一屏是四指标与热力图',/覆盖度/.test(ov)&&/车型 × 领域/.test(ov)&&/补学进度/.test(ov),'热力图='+/车型 × 领域/.test(ov)+' 补学='+/补学进度/.test(ov));
 CK('总览矩阵每款车单独列',kpCarsHost().every(c=>document.querySelector('#main').innerText.includes(c)));
 CK('总览不再出现「车型 × 部位」',!/车型 × 部位|车上的部位/.test(ov));
 UI.tab.catalog='知识点库';render();const lib=tx();

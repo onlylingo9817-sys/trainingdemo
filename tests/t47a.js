@@ -64,7 +64,7 @@ CK('总览缺口数 = 逐点缺口判定之和（与详情结论同一口径）'
 CK('总览无开发口径',!/分母应为|\d+ error|数据来源/.test(tx()));
 CK('热力格可点击进入知识点库',!!document.querySelector('.ux-cell'));
 const cell=document.querySelector('.ux-cell');A.kpHeatGo({dataset:{kind:cell.dataset.kind,car:cell.dataset.car,col:cell.dataset.col}});
-CK('点热力格进入已筛选的知识点库',UI.tab.catalog===KP_TAB_LIB&&!!(kpLibFilter().sellpoint||kpLibFilter().ability));
+CK('点热力格进入已筛选的知识点库',UI.tab.catalog===KP_TAB_LIB&&!!kpLibFilter().grp&&!!kpLibFilter().car);
 /* 加载态：批量导入读取 CSV 期间 */
 UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;A.kpOpenBatch();
 UI.sel.kpBusy='正在读取 知识点清单.csv…';UI.drw.body=kpBatchPage();renderDrawer();

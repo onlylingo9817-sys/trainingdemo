@@ -22,16 +22,16 @@ A.kpBackLib=()=>{UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;render();const m=$(
 
 /* ---------- 2. 页签说明 / 帮助：按当前页面显示，替代全站统一横幅 ---------- */
 const KP_TAB_NOTE={
-  '总览':'按岗位、车型、学习阶段看每个知识点能不能讲、能不能考；点热力格或缺口可直接进入知识点库。',
-  '知识图谱':'看知识点之间的先学、后学和相关关系，用来安排学习顺序。',
+  '总览':'按岗位、车型、学习阶段看每个知识点能不能讲、能不能考，并按领域汇总；点领域、热力格或缺口可直接进入知识点库。',
+  '知识图谱':'看知识点之间的先学、后学和相关关系，用来安排学习顺序；颜色对应知识点库的领域分组。',
   '知识点库':'公司要教的全部知识点。先看红色缺口，点一行进入详情，补讲解、题和演练。',
   '候选':'系统从语料、一线反馈、课题池里发现的候选。确认后才进入知识点库；和已有点相近的，先并入。',
   '补学进度':'知识点口径变更后，谁还没补学。当前是演示数据，不向学员推送。'
 };
 function kpTabNote(t){const s=KP_TAB_NOTE[t];return s?'<div class="ux-note">'+esc(s)+'</div>':''}
 const KP_HELP={
-  '总览':'先选统计口径（岗位 / 车型 / 学习阶段 / 优先级），再看四个指标和缺口清单；点热力格或「去补」进入知识点库。',
-  '知识图谱':'点任意节点看它的先学、后学和相关点；「只突出有缺口的点」可以先看哪里最缺。',
+  '总览':'先选统计口径（岗位 / 车型 / 学习阶段 / 优先级），再看四个指标、缺口清单和各领域进展；点领域行、热力格或「去补」进入知识点库。',
+  '知识图谱':'点任意节点看它的先学、后学和相关点；「只突出有缺口的点」按知识点库的缺口判定，可以先看哪里最缺。',
   '知识点库':'用顶部视图或筛选缩小范围，点一行进入详情；缺口列直接写明缺什么。',
   '候选':'「补全并新增」会打开预填好的新增表单，走和手工新增一样的校验；相近的先「并入已有」。',
   '补学进度':'按状态筛选，逾期的先催办；任务关闭后会留在「已完成」里。',
@@ -113,8 +113,8 @@ kpTasksPage=function(){
   const row=t=>{
     const e=kpTaskEff(t);const open=!['已复测','已关闭'].includes(e);
     return '<tr><td><b>'+esc(t.name||t.mid)+'</b><div class="hint">'+esc(t.store||'')+' · '+esc(t.role||'')+'</div></td>'
-      +'<td style="white-space:normal;min-width:200px"><a class="link" data-act="kpOpen" data-id="'+esc(t.kpId)+'">'+esc(t.kpName||'')+'</a><div class="hint">'+esc(t.kpCode||'')+' · v'+esc(t.specVer||1)+'</div></td>'
-      +'<td>'+esc(String(t.level||'').replace(/^L\d-/,''))+'<div class="hint">'+esc((String(t.level||'').match(/^L\d/)||[''])[0])+'</div></td>'
+      +'<td style="white-space:normal;min-width:200px"><a class="link" data-act="kpOpen" data-id="'+esc(t.kpId)+'">'+esc(t.kpName||'')+'</a><div class="hint">'+esc(t.kpCode||'')+' · v'+esc(t.specVer||1)+'</div>'+(t.fromObs&&t.reason?'<div class="hint">'+esc(t.reason)+'</div>':'')+'</td>'
+      +'<td>'+esc(String(t.level||'').replace(/^L\d-/,''))+'<div class="hint">'+esc((String(t.level||'').match(/^L\d/)||[''])[0])+(t.fromObs?' · 来自实操观察':'')+'</div></td>'
       +'<td><span class="tag '+tagOf(e)+'">'+esc(e)+'</span></td>'
       +'<td>'+esc(t.due||'')+(kpTaskDays(t,e)?'<div class="hint'+(e==='逾期'?' err':'')+'">'+kpTaskDays(t,e)+'</div>':'')+'</td>'
       +'<td class="hint">'+esc(t.remindAt?'催办 '+t.remindAt:(t.retestedAt||t.confirmedAt||t.readAt||'—'))+'</td>'
@@ -138,27 +138,53 @@ A.kpTaskCloseOk=el=>{const t=(S.tasks||[]).find(x=>x.id===el.dataset.id);if(!t)r
 
 /* ---------- 5. 总览：先口径，再指标，再缺口，最后明细 ---------- */
 const KP_BATCH_LABEL={'B1-30天':'新人 30 天内','B2-90天':'入职 90 天内','B3-后续':'全部阶段'};
+/* 总览按「领域」（知识点的 group）统计，与知识点库的领域分组同一套；不再用 v1.2 的卖点分类 / 能力项两张表 */
 function kpUxHeat(kind,ctx){
-  const cols=kind==='sell'?KP_SELLPOINT_LEAVES_V12:KP_DICT_V12.abilities;
+  const cols=kpGroupOrder();
   const rows=V23_CAR_LEAVES.slice();
   const cell=(car,col)=>{
     let n=0,t=0,a=0;
     (S.kps||[]).forEach(k=>{
-      if(kind==='sell'){if(k.domain!=='产品知识'||k.sellpoint!==col)return}else{if(k.ability!==col)return}
+      if((k.group||'其他')!==col)return;
       const m=kpV12Metrics(k,Object.assign({},ctx,{car}));if(!m)return;n++;if(m.teachable)t++;if(m.assessable)a++;
     });
     if(!n)return '<span class="hint">—</span>';
     const p=Math.round(t/n*100);const cls=p>=80?'ok':p>0?'warn':'err';
-    return '<button type="button" class="ux-cell '+cls+'" data-act="kpHeatGo" data-kind="'+kind+'" data-car="'+esc(car)+'" data-col="'+esc(col)+'" title="可授课 '+t+' / '+n+'；可考核 '+a+'；点击查看这些知识点">'+t+'/'+n+'</button>';
+    return '<button type="button" class="ux-cell '+cls+'" data-act="kpHeatGo" data-kind="grp" data-car="'+esc(car)+'" data-col="'+esc(col)+'" title="可授课 '+t+' / '+n+'；可考核 '+a+'；点击查看这些知识点">'+t+'/'+n+'</button>';
   };
   return '<div class="tw"><table class="t nw ux-heat"><tr><th>车型</th>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr>'
     +rows.map(car=>'<tr><td><b>'+esc(car)+'</b></td>'+cols.map(c=>'<td>'+cell(car,c)+'</td>').join('')+'</tr>').join('')
-    +'</table></div><div class="hint" style="margin-top:6px">格子 = 可授课 / 应有知识点（'+(ctx&&ctx.placeholder==='include'?'含合成占位':'不含合成占位')+'），绿色 ≥80%、橙色有缺口、红色全缺；点格子进入对应知识点。</div>';
+    +'</table></div><div class="hint" style="margin-top:6px">格子 = 可授课 / 应有知识点（'+(ctx&&ctx.placeholder==='include'?'含合成占位':'不含合成占位')+'），绿色 ≥80%、橙色有缺口、红色全缺；「—」表示当前口径下这个领域没有应教的点；点格子进入对应知识点。</div>';
+}
+/* 领域汇总：每行用和上方四指标同一套口径，各领域加起来等于「应覆盖」 */
+function kpUxGroupRows(ctx){
+  return kpGroupOrder().map(g=>{
+    let n=0,c=0,t=0,a=0;
+    (S.kps||[]).forEach(k=>{
+      if((k.group||'其他')!==g)return;
+      const m=kpV12Metrics(k,ctx);if(!m)return;n++;if(m.coverage)c++;if(m.teachable)t++;if(m.assessable)a++;
+    });
+    return {g,n,c,t,a,total:(S.kps||[]).filter(k=>(k.group||'其他')===g).length};
+  });
+}
+function kpUxGroupTable(ctx){
+  const rows=kpUxGroupRows(ctx);
+  const pct=(x,n)=>n?Math.round(x/n*100)+'%':'—';
+  const tag=(x,n)=>n?'<span class="tag '+(x===n?'ok':x?'warn':'err')+'">'+x+' / '+n+'</span>':'<span class="hint">—</span>';
+  return '<div class="tw"><table class="t"><tr><th>领域</th><th>应覆盖</th><th>有核心讲解</th><th>可授课</th><th>可考核</th><th>操作</th></tr>'
+    +rows.map(r=>'<tr class="kp-click" data-act="kpGrpGo" data-g="'+esc(r.g)+'"><td><b>'+esc(r.g)+'</b><div class="hint">共 '+r.total+' 个点'+(r.n?'':' · 当前口径下没有应教的点')+'</div></td><td>'+(r.n||'<span class="hint">—</span>')+'</td><td>'+tag(r.c,r.n)+'</td><td>'+tag(r.t,r.n)+(r.n?' <span class="hint">'+pct(r.t,r.n)+'</span>':'')+'</td><td>'+tag(r.a,r.n)+'</td><td><a class="link" data-act="kpGrpGo" data-g="'+esc(r.g)+'">看这个领域 ›</a></td></tr>').join('')+'</table></div>'
+    +'<div class="hint" style="margin-top:6px">各领域「应覆盖」相加等于上方的应覆盖数；还没确认归属的待整理资源不计入能讲、能考。</div>';
 }
 A.kpHeatGo=el=>{
-  const ctx=UI.sel.kpOv||{};const f={car:el.dataset.car,more:true};
-  if(el.dataset.kind==='sell')f.sellpoint=el.dataset.col;else f.ability=el.dataset.col;
+  const ctx=UI.sel.kpOv||{};const f={car:el.dataset.car,grp:el.dataset.col};
   if(ctx.pri&&ctx.pri!=='全部')f.pri=ctx.pri;
+  if(ctx.role)f.role=ctx.role;
+  UI.sel.kpf=f;UI.sel.kpPage={page:1,size:20};UI.tab.catalog=KP_TAB_LIB;render();$('#main').scrollTop=0;
+};
+A.kpGrpGo=el=>{
+  const ctx=UI.sel.kpOv||{};const f={grp:el.dataset.g};
+  if(ctx.pri&&ctx.pri!=='全部')f.pri=ctx.pri;
+  if(ctx.car&&ctx.car!=='全部车型')f.car=ctx.car;
   if(ctx.role)f.role=ctx.role;
   UI.sel.kpf=f;UI.sel.kpPage={page:1,size:20};UI.tab.catalog=KP_TAB_LIB;render();$('#main').scrollTop=0;
 };
@@ -189,12 +215,12 @@ kpOverviewNew=function(){
   const sub='<div class="ux-subline"><span>内容待核 <b>'+s.p+'</b> 个<span class="hint">（计入分母，不计入完成）</span></span><span>补学任务 <b>'+ts.done+' / '+ts.total+'</b> 已完成，逾期 <b'+(ts.overdue?' style="color:var(--err)"':'')+'>'+ts.overdue+'</b> <a class="link" data-act="tab" data-k="catalog" data-v="补学进度">去看 ›</a></span></div>';
   const sev=k=>kpGapList(k).some(x=>x[0]==='err')?0:1;
   const gaps=(S.kps||[]).filter(k=>kpV12Metrics(k,ctx)&&kpGapList(k).length).sort((a,b)=>sev(a)-sev(b)||(a.pri===b.pri?0:a.pri==='P0'?-1:1)||a.name.localeCompare(b.name,'zh'));
-  const gapRow=k=>'<tr class="kp-click" data-act="kpOpen" data-id="'+k.id+'"><td><b>'+esc(k.name)+'</b><div class="hint">'+esc(k.code)+' · '+esc(k.domain)+' · '+esc(k.pri)+'</div></td><td>'+kpGapChips(k)+'</td><td>'+(k.owner?esc(k.owner):'<span class="tag err">未指定</span>')+'</td><td><a class="link" data-act="kpOpen" data-id="'+k.id+'">去补 ›</a></td></tr>';
+  const gapRow=k=>'<tr class="kp-click" data-act="kpOpen" data-id="'+k.id+'"><td><b>'+esc(k.name)+'</b><div class="hint">'+esc(k.code)+' · '+esc(k.group||k.domain)+' · '+esc(k.pri)+'</div></td><td>'+kpGapChips(k)+'</td><td>'+(k.owner?esc(k.owner):'<span class="tag err">未指定</span>')+'</td><td><a class="link" data-act="kpOpen" data-id="'+k.id+'">去补 ›</a></td></tr>';
   const gapCard='<div class="card"><h3>待补缺口 <span class="hint">当前口径下 '+gaps.length+' 个点还没完备（缺讲解、负责人的排前面）</span>'+(gaps.length>8?'<a class="link" data-act="kpGapAll" style="margin:0">查看全部 '+gaps.length+' 条 ›</a>':'')+'</h3>'
     +(gaps.length?'<div class="tw"><table class="t"><tr><th>知识点</th><th>缺什么</th><th>负责人</th><th>操作</th></tr>'+gaps.slice(0,8).map(gapRow).join('')+'</table></div>'
       :'<div class="chk ok"><b>✓</b><span>当前口径下没有缺口。</span></div>')+'</div>';
-  const heat='<div class="card"><h3>车型 × 卖点分类 <span class="hint">产品知识</span></h3>'+kpUxHeat('sell',ctx)+'</div>'
-    +'<div class="card"><h3>车型 × 能力项 <span class="hint">销售动作</span></h3>'+kpUxHeat('ability',ctx)+'</div>';
+  const heat='<div class="card"><h3>各领域进展 <span class="hint">点一行进入该领域的知识点</span></h3>'+kpUxGroupTable(ctx)+'</div>'
+    +'<div class="card"><h3>车型 × 领域 <span class="hint">看哪款车在哪个领域还缺讲解</span></h3>'+kpUxHeat('grp',ctx)+'</div>';
   const by={};(S.kps||[]).forEach(k=>{if(k.stage==='不直接对应')return;const w=kpWeak(k),t=kpTested(k);const x=by[k.stage]=by[k.stage]||{n:0,w:0,t:0};x.n++;x.w+=w;x.t+=t});
   const stages=Object.keys(by).sort((a,b)=>(by[b].t?by[b].w/by[b].t:0)-(by[a].t?by[a].w/by[a].t:0));
   const stageBody=stages.length?'<div class="tw"><table class="t"><tr><th>业务环节</th><th>知识点数</th><th>已测人次</th><th>未过关人次</th><th>未过关占比</th></tr>'+stages.map(st=>{const x=by[st];const p=x.t?Math.round(x.w/x.t*100):0;return '<tr><td><b>'+esc(st)+'</b></td><td>'+x.n+'</td><td>'+x.t+'</td><td>'+x.w+'</td><td><span class="tag '+(p>=50?'err':p?'warn':'ok')+'">'+p+'%</span></td></tr>'}).join('')+'</table></div><div class="hint" style="margin-top:6px">只用于定位和对照，不作因果结论；样本量与对照批在真实接入后由效果页给出。</div>':uxEmpty({title:'还没有可对照的知识点'});

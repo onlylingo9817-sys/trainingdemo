@@ -346,7 +346,7 @@ function kpScopeCell(k){
   const shown=uni?[]:cars;
   const carTxt=uni?'通用':(shown.slice(0,2).join('、')+(shown.length>2?'等'+shown.length+'个':''));
   const year=(UI.sel.kpOv||{}).year||'';
-  const yearTxt=year?('当前看 '+year):'年款看资源，未标≠通用';
+  const yearTxt=year?('当前看 '+year):'';
   return '<td class="kp-scope"><b>'+esc(carTxt)+'</b><div class="hint" title="'+esc(cars.join('、')||'未标车型')+'">'+esc(yearTxt)+'</div></td>';
 }
 function kpClassCell(k){
@@ -387,7 +387,7 @@ function kpCard(k){
   const s=kpRowStatus(k);
   const cars=kpCars(k)||[];
   const uni=cars.indexOf('通用车型')>=0;
-  return '<article class="kp-card"><div class="kp-card-h"><a class="link" data-act="kpOpen" data-id="'+k.id+'"><b>'+esc(k.name)+'</b></a> <span class="tag '+(k.pri==='P0'?'pri':'')+'">'+esc(k.pri||'—')+'</span>'+(typeof rvChip==='function'?rvChip('kp',k.id):'')+'</div><div class="hint">'+esc(k.code||k.id)+' · '+esc(uni?'通用':cars.slice(0,2).join('、'))+' · '+esc((UI.sel.kpOv||{}).year||'年款看资源')+' · '+(k.owner?esc(k.owner):'未分配')+'</div><div class="kp-card-st">'+esc(s.teach)+' · '+esc(s.exam)+' · '+esc(s.drill)+(s.pend?' · 待整理 '+s.pend:'')+'</div><div class="kp-ops"><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a><a class="link" data-act="kpEditRow" data-id="'+k.id+'">编辑</a><button type="button" class="link" data-act="kpRowQuiz" data-id="'+k.id+'">补题</button><button type="button" class="link" data-act="kpRowDrill" data-id="'+k.id+'">补演练</button></div>'+kpGoalHtml(k)+'</article>';
+  return '<article class="kp-card"><div class="kp-card-h"><a class="link" data-act="kpOpen" data-id="'+k.id+'"><b>'+esc(k.name)+'</b></a> <span class="tag '+(k.pri==='P0'?'pri':'')+'">'+esc(k.pri||'—')+'</span>'+(typeof rvChip==='function'?rvChip('kp',k.id):'')+'</div><div class="hint">'+esc(k.code||k.id)+' · '+esc(uni?'通用':cars.slice(0,2).join('、'))+' · '+esc((UI.sel.kpOv||{}).year||(typeof kpPendingYearItems==='function'&&(()=>{const p=kpPendingYearItems(k);const n=p.c+p.q+p.d;return n?n+' 条资源未标年款':'年款已标全'})())||'')+' · '+(k.owner?esc(k.owner):'未分配')+'</div><div class="kp-card-st">'+esc(s.teach)+' · '+esc(s.exam)+' · '+esc(s.drill)+(s.pend?' · 待整理 '+s.pend:'')+'</div><div class="kp-ops"><a class="link" data-act="kpOpen" data-id="'+k.id+'">查看</a><a class="link" data-act="kpEditRow" data-id="'+k.id+'">编辑</a><button type="button" class="link" data-act="kpRowQuiz" data-id="'+k.id+'">补题</button><button type="button" class="link" data-act="kpRowDrill" data-id="'+k.id+'">补演练</button></div>'+kpGoalHtml(k)+'</article>';
 }
 function kpSortRows(rows,sort){
   const list=rows.slice();
@@ -505,19 +505,18 @@ A.kpOv=el=>{UI.sel.kpOv=UI.sel.kpOv||{};UI.sel.kpOv[el.dataset.k]=el.value;rende
 const __pgKpV13=pgKp;
 pgKp=function(){
   const html=__pgKpV13();const k=kp(UI.kid);if(!k||!k.out)return html;
-  const card='<div class="card"><h3>这个点要学会什么</h3><dl class="kv"><dt>学习结果</dt><dd>'+esc(k.out)+'</dd><dt>包括</dt><dd>'+esc(k.inc||'')+'</dd><dt>不包括</dt><dd>'+esc(k.exc||'')+'</dd><dt>岗位 / 阶段</dt><dd>'+esc((k.roleText||(k.roles||[]).join('、'))+' / '+(k.stage||''))+'</dd><dt>适用范围</dt><dd>'+esc((k.level||'')+' · '+((k.models&&k.models.length?k.models:k.cars)||[]).join('、'))+'</dd><dt>年款</dt><dd>演示年款 A/B 可同时在售。资源自己标年款；没标年款的，不算新年款已经有课。</dd><dt>怎么证明</dt><dd>'+esc(k.verify||'')+'</dd>'+(k.srcNote?'<dt>依据</dt><dd>'+esc(k.srcNote)+'</dd>':'')+(k.note?'<dt>说明</dt><dd>'+esc(k.note)+'</dd>':'')+(k.legacy?'<dt>旧编号</dt><dd>'+esc(k.legacy)+'</dd>':'')+'</dl></div>';
+  const card='<div class="card"><h3>这个点要学会什么</h3><dl class="kv"><dt>学习结果</dt><dd>'+esc(k.out)+'</dd><dt>包括</dt><dd>'+esc(k.inc||'')+'</dd><dt>不包括</dt><dd>'+esc(k.exc||'')+'</dd><dt>岗位 / 阶段</dt><dd>'+esc((k.roleText||(k.roles||[]).join('、'))+' / '+(k.stage||''))+'</dd><dt>适用范围</dt><dd>'+esc((k.level||'')+' · '+((k.models&&k.models.length?k.models:k.cars)||[]).join('、'))+'</dd><dt>年款</dt><dd>演示年款 A/B 可同时在售。讲解、题、演练在各自的表单里标年款；没标的按年款看时不计入，也不算真缺，统一在知识点库的「待标年款」里补。</dd><dt>怎么证明</dt><dd>'+esc(k.verify||'')+'</dd>'+(k.srcNote?'<dt>依据</dt><dd>'+esc(k.srcNote)+'</dd>':'')+(k.note?'<dt>说明</dt><dd>'+esc(k.note)+'</dd>':'')+(k.legacy?'<dt>旧编号</dt><dd>'+esc(k.legacy)+'</dd>':'')+'</dl></div>';
   return html.indexOf('<div class="dgrid">')>=0?html.replace('<div class="dgrid">',card+'<div class="dgrid">'):html+card;
 };
 if(typeof rxPackHtml==='function'){
+  /* 实操观察框和记录逻辑在 x_kp_v14.js：观察人、来源、合格判定、补学任务 */
   const __rxV13=rxPackHtml;
   rxPackHtml=function(){
-    const html=__rxV13();const p=(S.packs||[]).find(x=>x.id===R.packId);if(!p||!p.train)return html;
-    const rows=(p.observe||[]).map(o=>'<div class="hint">'+esc(o.dim)+' · '+esc(o.grade)+' · '+esc(o.note||'')+'</div>').join('');
-    const box='<div class="rx-note">实操观察和做题分开记。主管记录不能由对话冒充。不下订也可以完成这次接待。<div style="margin-top:6px"><select id="ob_dim"><option>探需有效</option><option>事实准确与范围</option><option>安全有效演示</option><option>下一步与记录</option></select> <select id="ob_grade"><option>独立完成</option><option>提示后完成</option><option>未完成</option><option>未观察</option></select></div><input id="ob_note" placeholder="看到的具体动作" style="width:100%;margin:6px 0"><button class="rb" data-act="trainObs" data-id="'+p.id+'">记下这次实操</button>'+rows+'</div>';
+    const html=__rxV13();const p=(S.packs||[]).find(x=>x.id===R.packId);if(!p||!p.train||typeof kpObsBoxHtml!=='function')return html;
+    const box=kpObsBoxHtml(p);
     return html.indexOf('<div style="height:30px"></div>')>=0?html.replace('<div style="height:30px"></div>',box+'<div style="height:30px"></div>'):html+box;
   };
 }
-A.trainObs=el=>{const p=(S.packs||[]).find(x=>x.id===el.dataset.id);if(!p)return;p.observe=p.observe||[];p.observe.push({dim:($('#ob_dim')||{}).value||'',grade:($('#ob_grade')||{}).value||'未观察',note:($('#ob_note')||{}).value||'',kp:p.kp,at:typeof today!=='undefined'?today:'',sim:true});toast('已记下实操观察，没有改题目成绩','ok');if(typeof renderRN==='function')renderRN()};
 A.navToggle=()=>{document.body.classList.toggle('nav-open')};
 document.addEventListener('click',function(e){
   const t=e.target;

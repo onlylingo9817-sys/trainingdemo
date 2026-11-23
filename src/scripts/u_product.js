@@ -130,13 +130,28 @@ function kpLibrary(){
 function kpStatForKp(k,car){if(!kpCarsHas(k,car))return '—';return kpReady(k)?'✓':'缺'}
 
 /* ---------- 知识图谱：按能力维度聚焦，只展开选中节点的上下游 ---------- */
+/* 图谱和总览都按「领域」（知识点的 group）分组，与知识点库的领域分组同一套 */
+const kgGroupOf=k=>k.group||'其他';
+function kpGroupOrder(){return [...new Set((S.kps||[]).map(kgGroupOf))]}
 function kgDims(){
   const act=S.kps.filter(k=>k.st==='启用');
-  return KP_DIMS.map(dim=>({dim,list:act.filter(k=>kpAbText(k)===dim)})).filter(g=>g.list.length).concat((()=>{const rest=act.filter(k=>!KP_DIMS.includes(kpAbText(k)));return rest.length?[{dim:'未分能力',list:rest}]:[]})());
+  return kpGroupOrder().map(dim=>({dim,list:act.filter(k=>kgGroupOf(k)===dim)})).filter(g=>g.list.length);
+}
+/* 去重后的关系对：先学优先；「相关」里和先学是同一对点的不再单算 */
+function kgEdgePairs(act){
+  const ids=new Set(act.map(k=>k.id));const seen={};const out=[];
+  const add=(a,b,type)=>{if(a===b||!ids.has(a)||!ids.has(b))return;const key=[a,b].sort().join('~');if(seen[key])return;seen[key]=1;out.push([a,b,type])};
+  act.forEach(k=>(k.pre||[]).forEach(p=>add(p,k.id,'pre')));
+  act.forEach(k=>(k.rel||[]).forEach(r=>add(k.id,r,'rel')));
+  return out;
+}
+function kgIsolated(act){
+  const linked=new Set();kgEdgePairs(act).forEach(([a,b])=>{linked.add(a);linked.add(b)});
+  return act.filter(k=>!linked.has(k.id));
 }
 function kgFocusId(){
   const act=S.kps.filter(k=>k.st==='启用');
-  const inDim=k=>!UI.sel.kgDim||UI.sel.kgDim==='全部'||kpAbText(k)===UI.sel.kgDim;
+  const inDim=k=>!UI.sel.kgDim||UI.sel.kgDim==='全部'||kgGroupOf(k)===UI.sel.kgDim;
   if(UI.sel.kgId&&act.some(k=>k.id===UI.sel.kgId&&inDim(k)))return UI.sel.kgId;
   const inScope=act.filter(inDim);
   const hasFlow=k=>(k.pre||[]).length||act.some(x=>(x.pre||[]).includes(k.id));
@@ -150,27 +165,26 @@ function kgRelations(id){
   const next=act.filter(x=>(x.pre||[]).includes(id));
   const rel=(k.rel||[]).map(x=>S.kps.find(y=>y.id===x)).filter(Boolean).concat(act.filter(x=>(x.rel||[]).includes(id)&&!(k.rel||[]).includes(x.id)));
   const uniq=a=>a.filter((x,i,arr)=>arr.findIndex(y=>y.id===x.id)===i);
-  return {pre:uniq(pre),next:uniq(next),rel:uniq(rel)};
+  const P=uniq(pre),N=uniq(next);
+  const taken=new Set(P.concat(N).map(x=>x.id).concat([id]));
+  return {pre:P,next:N,rel:uniq(rel).filter(x=>!taken.has(x.id))};
 }
+/* 卡片圆点：红=缺讲解，橙=讲解有但题/演练不齐，绿=讲解、题、演练都齐；与知识点库同一判定 */
 function kgMiniCard(k,side){
-  const h=kpHealth(k);const color=h.cells.exp.s==='ok'?(kpReady(k)?'#12a36b':'#e8830c'):'#e5484d';
-  return '<div class="kg-card" data-act="kpOpen" data-id="'+k.id+'"><i style="background:'+color+'"></i><div><b>'+esc(k.name)+'</b><div class="hint">'+esc(kpAbText(k))+' · 薄弱 '+kpWeak(k)+' 人</div></div>'+(side?'<span class="hint">'+side+'</span>':'')+'</div>';
+  const s=kpRowStatus(k);const color=s.missTeach?'#e5484d':s.gap?'#e8830c':'#12a36b';
+  return '<div class="kg-card" data-act="kpOpen" data-id="'+k.id+'"><i style="background:'+color+'"></i><div><b>'+esc(k.name)+'</b><div class="hint">'+esc(kgGroupOf(k))+' · 薄弱 '+kpWeak(k)+' 人</div></div>'+(side?'<span class="hint">'+side+'</span>':'')+'</div>';
 }
-const KG_COLORS={'探需':'#2b6fe0','产品讲解':'#12a36b','试乘试驾':'#0f8b8d','顾虑解除':'#e8830c','促单成交':'#d64545','客户经营':'#8a5cf6','带人辅导':'#7b3fc4','未分能力':'#98a2b3'};
-function kgColorOf(k){return KG_COLORS[kpAbText(k)]||KG_COLORS['未分能力']}
+const KG_COLORS={'基础':'#8a5cf6','产品共性':'#2b6fe0','产品专项':'#0f8b8d','销售旅程':'#12a36b','成交交接':'#e8830c','客户经营':'#d64545','交付服务':'#b7791f','带教管理':'#c2418b','其他':'#98a2b3'};
+function kgColorOf(k){return KG_COLORS[kgGroupOf(k)]||KG_COLORS['其他']}
 function kgLayout(){
   const act=S.kps.filter(k=>k.st==='启用');
   const W=1000,H=620;
   let seed=20261117;const rnd=()=>{seed=(seed*1103515245+12345)%2147483648;return seed/2147483648};
-  const dims=KP_DIMS.map(d=>({d,i:KP_DIMS.indexOf(d)}));
-  const angleOf=k=>{const i=KP_DIMS.indexOf(kpAbText(k));return (i<0?4:i)/Math.max(1,KP_DIMS.length)*Math.PI*2};
+  const order=kpGroupOrder();
+  const angleOf=k=>{const i=Math.max(0,order.indexOf(kgGroupOf(k)));return i/Math.max(1,order.length)*Math.PI*2};
   const pos=act.map(k=>{const a=angleOf(k);const r=170+rnd()*90;return {k,x:W/2+Math.cos(a)*r+(rnd()-.5)*40,y:H/2+Math.sin(a)*r*0.72+(rnd()-.5)*40,vx:0,vy:0}});
   const idx={};pos.forEach((p,i)=>idx[p.k.id]=i);
-  const edges=[];const seen={};
-  pos.forEach((p,i)=>{
-    (p.k.pre||[]).forEach(id=>{if(idx[id]==null)return;const a=idx[id],b=i;const key=[Math.min(a,b),Math.max(a,b),'pre'].join('-');if(seen[key])return;seen[key]=1;edges.push([a,b,'pre'])});
-    (p.k.rel||[]).forEach(id=>{if(idx[id]==null)return;const a=i,b=idx[id];const key=[Math.min(a,b),Math.max(a,b),'rel'].join('-');if(seen[key])return;seen[key]=1;edges.push([a,b,'rel'])});
-  });
+  const edges=kgEdgePairs(act).map(([a,b,type])=>[idx[a],idx[b],type]);
   const deg={};edges.forEach(([a,b])=>{deg[a]=(deg[a]||0)+1;deg[b]=(deg[b]||0)+1});
   for(let it=0;it<260;it++){
     const cool=1-it/300;
@@ -191,38 +205,37 @@ function kpNetworkSvg(){
   const edges=L.edges.map(([a,b,type])=>{const pa=L.pos[a],pb=L.pos[b];
     return '<line x1="'+pa.x.toFixed(1)+'" y1="'+pa.y.toFixed(1)+'" x2="'+pb.x.toFixed(1)+'" y2="'+pb.y.toFixed(1)+'" stroke="'+(type==='pre'?'#b6bfcc':'#dfe4ea')+'" stroke-width="'+(type==='pre'?'1.1':'1')+'"'+(type==='rel'?' stroke-dasharray="3 4"':'')+' stroke-opacity=".75"/>'}).join('');
   const nodes=L.pos.map((p,i)=>{const k=p.k;const weak=kpWeak(k);const deg=L.deg[i]||0;const r=Math.min(26,10+Math.sqrt(weak)*1.5+deg*0.5);const color=kgColorOf(k);
-    const hit=q&&k.name.toLowerCase().includes(q);const dim=(q&&!hit)||(scope==='gap'&&kpV12Health(k).level==='ok');const on=sel&&sel===k.id;
+    const hit=q&&k.name.toLowerCase().includes(q);const dim=(q&&!hit)||(scope==='gap'&&!kpRowStatus(k).gap);const on=sel&&sel===k.id;
     const showLabel=hit||on||topW.has(k.id);
     return '<g class="kg-node'+(hit?' hit':'')+(dim?' dim':'')+(on?' on':'')+'" data-id="'+k.id+'" data-act="kgPick" style="cursor:pointer">'
-      +'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r.toFixed(1)+'" fill="'+color+'" fill-opacity="'+(dim?'.12':'.82')+'" stroke="#fff" stroke-width="1.6"><title>'+esc(k.name+' · '+kpAbText(k)+' · 薄弱 '+weak+' 人 · 关系 '+deg+' 条')+'</title></circle>'
+      +'<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+r.toFixed(1)+'" fill="'+color+'" fill-opacity="'+(dim?'.12':'.82')+'" stroke="#fff" stroke-width="1.6"><title>'+esc(k.name+' · '+kgGroupOf(k)+' · 薄弱 '+weak+' 人 · 关系 '+deg+' 条')+'</title></circle>'
       +(showLabel?'<text x="'+(p.x+r+5).toFixed(1)+'" y="'+(p.y+3.5).toFixed(1)+'" font-size="10.5" fill="'+(dim?'#c9ced6':'#344054')+'" style="paint-order:stroke;stroke:#fff;stroke-width:3">'+esc(k.name.length>11?k.name.slice(0,11)+'…':k.name)+'</text>':'')
       +'</g>'}).join('');
   return '<div class="kg-net-wrap"><div class="kg-net-bar"><input id="kg_q" value="'+esc(UI.sel.kgQ||'')+'" placeholder="搜索知识点，命中会高亮…" oninput="A.kgQ(this)"><select data-wc="kgScope" aria-label="显示范围"><option value="all" '+(scope==='all'?'selected':'')+'>全部知识点</option><option value="gap" '+(scope==='gap'?'selected':'')+'>只突出有缺口的点</option></select><span class="hint">点击任意节点 → 看它的先学/后续/相关</span></div>'
     +'<svg class="kg-net" viewBox="0 0 '+L.W+' '+L.H+'" width="100%" style="max-width:'+L.W+'px" data-nodes="'+act+'">'+edges+nodes+'</svg>'
-    +'<div class="kg-legend">'+Object.keys(KG_COLORS).filter(d=>d!=='未分能力').map(d=>'<span><i style="background:'+KG_COLORS[d]+'"></i>'+d+'</span>').join('')+'<span><i class="ring"></i>越大=薄弱人数越多</span></div></div>';
+    +'<div class="kg-legend">'+kpGroupOrder().map(d=>'<span><i style="background:'+(KG_COLORS[d]||KG_COLORS['其他'])+'"></i>'+d+'</span>').join('')+'<span><i class="ring"></i>越大=薄弱人数越多</span></div></div>';
 }
 A.kgQ=el=>{const v=(el.value||'').trim();UI.sel.kgQ=v;const q=v.toLowerCase();document.querySelectorAll('.kg-net .kg-node').forEach(g=>{const t=(g.querySelector('title')||{}).textContent||'';const hit=!!q&&t.toLowerCase().includes(q);g.classList.toggle('hit',hit);g.classList.toggle('dim',!!q&&!hit)})};
 function kpGraphOverview(){
   const act=S.kps.filter(k=>k.st==='启用');
-  const relCount=act.reduce((n,k)=>n+(k.pre||[]).length+(k.rel||[]).length,0);
+  const E=kgEdgePairs(act);
   return '<div class="kg-overview">'
-   +'<div class="kg-ov-stats"><div><span>启用知识点</span><b>'+act.length+'</b></div><div><span>前置关系</span><b>'+act.reduce((n,k)=>n+(k.pre||[]).length,0)+'</b></div><div><span>相关关系</span><b>'+act.reduce((n,k)=>n+(k.rel||[]).length,0)+'</b></div><div><span>没有关系</span><b>'+act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length&&!S.kps.some(x=>(x.pre||[]).includes(k.id)||(x.rel||[]).includes(k.id))).length+'</b></div></div>'
+   +'<div class="kg-ov-stats"><div><span>启用知识点</span><b>'+act.length+'</b></div><div><span>先学关系</span><b>'+E.filter(e=>e[2]==='pre').length+'</b></div><div><span>相关关系</span><b>'+E.filter(e=>e[2]==='rel').length+'</b></div><div><span>没有关系</span><b>'+kgIsolated(act).length+'</b></div></div>'
    +kpNetworkSvg()
-   +'<div class="hint" style="margin-top:8px">这是全貌：颜色=能力维度，大小=薄弱人数，实线=先学后学，虚线=相关。默认只标出薄弱人数最多的 8 个点，其余点悬停或搜索查看名称；搜索或点击节点可下钻到单点关系。</div></div>';
+   +'<div class="hint" style="margin-top:8px">这是全貌：颜色=领域（与知识点库的领域分组一致），大小=薄弱人数，实线=先学后学，虚线=相关。默认只标出薄弱人数最多的 8 个点，其余点悬停或搜索查看名称；搜索或点击节点可下钻到单点关系。</div></div>';
 }
 function kpGraphView(){
   const act=S.kps.filter(k=>k.st==='启用');
-  const noRel=act.filter(k=>!(k.pre||[]).length&&!(k.rel||[]).length&&!S.kps.some(x=>(x.pre||[]).includes(k.id)||(x.rel||[]).includes(k.id)));
+  const noRel=kgIsolated(act);
   const view=UI.sel.kgView||'overview';
   const dim=UI.sel.kgDim||'全部';
   const focus=kgFocusId();
   const fk=S.kps.find(k=>k.id===focus);
   const rel=kgRelations(focus);
-  const dims=['全部'].concat(KP_DIMS).filter((d,i,a)=>a.indexOf(d)===i);
   return '<div class="kp-panel"><div class="kp-ph"><h3>知识图谱 <span class="hint">先看全貌，再点一个点看它的先学/后续/相关</span></h3><span class="hint">'+act.length+' 个启用点 · '+noRel.length+' 个没有任何关系</span></div>'
    +'<div class="kg-view-tabs"><span class="'+(view==='overview'?'on':'')+'" data-act="kgView" data-v="overview">全貌</span><span class="'+(view==='focus'?'on':'')+'" data-act="kgView" data-v="focus">单点关系</span></div>'
    +(view==='overview'?kpGraphOverview():
-     '<div class="kg-toolbar"><div class="fi2"><label>能力维度</label><select data-wc="kgDim">'+['全部'].concat(KP_DIMS).filter((d,i,a)=>a.indexOf(d)===i).map(d=>'<option '+(dim===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div><div class="fi2"><label>聚焦知识点</label><select data-wc="kgSkill">'+act.map(k=>'<option value="'+k.id+'" '+(focus===k.id?'selected':'')+'>'+esc(k.name)+'</option>').join('')+'</select></div><span class="hint">关系在「编辑知识点 → 先学（前置）/ 相关知识点」维护</span></div>'
+     '<div class="kg-toolbar"><div class="fi2"><label>领域</label><select data-wc="kgDim">'+['全部'].concat(kpGroupOrder()).map(d=>'<option '+(dim===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div><div class="fi2"><label>聚焦知识点</label><select data-wc="kgSkill">'+act.filter(k=>dim==='全部'||kgGroupOf(k)===dim||k.id===focus).map(k=>'<option value="'+k.id+'" '+(focus===k.id?'selected':'')+'>'+esc(k.code?k.code+' '+k.name:k.name)+'</option>').join('')+'</select></div><span class="hint">关系在「编辑知识点 → 先学（前置）/ 相关知识点」维护</span></div>'
      +'<div class="kg-focus">'
       +'<div class="kg-col"><div class="kg-col-h">先学（前置）<span>'+rel.pre.length+'</span></div>'+(rel.pre.length?rel.pre.map(k=>kgMiniCard(k,'前置')).join(''):'<div class="kg-empty">没有前置</div>')+'</div>'
       +'<div class="kg-col kg-main"><div class="kg-col-h">当前知识点</div>'+(fk?kgMiniCard(fk,''):'<div class="kg-empty">没有可显示的知识点</div>')+'<div class="kg-actions"><button class="btn sm" data-act="kpOpen" data-id="'+focus+'">看详情</button><button class="btn sm" data-act="kgEditRel" data-id="'+focus+'">维护关系</button></div></div>'

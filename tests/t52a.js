@@ -32,9 +32,11 @@ CK('抽题不会把年款A的题抽进年款B',picked.indexOf('Q_YEAR_A')<0&&pic
 R.diagYear='';
 document.body.dataset.end='rn';R.packId='PK_R01';R.page='pack';renderRN();
 CK('接待任务引用指定资源且允许不下订',/可不下订/.test(document.body.innerText)&&/演示年款A/.test(document.body.innerText));
+const setv=(id,v)=>{let e=document.getElementById(id);if(!e){e=document.createElement('input');e.id=id;document.body.appendChild(e)}e.value=v};
+setv('ob_dim','探需有效');setv('ob_grade','独立完成');setv('ob_src','主管现场观察');setv('ob_by','周丽');setv('ob_note','');
 A.trainObs({dataset:{id:'PK_R01'}});
 const pk=S.packs.find(p=>p.id==='PK_R01');
-CK('实操记录不写进题目成绩',pk.observe&&pk.observe.length===1&&pk.observe[0].sim===true);
+CK('实操记录不写进题目成绩',pk.observe&&pk.observe.length===1&&pk.observe[0].sim===true&&pk.observe[0].by==='周丽');
 CK('异常和置换演练在',!!drById('D_E01')&&/不能答应几天/.test(drById('D_E01').turns[0].ref)&&!!drById('D_T01'));
 document.body.dataset.end='pc';
 CK('页面无 undefined / NaN',!/undefined|NaN/.test(document.querySelector('#main').innerHTML));
