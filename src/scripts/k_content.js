@@ -219,7 +219,7 @@ function pgContentDetail(){
   let side='';
   if(tab==='内容'){
     const assets=(c.assets||[]).length?'<div class="card"><h3>附件素材 <span class="hint">'+c.assets.length+' 个</span></h3><table class="t">'+c.assets.map(a=>'<tr><td>'+esc(a.name)+'</td><td><span class="tag">'+a.kind+'</span>'+(FMT_NEW.includes(a.kind)?' <span class="tag warn">需学堂新增上传</span>':'')+'</td><td>'+esc(a.size||'-')+'</td><td class="hint">'+esc(a.note||'')+'</td></tr>').join('')+'</table></div>':'';
-    main=(typeof rvPanel==='function'?rvPanel('content',c.id):'')+'<div class="card cbody"><div class="cbody-h"><h3>正文'+(c.kind==='话术'&&c.body&&c.body.spin?' <span class="tag blue">SPIN 话术</span>':'')+'</h3><div class="cbody-a">'+(c.kind==='话术'?'<button class="btn sm" data-act="cCopyTxt" data-id="'+c.id+'">复制话术</button>':'')+'<button class="btn sm" data-act="cPvRn" data-id="'+c.id+'">零售通效果</button></div></div>'+cBodyHtml(c)+'</div>'+assets;
+    main=(typeof rvPanel==='function'?rvPanel('content',c.id):'')+'<div class="card cbody"><div class="cbody-h"><h3>正文'+(c.kind==='话术'&&c.body&&c.body.spin?' <span class="tag blue">SPIN 话术</span>':'')+'</h3><div class="cbody-a">'+(c.kind==='话术'?'<button class="btn sm" data-act="cCopyTxt" data-id="'+c.id+'">复制话术</button>':'')+'<button class="btn sm" data-act="cPvRn" data-id="'+c.id+'">零售通效果</button></div></div>'+cBodyHtml(c)+'</div>'+assets+(typeof kpCoursePickCard==='function'&&(c.kind==='课程'||c.kind==='话术')?kpCoursePickCard(c):'');
     const fbn=fp.length;
     const mini=(l,v,h)=>'<div class="mini"><div class="l">'+l+'</div><div class="v">'+v+'</div>'+(h?'<div class="h">'+h+'</div>':'')+'</div>';
     side='<div class="card sd"><h3>基本信息</h3><dl class="kv sm"><dt>内容性质</dt><dd>'+kindTag(c.kind)+' '+esc(c.type)+'</dd>'
