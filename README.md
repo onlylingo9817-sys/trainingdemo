@@ -29,7 +29,7 @@ src/
 tests/                交互回归探针（按 tools/run-tests.js 的清单执行）
 tools/dev-server.js   零依赖开发服务器
 tools/build-single-file.js  可选单文件导出
-tools/run-tests.js    批量回归测试（88 组）
+tools/run-tests.js    批量回归测试（89 组）
 docs/HANDOFF-v23.md   产品决策、历史改造与踩坑记录
 docs/KP-UX-v1.3.md    知识点模块的 UX 诊断、布局与交互 / UI 规范
 docs/KP-ARCH-STATUS.md 知识点架构现状与问题清单（对外讨论用）
@@ -91,7 +91,7 @@ npm run build
 ```bash
 npm run dev        # 启动 http://127.0.0.1:4173/
 npm run check      # 语法 / 脚本顺序 / 启动链
-npm test           # 全量页面探针测试（当前 88 组）
+npm test           # 全量页面探针测试（当前 89 组）
 ```
 
 - 源码入口：`src/index.html`。不要重新合并回单文件；`npm run build` 只用于对外分享。

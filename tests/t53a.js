@@ -1,0 +1,44 @@
+const L=m=>out.push(String(m));const CK=(name,ok,detail)=>L((ok?'PASS ':'FAIL ')+name+(detail?' — '+detail:''));
+const tx=()=>document.querySelector('#main').innerText;
+/* t53a：分组列表和全部列表同一套管理列；缺口排序不掺 P0；待整理不计能讲 */
+try{
+A.roleSwitch({value:'hq'});closeDlg();A.reset();
+UI.page='catalog';UI.tab.catalog='知识点库';render();
+const heads=[...document.querySelectorAll('.kp-list.compact tr:first-child th')].map(th=>th.textContent);
+CK('分组表有适用范围和能讲能考能练',heads.indexOf('适用范围')>=0&&heads.indexOf('能讲 / 能考 / 能练')>=0&&heads.indexOf('负责人')>=0&&heads.indexOf('操作')>=0,heads.join('|'));
+CK('至少展开两组',document.querySelectorAll('.kp-group').length>=2&&document.querySelectorAll('.kp-list tbody tr, .kp-list tr.kp-click').length>=8);
+const std=S.kps.filter(k=>String(k.code||'').indexOf('XM-')===0).length;
+const grouped=[...document.querySelectorAll('.kp-group')].reduce((n,g)=>n+[...g.querySelectorAll('tr.kp-click')].length,0);
+CK('分组行数等于当前结果且标准点 49',grouped===S.kps.length&&std===49,grouped+' / '+S.kps.length);
+CK('学习结果在行上',/能用对应品牌|能区分标称工况|能解释电池/.test(tx()));
+CK('缺口排序不把 P0 写进排序名',/缺口优先（不含优先级）/.test(tx()));
+const ids=[...document.querySelector('.kp-group').querySelectorAll('tr.kp-click')].map(tr=>tr.dataset.id);
+const scores=ids.map(id=>kpGapScore(kp(id)));
+CK('组内按缺口从高到低',scores.every((n,i)=>i===0||n<=scores[i-1]),scores.join(','));
+UI.sel.kpf={car:'SU7',gap:'缺讲解'};UI.sel.kpOv={year:'演示年款B'};render();
+const shown=[...document.querySelectorAll('tr.kp-click')].map(tr=>tr.dataset.id);
+CK('车型加年款加缺讲解只留范围内缺讲解的点',shown.length>0&&shown.every(id=>{const k=kp(id);return kpRowStatus(k).missTeach&&(kpCars(k)||[]).some(c=>c==='通用车型'||c.indexOf('SU7')===0)})&&!shown.some(id=>kp(id).code==='XM-P18'),shown.length+'');
+const groups=[...document.querySelectorAll('.kp-group')].length;
+CK('空组不出现且组内行数可加总',groups>0&&[...document.querySelectorAll('.kp-group')].reduce((n,g)=>n+[...g.querySelectorAll('tr.kp-click')].length,0)===shown.length);
+A.kpFclr();UI.sel.kpOv={year:''};render();
+A.kpFlat();
+const flat=[...document.querySelectorAll('tr.kp-click')].length;
+CK('全部列表与分组用同一批 49 个标准点',flat===S.kps.length&&/全部列表/.test(tx())&&/适用范围/.test(tx()));
+A.kpFlat();
+const row=document.querySelector('tr.kp-click');
+const id=row.dataset.id;
+const yBefore=0;UI.sel.kpListScroll=120;
+A.kpEditRow({dataset:{id}});
+CK('行内编辑进入表单',UI.page==='kpform'&&KF&&KF.id===id);
+A.kfCancel();
+CK('取消回到知识点库并保留筛选上下文',UI.page==='catalog'&&UI.tab.catalog==='知识点库'&&document.querySelector('tr.kp-click[data-id="'+id+'"]'));
+A.kpRowQuiz({dataset:{id}});
+CK('行内补题打开既有出题抽屉',/为这个点出题/.test((document.querySelector('#drw-root')||{}).innerText||'')&&UI.page==='catalog');
+A.drwClose();
+const k=kp(id);const own=k.owner;
+A.kpRowOwner({dataset:{id},value:''});
+CK('负责人可以标成未分配',kp(id).owner==null||kp(id).owner==='');
+A.kpRowOwner({dataset:{id},value:own||''});
+CK('待整理题不挂成已确认资源',qById('Q8').kp===''&&qById('Q8').kpMap==='待整理');
+CK('页面无 undefined / NaN',!/undefined|NaN/.test(document.querySelector('#main').innerHTML));
+}catch(e){L('ERR '+e.message+' @'+(e.stack||'').split('\n').slice(1,3).join(' | '))}

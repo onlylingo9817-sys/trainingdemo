@@ -45,7 +45,7 @@ CK('「内容审核状态」已改名',/依据核对状态/.test(tx())&&!/内容
 A.kfCancel();
 /* 列表：缺什么 / 行点击 / 翻页顺序 */
 UI.page='catalog';UI.tab.catalog=KP_TAB_LIB;UI.sel.kpf={};render();
-CK('列表有「缺什么」且 P0 缺口在前',/缺讲解|题 \d\/\d/.test(tx())&&kp(UI.kpOrder[0]).pri==='P0');
+CK('列表写出缺口且缺口优先不按 P0 排序',/缺讲解|缺题/.test(tx())&&kpGapScore(kp(UI.kpOrder[0]))>=kpGapScore(kp(UI.kpOrder[1]||UI.kpOrder[0])));
 CK('整行可点击进入详情',document.querySelectorAll('tr.kp-click[data-act="kpOpen"]').length>0);
 UI.sel.kpf={domain:'客户运营'};render();const ord=UI.kpOrder.slice();
 const first=document.querySelector('tr.kp-click');A.kpOpen({dataset:{id:first.dataset.id},closest:s=>first.closest(s)});
